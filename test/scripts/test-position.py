@@ -15,6 +15,6 @@ def movabs(motor, position):
         msg = "ERROR: " + motor + " .STAT " + str(stat) + ' position=' + str(position) + ' RBV=' + str(rbv)
         raise Exception(__name__ + msg)
 
-
-movabs(motor1, 15.0)
+init(motor1)
+movabs(motor1, 16.0)
 movabs(motor1, 60.0)
