@@ -319,7 +319,7 @@ asynStatus EthercatMCAxis::readMonitoring(int axisID)
 {
   int nvals;
   asynStatus status;
-  double rdbd, rdbd_tim, poslag = -1, poslag_tim = -1;
+  double rdbd_tim, poslag = -1, poslag_tim = -1;
   int rdbd_en, poslag_en = 0;
   double stepSize = drvlocal.stepSize;
 
@@ -340,7 +340,7 @@ asynStatus EthercatMCAxis::readMonitoring(int axisID)
   status = writeReadControllerPrint();
   if (status) return status;
   nvals = sscanf(pC_->inString_, "%lf;%lf;%d;%lf;%lf;%d",
-                 &rdbd, &rdbd_tim, &rdbd_en, &poslag, &poslag_tim, &poslag_en
+                 &drvlocal.rdbd, &rdbd_tim, &rdbd_en, &poslag, &poslag_tim, &poslag_en
                  );
   if ((nvals != 6) && (nvals != 3)) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
@@ -349,15 +349,17 @@ asynStatus EthercatMCAxis::readMonitoring(int axisID)
   }
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%srdbd=%f, rdbd_tim=%f rdbd_en=%d poslag=%f poslag_tim=%f poslag_en=%d\n",
-            modNamEMC, rdbd, rdbd_tim, rdbd_en, poslag, poslag_tim, poslag_en);
-  setDoubleParam(pC_->EthercatMCScalRDBD_RB_, rdbd);
+            modNamEMC, drvlocal.rdbd, rdbd_tim, rdbd_en,
+            poslag, poslag_tim, poslag_en);
+  setDoubleParam(pC_->EthercatMCScalRDBD_RB_, drvlocal.rdbd);
   setDoubleParam(pC_->EthercatMCScalRDBD_Tim_RB_, rdbd_tim);
   setIntegerParam(pC_->EthercatMCScalRDBD_En_RB_, rdbd_en);
 #ifdef motorRDBDROString
-    setDoubleParam(pC_->motorRDBDRO_, rdbd_en ? rdbd / stepSize : 0.0);
+  setDoubleParam(pC_->motorRDBDRO_,
+                 rdbd_en ? drvlocal.rdbd / stepSize : 0.0);
 #endif
   /* Either the monitoring is off or 0.0 by mistake, set an error */
-  drvlocal.illegalInTargetWindow = (!rdbd_en || !rdbd);
+  drvlocal.illegalInTargetWindow = (!rdbd_en || !drvlocal.rdbd);
 
   if (nvals == 6) {
     setDoubleParam(pC_->EthercatMCScalPOSLAG_RB_, poslag);
@@ -1244,6 +1246,23 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
   }
   if (axisNo_ != motor_axis_no) return asynError;
 
+  /* Use fPosition or fActPosition for "commanded position */
+  if (pst_axis_status->nCommand == NCOMMANDMOVEABS &&
+      pst_axis_status->nCmdData == 0 &&
+      drvlocal.rdbd) {
+    /* The default is to use fActPosition */
+    double cmdPositionInEGU = pst_axis_status->fActPosition;
+    if (fabs(pst_axis_status->fPosition - pst_axis_status->fActPosition) < drvlocal.rdbd) {
+        /* The command position is different from actual postion.
+           E.g. 16.000 != 15.990
+           If both are within RDBD, use the commanded position
+        */
+      cmdPositionInEGU = pst_axis_status->fPosition;
+    }
+    /* Patch the value for fPosition */
+    pst_axis_status->fPosition = cmdPositionInEGU;
+  }
+
   /* Use previous fActPosition and current fActPosition to calculate direction.*/
   if (pst_axis_status->fActPosition > drvlocal.old_st_axis_status.fActPosition) {
     pst_axis_status->motorDiffPostion = 1;
@@ -1331,11 +1350,11 @@ asynStatus EthercatMCAxis::poll(bool *moving)
     drvlocal.nCommandActive = 0;
 
   if (drvlocal.nCommandActive != NCOMMANDHOME) {
-    double newPositionInSteps = st_axis_status.fActPosition / drvlocal.stepSize;
-    setDoubleParam(pC_->motorPosition_, newPositionInSteps);
+    /* Set values for commanded position and readback position */
+    setDoubleParam(pC_->motorPosition_, st_axis_status.fPosition / drvlocal.stepSize);
     setDoubleParam(pC_->motorEncoderPosition_,
-                   drvlocal.eres ? newPositionInSteps * drvlocal.stepSize / drvlocal.eres:
-		   newPositionInSteps);
+                   drvlocal.eres ? st_axis_status.fActPosition / drvlocal.eres :
+                   0);
     drvlocal.old_st_axis_status.fActPosition = st_axis_status.fActPosition;
     setDoubleParam(pC_->EthercatMCVel_RB_, st_axis_status.fVelocity);
   }

@@ -698,6 +698,7 @@ static void motorHandleOneArg(const char *myarg_1)
     int bJogBwd = 0;
     double fOverride = 0;
     /* getMotorPos must be first, it calls simulateMotion() */
+    cmd_Motor_status[motor_axis_no].fPosition = cmd_Motor_cmd[motor_axis_no].fPosition;
     cmd_Motor_status[motor_axis_no].fActPostion = getMotorPos(motor_axis_no);
     cmd_Motor_status[motor_axis_no].bEnable = cmd_Motor_cmd[motor_axis_no].bEnable;
     cmd_Motor_status[motor_axis_no].bEnabled = getAmplifierOn(motor_axis_no);

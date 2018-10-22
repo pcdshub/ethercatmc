@@ -27,6 +27,7 @@ record(motor,"$(PREFIX)$(MOTOR_NAME)")
 	field(FOFF,"$(FOFF=0)")
 	field(NTM,"0")
 	field(TWV,"$(TWV=1)")
+	field(UEIP,"$(UEIP=1)")
 }
 
 # The message text

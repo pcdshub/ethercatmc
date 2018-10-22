@@ -151,6 +151,7 @@ private:
     double stepSize;
     double cfgStepSize;
     double eres;
+    double rdbd;
     const char *externalEncoderStr;
     const char *cfgfileStr;
     const char *cfgDebug_str;
