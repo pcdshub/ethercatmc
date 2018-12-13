@@ -1,11 +1,5 @@
-version: 1
+version: 2
 
-jobs:
-  deploy-job:
-    steps:
-      - add_ssh_keys:
-          fingerprints:
-              - "SO:ME:FIN:G:ER:PR:IN:T"
   build:
     docker:
       - image: "debian:stretch"
@@ -44,6 +38,9 @@ jobs:
       - run:
           name: Install GIT
           command: 'apt-get update && sudo apt-get install -y git'
+      - add_ssh_keys:
+          fingerprints:
+              - "SO:ME:FIN:G:ER:PR:IN:T"
       - run:
           name: Install ESS e3
           command: |
