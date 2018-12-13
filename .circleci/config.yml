@@ -16,6 +16,9 @@ jobs:
           name: Install CMAKE
           command: 'apt-get update && sudo apt-get install -y cmake'
       - run:
+          name: Install GNU m4
+          command: 'apt-get update && sudo apt-get install -y m4'
+      - run:
           name: Install TAR
           command: 'apt-get update && sudo apt-get install -y tar'
       - run:
@@ -37,4 +40,3 @@ jobs:
               ./e3.bash -e mod
               cmake -Bbuild -H. -DBUILD_TESTING=OFF
               sudo cmake --build build/ --target install
-
