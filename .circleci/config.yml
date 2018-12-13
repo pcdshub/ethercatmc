@@ -41,16 +41,16 @@ jobs:
           command: 'apt-get update && sudo apt-get install -y git'
       - add_ssh_keys:
           fingerprints:
-              - "e0:5b:b4:24:41:a1:18:a0:cf:fc:45:ef:3d:4c:09:00"
+              - "03:d7:8a:c6:ba:e5:e3:6f:c2:2c:0d:0c:4e:8b:ac:b9"
       - run:
           name: Install ESS e3
           command: |
               cd /usr/local/src
               git clone https://github.com/icshwi/e3
               cd e3
+              source tools/use_sshkey.sh
               ./e3_building_config.bash setup
               ./e3.bash base
               ./e3.bash req
               ./e3.bash -c mod
-              source tools/use_sshkey.sh
               ./e3.bash -e mod
