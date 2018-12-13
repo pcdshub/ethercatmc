@@ -1,4 +1,4 @@
-version: 2
+version: 1
 
 jobs:
   build:
@@ -16,11 +16,25 @@ jobs:
           name: Install CMAKE
           command: 'apt-get update && sudo apt-get install -y cmake'
       - run:
-          name: Creating Build Files
-          command: 'cmake -H. -Bbuild'
+          name: Install TAR
+          command: 'apt-get update && sudo apt-get install -y tar'
       - run:
-          name: Creating Binary Files
-          command: 'cmake --build build'
+          name: Install WGET
+          command: 'apt-get update && sudo apt-get install -y wget'
       - run:
-          name: Point Unit Testing
-          command: './bin/point_test'
+          name: Install GIT
+          command: 'apt-get update && sudo apt-get install -y git'
+      - run:
+          name: Install ESS e3
+          command: |
+              cd /usr/local/src
+              git clone https://github.com/icshwi/e3
+              cd e3
+              ./e3_building_config.bash setup
+              ./e3.bash base
+              ./e3.bash req
+              ./e3.bash -c mod
+              ./e3.bash -e mod
+              cmake -Bbuild -H. -DBUILD_TESTING=OFF
+              sudo cmake --build build/ --target install
+

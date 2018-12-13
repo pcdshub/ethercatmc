@@ -1,5 +1,5 @@
-require asyn,4.31
-require EthercatMC,USER
+require asyn,4.33
+require EthercatMC,2.1.0
 
 epicsEnvSet("MOTOR_PORT",    "$(SM_MOTOR_PORT=MCU1)")
 
