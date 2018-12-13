@@ -7,7 +7,8 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: "e0:5b:b4:24:41:a1:18:a0:cf:fc:45:ef:3d:4c:09:00"
+          fingerprints:
+              - "e0:5b:b4:24:41:a1:18:a0:cf:fc:45:ef:3d:4c:09:00"
       - run:
           name: Installing SUDO
           command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
@@ -47,7 +48,6 @@ jobs:
               cd /usr/local/src
               git clone https://github.com/icshwi/e3
               cd e3
-              source tools/use_sshkey.sh
               ./e3_building_config.bash setup
               ./e3.bash base
               ./e3.bash req
