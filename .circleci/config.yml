@@ -1,6 +1,11 @@
 version: 1
 
 jobs:
+  deploy-job:
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+              - "SO:ME:FIN:G:ER:PR:IN:T"
   build:
     docker:
       - image: "debian:stretch"
@@ -45,10 +50,9 @@ jobs:
               cd /usr/local/src
               git clone https://github.com/icshwi/e3
               cd e3
+              source tools/use_sshkey.sh
               ./e3_building_config.bash setup
               ./e3.bash base
               ./e3.bash req
               ./e3.bash -c mod
               ./e3.bash -e mod
-              cmake -Bbuild -H. -DBUILD_TESTING=OFF
-              sudo cmake --build build/ --target install
