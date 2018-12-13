@@ -19,6 +19,9 @@ jobs:
           name: Install GNU m4
           command: 'apt-get update && sudo apt-get install -y m4'
       - run:
+          name: Install GNU readline-dev
+          command: 'apt-get update && sudo apt-get install -y libreadline-dev'
+      - run:
           name: Install TAR
           command: 'apt-get update && sudo apt-get install -y tar'
       - run:
