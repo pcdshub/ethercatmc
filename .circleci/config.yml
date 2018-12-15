@@ -16,6 +16,9 @@ jobs:
           name: Install CMAKE
           command: 'apt-get update && sudo apt-get install -y cmake'
       - run:
+          name: Install DKMS
+          command: 'apt-get update && sudo apt-get install -y dkms'
+      - run:
           name: Install TCL interpreter
           command: 'apt-get update && sudo apt-get install -y tcl'
       - run:
@@ -39,6 +42,22 @@ jobs:
       - run:
           name: Install GIT
           command: 'apt-get update && sudo apt-get install -y git'
+      - run:
+          name: Install EtherLab Master
+          command: |
+              sudo mkdir ~/.ssh
+              sudo ssh-keyscan -H bitbucket.org >> ~/.ssh/known_hosts
+              cd /usr/local/src
+              git clone https://github.com/icshwi/etherlabmaster.git 
+              cd etherlabmaster
+              make init
+              make patch
+              make build
+              make install
+              make dkms_add
+              make dkms_build
+              make dkms_install
+              make setup
       - run:
           name: Install ESS e3
           command: |
