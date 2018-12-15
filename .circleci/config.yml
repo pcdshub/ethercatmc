@@ -19,6 +19,9 @@ jobs:
           name: Install autoconf
           command: 'apt-get update && sudo apt-get install -y autoconf'
       - run:
+          name: Install autoconf-archive
+          command: 'apt-get update && sudo apt-get install -y autoconf-archive'
+      - run:
           name: Install Debian helpers (autoreconf, e.g.)
           command: 'apt-get update && sudo apt-get install -y dh-*'
       - run:
