@@ -17,7 +17,7 @@ jobs:
           command: 'apt-get update && sudo apt-get install -y cmake'
       - run:
           name: Install Linux source needed by etherlab master...
-          command: 'apt-get update && sudo apt-get source -y'
+          command: 'apt-get update && sudo apt-get source linux-image-$(uname -r)'
       - run:
           name: Install some packages needed by etherlab master...
           command: 'apt-get update && sudo apt-get install -y automake autoconf autoconf-archive dh-autoreconf pkg-config'
