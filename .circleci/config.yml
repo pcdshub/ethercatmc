@@ -47,6 +47,7 @@ jobs:
               cd /usr/local/src
               git clone https://github.com/icshwi/e3
               cd e3
+              source tools/use_sshkey.sh
               ./e3_building_config.bash setup
               ./e3.bash base
               ./e3.bash req
