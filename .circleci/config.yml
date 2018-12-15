@@ -86,10 +86,9 @@ jobs:
       - run:
           name: Starting m-epics-ethercatmc IOC connected to the simulator, in background
           command: |
-              cd /usr/local/src
-              cd e3/e3-ethercatmc
+              cd /usr/local/src/e3
               source tools/setenv
-              cd m-epics-ethercatmc/startup
+              cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/startup
               ln -s ../test/startup/st.SolAxis-SimCfgDbg.cmd
               ln -s ../test/startup/SimAxis.cfg
               export IOC_SH=$(which iocsh.bash)
@@ -98,6 +97,5 @@ jobs:
       - run:
           name: Performing motor tests using runnign m-epics-ethercatmc IOC
           command: |
-              cd /usr/local/src
-              cd e3/e3-ethercatmc/m-epics-ethercatmc/test/nose_tests
+              cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/test/nose_tests
               ./runTests.sh IOC:m1
