@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: "debian:stretch"
+      - image: "ubuntu:16.04"
     steps:
       - checkout
       - add_ssh_keys:
