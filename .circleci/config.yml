@@ -95,7 +95,7 @@ jobs:
               ln -s ../test/startup/st.SolAxis-SimCfgDbg.cmd
               ln -s ../test/startup/SimAxis.cfg
               export IOC_SH=$(which iocsh.bash)
-              procServ -e $IOC_SH -n "Ethercat motor axis simulation" -i ^D^C 20000 ./st.SolAxis-SimCfgDbg.cmd
+              iocsh.bash ./st.SolAxis-SimCfgDbg.cmd
               sleep 5
               cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/test/nose_tests
               ./runTests.sh IOC:m1
