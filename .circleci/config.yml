@@ -89,9 +89,6 @@ jobs:
               cd e3/e3-ethercatmc/m-epics-ethercatmc/test
               ./run-EthercatMC-simulator.sh &
               sleep 5
-      - run:
-          name: Starting m-epics-ethercatmc IOC connected to the simulator, in background
-          command: |
               cd /usr/local/src/e3
               source tools/setenv
               cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/startup
@@ -102,9 +99,6 @@ jobs:
               export IOC_SH=$(which iocsh.bash)
               procServ -e $IOC_SH -n "Ethercat motor axis simulation" -i ^D^C 20000 ./st.SolAxis-SimCfgDbg.cmd
               sleep 5
-      - run:
-          name: Performing motor tests using runnign m-epics-ethercatmc IOC
-          command: |
               cd /usr/local/src/e3
               source tools/setenv
               cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/test/nose_tests
