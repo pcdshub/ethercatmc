@@ -103,5 +103,7 @@ jobs:
       - run:
           name: Performing motor tests using runnign m-epics-ethercatmc IOC
           command: |
+              cd /usr/local/src/e3
+              source tools/setenv
               cd /usr/local/src/e3/e3-ethercatmc/m-epics-ethercatmc/test/nose_tests
               ./runTests.sh IOC:m1
