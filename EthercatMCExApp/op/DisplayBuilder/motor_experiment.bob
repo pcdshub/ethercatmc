@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display version="2.0.0">
+  <name>Experiment</name>
+  <macros>
+    <M1>m1</M1>
+    <M2>m2</M2>
+  </macros>
+  <width>1200</width>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle_3</name>
+    <x>297</x>
+    <y>56</y>
+    <width>790</width>
+    <height>410</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="BLACK-BORDER" red="121" green="121" blue="121">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle_2</name>
+    <x>17</x>
+    <y>55</y>
+    <width>258</width>
+    <height>410</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="BLACK-BORDER" red="121" green="121" blue="121">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_5</name>
+    <text>Simple experiment</text>
+    <x>20</x>
+    <y>20</y>
+    <width>200</width>
+    <height>30</height>
+    <font>
+      <font family="Source Code Pro" style="BOLD" size="18.0">
+      </font>
+    </font>
+  </widget>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle</name>
+    <x>27</x>
+    <y>65</y>
+    <width>258</width>
+    <height>410</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="BACKGROUND" red="220" green="225" blue="221">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_6</name>
+    <text>Acquisition setup</text>
+    <x>37</x>
+    <y>75</y>
+    <width>210</width>
+    <height>30</height>
+    <font>
+      <font family="Source Code Pro" style="BOLD" size="16.0">
+      </font>
+    </font>
+  </widget>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle_1</name>
+    <x>307</x>
+    <y>65</y>
+    <width>790</width>
+    <height>410</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="BACKGROUND" red="220" green="225" blue="221">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="xyplot" version="2.0.0">
+    <name>X/Y Plot</name>
+    <x>317</x>
+    <y>75</y>
+    <width>770</width>
+    <height>390</height>
+    <title>Position trace</title>
+    <show_toolbar>true</show_toolbar>
+    <show_legend>false</show_legend>
+    <tooltip>$(traces[0].y_pv)
+$(traces[0].x_pv)</tooltip>
+    <x_axis>
+      <title>X</title>
+      <autoscale>false</autoscale>
+      <log_scale>false</log_scale>
+      <minimum>0.0</minimum>
+      <maximum>10.0</maximum>
+      <show_grid>true</show_grid>
+      <title_font>
+        <font name="Default Bold" family="Source Sans Pro" style="BOLD" size="16.0">
+        </font>
+      </title_font>
+      <scale_font>
+        <font name="Default" family="Source Sans Pro" style="REGULAR" size="16.0">
+        </font>
+      </scale_font>
+      <visible>true</visible>
+    </x_axis>
+    <y_axes>
+      <y_axis>
+        <title>Y</title>
+        <autoscale>false</autoscale>
+        <log_scale>false</log_scale>
+        <minimum>0.0</minimum>
+        <maximum>10.0</maximum>
+        <show_grid>true</show_grid>
+        <title_font>
+          <font name="Default Bold" family="Source Sans Pro" style="BOLD" size="16.0">
+          </font>
+        </title_font>
+        <scale_font>
+          <font name="Default" family="Source Sans Pro" style="REGULAR" size="16.0">
+          </font>
+        </scale_font>
+        <visible>true</visible>
+      </y_axis>
+    </y_axes>
+    <traces>
+      <trace>
+        <name></name>
+        <x_pv>loc://arrayPointsX()</x_pv>
+        <y_pv>loc://arrayPointsY()</y_pv>
+        <err_pv></err_pv>
+        <axis>0</axis>
+        <trace_type>1</trace_type>
+        <color>
+          <color red="77" green="102" blue="204">
+          </color>
+        </color>
+        <line_width>3</line_width>
+        <point_type>2</point_type>
+        <point_size>7</point_size>
+      </trace>
+    </traces>
+  </widget>
+  <widget type="action_button" version="3.0.0">
+    <name>runButton</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>$(pv_name)</pv_name>
+        <value>1</value>
+        <description>Set to run</description>
+      </action>
+    </actions>
+    <pv_name>loc://run(0)</pv_name>
+    <text>Start</text>
+    <x>81</x>
+    <y>435</y>
+    <width>90</width>
+    <font>
+      <font family="Source Code Pro" style="BOLD" size="18.0">
+      </font>
+    </font>
+    <background_color>
+      <color name="GREEN" red="61" green="216" blue="61">
+      </color>
+    </background_color>
+    <scripts>
+      <script file="scripts/experiment.py">
+        <pv_name>loc://run(0)</pv_name>
+        <pv_name trigger="false">loc://startPosMotor1</pv_name>
+        <pv_name trigger="false">loc://endPosMotor1</pv_name>
+        <pv_name trigger="false">loc://numPointsMotor1</pv_name>
+        <pv_name trigger="false">loc://startPosMotor2</pv_name>
+        <pv_name trigger="false">loc://endPosMotor2</pv_name>
+        <pv_name trigger="false">loc://numPointsMotor2</pv_name>
+        <pv_name trigger="false">$(P)$(M1).RBV</pv_name>
+        <pv_name trigger="false">$(P)$(M1).VAL</pv_name>
+        <pv_name trigger="false">$(P)$(M1).DMOV</pv_name>
+        <pv_name trigger="false">$(P)$(M1).STOP</pv_name>
+        <pv_name trigger="false">$(P)$(M2).RBV</pv_name>
+        <pv_name trigger="false">$(P)$(M2).VAL</pv_name>
+        <pv_name trigger="false">$(P)$(M2).DMOV</pv_name>
+        <pv_name trigger="false">$(P)$(M2).STOP</pv_name>
+        <pv_name trigger="false">loc://integrationTime</pv_name>
+        <pv_name trigger="false">loc://arrayPointsX()</pv_name>
+        <pv_name trigger="false">loc://arrayPointsY()</pv_name>
+        <pv_name trigger="false">loc://stop(0)</pv_name>
+        <pv_name trigger="false">loc://updateMessage("")</pv_name>
+      </script>
+    </scripts>
+    <tooltip>$(actions)</tooltip>
+  </widget>
+  <widget type="action_button" version="3.0.0">
+    <name>stopButton</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>loc://stop(0)</pv_name>
+        <value>1</value>
+        <description>Stop experiment</description>
+      </action>
+    </actions>
+    <text>Stop</text>
+    <x>183</x>
+    <y>435</y>
+    <width>90</width>
+    <font>
+      <font family="Source Code Pro" style="BOLD" size="18.0">
+      </font>
+    </font>
+    <background_color>
+      <color name="RED" red="252" green="13" blue="27">
+      </color>
+    </background_color>
+    <tooltip>$(actions)</tooltip>
+  </widget>
+  <widget type="group" version="2.0.0">
+    <name>axis x</name>
+    <x>38</x>
+    <y>107</y>
+    <width>236</width>
+    <height>128</height>
+    <widget type="spinner" version="2.0.0">
+      <name>startPosMotor1Spinner</name>
+      <pv_name>loc://startPosMotor1(-10)</pv_name>
+      <x>89</x>
+      <y>2</y>
+      <precision>1</precision>
+      <rules>
+        <rule name="SetMinimum" prop_id="minimum" out_exp="true">
+          <exp bool_exp="pv0!=0">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M1).LLM</pv_name>
+        </rule>
+        <rule name="SetMaximum" prop_id="maximum" out_exp="true">
+          <exp bool_exp="pv0!=100">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M1).HLM</pv_name>
+        </rule>
+      </rules>
+      <limits_from_pv>false</limits_from_pv>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label</name>
+      <text>start</text>
+      <x>9</x>
+      <y>2</y>
+      <width>50</width>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>endPosMotor1Spinner</name>
+      <pv_name>loc://endPosMotor1(10)</pv_name>
+      <x>89</x>
+      <y>32</y>
+      <precision>1</precision>
+      <rules>
+        <rule name="SetMinimum" prop_id="minimum" out_exp="true">
+          <exp bool_exp="pv0!=0">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M1).LLM</pv_name>
+        </rule>
+        <rule name="SetMaximum" prop_id="maximum" out_exp="true">
+          <exp bool_exp="pv0!=100">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M1).HLM</pv_name>
+        </rule>
+      </rules>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_1</name>
+      <text>end</text>
+      <x>9</x>
+      <y>29</y>
+      <width>50</width>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>pointMotor1Spinner</name>
+      <pv_name>loc://numPointsMotor1(15)</pv_name>
+      <x>88</x>
+      <y>62</y>
+      <precision>0</precision>
+      <minimum>2.0</minimum>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_7</name>
+      <text>points</text>
+      <x>9</x>
+      <y>56</y>
+      <width>69</width>
+    </widget>
+  </widget>
+  <widget type="group" version="2.0.0">
+    <name>axis y</name>
+    <x>38</x>
+    <y>242</y>
+    <width>236</width>
+    <height>128</height>
+    <widget type="spinner" version="2.0.0">
+      <name>startPosMotor2Spinner</name>
+      <pv_name>loc://startPosMotor2(-10)</pv_name>
+      <x>89</x>
+      <y>2</y>
+      <precision>2</precision>
+      <rules>
+        <rule name="SetMinimum" prop_id="minimum" out_exp="true">
+          <exp bool_exp="pv0!=0">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M2).LLM</pv_name>
+        </rule>
+        <rule name="SetMaximum" prop_id="maximum" out_exp="true">
+          <exp bool_exp="pv0!=100">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M2).HLM</pv_name>
+        </rule>
+      </rules>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_2</name>
+      <text>start</text>
+      <x>9</x>
+      <y>2</y>
+      <width>69</width>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>endPosMotor2Spinner</name>
+      <pv_name>loc://endPosMotor2(10)</pv_name>
+      <x>89</x>
+      <y>32</y>
+      <precision>2</precision>
+      <rules>
+        <rule name="SetMinimum" prop_id="minimum" out_exp="true">
+          <exp bool_exp="pv0!=0">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M2).LLM</pv_name>
+        </rule>
+        <rule name="SetMaximum" prop_id="maximum" out_exp="true">
+          <exp bool_exp="pv0!=100">
+            <expression>pv0</expression>
+          </exp>
+          <pv_name>$(P)$(M2).HLM</pv_name>
+        </rule>
+      </rules>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_3</name>
+      <text>end</text>
+      <x>9</x>
+      <y>29</y>
+      <width>69</width>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_4</name>
+      <text>points</text>
+      <x>9</x>
+      <y>56</y>
+      <width>69</width>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>pointMotor2Spinner</name>
+      <pv_name>loc://numPointsMotor2(15)</pv_name>
+      <x>89</x>
+      <y>62</y>
+      <precision>0</precision>
+      <minimum>2.0</minimum>
+    </widget>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_8</name>
+    <text>integration time</text>
+    <x>52</x>
+    <y>385</y>
+    <width>115</width>
+  </widget>
+  <widget type="spinner" version="2.0.0">
+    <name>intTimeSpinner</name>
+    <pv_name>loc://integrationTime(0.5)</pv_name>
+    <x>167</x>
+    <y>385</y>
+    <precision>2</precision>
+    <minimum>0.2</minimum>
+    <maximum>5.0</maximum>
+    <increment>0.1</increment>
+  </widget>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle_4</name>
+    <x>17</x>
+    <y>490</y>
+    <width>1070</width>
+    <height>40</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="BLACK-BORDER" red="121" green="121" blue="121">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="rectangle" version="2.0.0">
+    <name>Rectangle_5</name>
+    <x>27</x>
+    <y>500</y>
+    <width>1070</width>
+    <height>40</height>
+    <line_color>
+      <color name="BLACK" red="0" green="0" blue="0">
+      </color>
+    </line_color>
+    <background_color>
+      <color name="WHITE" red="255" green="255" blue="255">
+      </color>
+    </background_color>
+    <corner_width>15</corner_width>
+    <corner_height>15</corner_height>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>updateText</name>
+    <pv_name>loc://updateMessage("")</pv_name>
+    <x>52</x>
+    <y>510</y>
+    <width>1018</width>
+    <height>30</height>
+    <font>
+      <font family="Source Sans Pro" style="BOLD" size="16.0">
+      </font>
+    </font>
+    <foreground_color>
+      <color name="RAL-2000" red="213" green="111" blue="1">
+      </color>
+    </foreground_color>
+    <transparent>true</transparent>
+  </widget>
+</display>
