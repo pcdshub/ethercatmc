@@ -200,11 +200,6 @@
         </color>
       </tag_color>
       <tag_visible>true</tag_visible>
-      <rules>
-        <rule name="SetHiHi" prop_id="level_hihi" out_exp="false">
-          <pv_name>$(P)$(M1).HLM</pv_name>
-        </rule>
-      </rules>
       <minimum></minimum>
       <maximum></maximum>
       <fine_increment>0.5</fine_increment>

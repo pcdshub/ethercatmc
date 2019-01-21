@@ -107,6 +107,32 @@
     <title>Position trace</title>
     <show_toolbar>true</show_toolbar>
     <show_legend>false</show_legend>
+    <rules>
+      <rule name="Update x_axis.minimum" prop_id="x_axis.minimum" out_exp="true">
+        <exp bool_exp="True">
+          <expression>pv0</expression>
+        </exp>
+        <pv_name>loc://xAxisMinimum(0)</pv_name>
+      </rule>
+      <rule name="Update x_axis.maximum" prop_id="x_axis.maximum" out_exp="true">
+        <exp bool_exp="True">
+          <expression>pv0</expression>
+        </exp>
+        <pv_name>loc://xAxisMaximum(0)</pv_name>
+      </rule>
+      <rule name="Update y_axis.minimum" prop_id="y_axes[0].minimum" out_exp="true">
+        <exp bool_exp="True">
+          <expression>pv0</expression>
+        </exp>
+        <pv_name>loc://yAxisMinimum(0)</pv_name>
+      </rule>
+      <rule name="Update y_axis.maximum" prop_id="y_axes[0].maximum" out_exp="true">
+        <exp bool_exp="True">
+          <expression>pv0</expression>
+        </exp>
+        <pv_name>loc://yAxisMaximum(0)</pv_name>
+      </rule>
+    </rules>
     <tooltip>$(traces[0].y_pv)
 $(traces[0].x_pv)</tooltip>
     <x_axis>
@@ -303,6 +329,26 @@ $(traces[0].x_pv)</tooltip>
       <x>88</x>
       <y>62</y>
       <precision>0</precision>
+      <actions>
+      </actions>
+      <scripts>
+        <script file="EmbeddedPy">
+          <text><![CDATA[# -----------------------------------------------------------------------------
+# Update maximum X points
+# -----------------------------------------------------------------------------
+# Embedded python script
+from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
+
+startX = int(round(PVUtil.getDouble(pvs[0])))
+endX   = int(round(PVUtil.getDouble(pvs[1])))
+
+deltaX = endX - startX
+
+widget.setPropertyValue("maximum", deltaX)]]></text>
+          <pv_name>loc://startPosMotor1(0)</pv_name>
+          <pv_name>loc://endPosMotor1(10)</pv_name>
+        </script>
+      </scripts>
       <minimum>2.0</minimum>
     </widget>
     <widget type="label" version="2.0.0">
@@ -388,6 +434,24 @@ $(traces[0].x_pv)</tooltip>
       <x>89</x>
       <y>62</y>
       <precision>0</precision>
+      <scripts>
+        <script file="EmbeddedPy">
+          <text><![CDATA[# -----------------------------------------------------------------------------
+# Update maximum Y points
+# -----------------------------------------------------------------------------
+# Embedded python script
+from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
+
+startY = int(round(PVUtil.getDouble(pvs[0])))
+endY   = int(round(PVUtil.getDouble(pvs[1])))
+
+deltaY = endY - startY
+
+widget.setPropertyValue("maximum", deltaY)]]></text>
+          <pv_name>loc://startPosMotor2(-10)</pv_name>
+          <pv_name>loc://endPosMotor2(10)</pv_name>
+        </script>
+      </scripts>
       <minimum>2.0</minimum>
     </widget>
   </widget>
