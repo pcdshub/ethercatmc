@@ -7,9 +7,9 @@
   <widget type="rectangle" version="2.0.0">
     <name>Rectangle_5</name>
     <x>13</x>
-    <y>103</y>
+    <y>64</y>
     <width>760</width>
-    <height>250</height>
+    <height>337</height>
     <line_color>
       <color name="BLACK" red="0" green="0" blue="0">
       </color>
@@ -24,9 +24,9 @@
   <widget type="rectangle" version="2.0.0">
     <name>Rectangle_4</name>
     <x>22</x>
-    <y>112</y>
+    <y>73</y>
     <width>760</width>
-    <height>250</height>
+    <height>338</height>
     <line_color>
       <color name="BLACK" red="0" green="0" blue="0">
       </color>
@@ -42,7 +42,7 @@
     <name>Label_5</name>
     <text>Motors controller</text>
     <x>20</x>
-    <y>50</y>
+    <y>24</y>
     <width>410</width>
     <height>40</height>
     <font>
@@ -53,7 +53,7 @@
   <widget type="rectangle" version="2.0.0">
     <name>Rectangle_3</name>
     <x>370</x>
-    <y>240</y>
+    <y>281</y>
     <width>390</width>
     <height>100</height>
     <line_color>
@@ -71,9 +71,9 @@
   <widget type="rectangle" version="2.0.0">
     <name>Rectangle_2</name>
     <x>370</x>
-    <y>130</y>
+    <y>91</y>
     <width>390</width>
-    <height>100</height>
+    <height>180</height>
     <line_color>
       <color name="BLACK" red="0" green="0" blue="0">
       </color>
@@ -97,7 +97,7 @@
     </actions>
     <text>Experiment</text>
     <x>400</x>
-    <y>290</y>
+    <y>331</y>
     <width>120</width>
     <font>
       <font family="Source Sans Pro" style="BOLD" size="16.0">
@@ -113,7 +113,7 @@
     <name>Label_1</name>
     <text>Experimental procedures</text>
     <x>400</x>
-    <y>260</y>
+    <y>301</y>
     <width>280</width>
     <height>30</height>
     <font>
@@ -125,7 +125,7 @@
     <name>Label</name>
     <text>Basic motion movements</text>
     <x>400</x>
-    <y>150</y>
+    <y>111</y>
     <width>280</width>
     <height>30</height>
     <font>
@@ -144,7 +144,7 @@
     </actions>
     <text>Move</text>
     <x>400</x>
-    <y>180</y>
+    <y>141</y>
     <width>120</width>
     <font>
       <font family="Source Sans Pro" style="BOLD" size="16.0">
@@ -167,7 +167,7 @@
   <widget type="group" version="2.0.0">
     <name>Group</name>
     <x>40</x>
-    <y>130</y>
+    <y>91</y>
     <width>310</width>
     <height>210</height>
     <style>3</style>
@@ -195,5 +195,51 @@
       <width>270</width>
       <height>170</height>
     </widget>
+  </widget>
+  <widget type="action_button" version="3.0.0">
+    <name>slitsButton</name>
+    <actions>
+      <action type="open_display">
+        <file>motor_slits.bob</file>
+        <target>tab</target>
+        <description>Open slits display</description>
+      </action>
+    </actions>
+    <text>Slits</text>
+    <x>400</x>
+    <y>183</y>
+    <width>120</width>
+    <font>
+      <font family="Source Sans Pro" style="BOLD" size="16.0">
+      </font>
+    </font>
+    <background_color>
+      <color name="GRAY" red="169" green="169" blue="169">
+      </color>
+    </background_color>
+    <tooltip>$(actions)</tooltip>
+  </widget>
+  <widget type="action_button" version="3.0.0">
+    <name>targetButton</name>
+    <actions>
+      <action type="open_display">
+        <file>motor_target.bob</file>
+        <target>tab</target>
+        <description>Open target display</description>
+      </action>
+    </actions>
+    <text>Target</text>
+    <x>400</x>
+    <y>225</y>
+    <width>120</width>
+    <font>
+      <font family="Source Sans Pro" style="BOLD" size="16.0">
+      </font>
+    </font>
+    <background_color>
+      <color name="GRAY" red="169" green="169" blue="169">
+      </color>
+    </background_color>
+    <tooltip>$(actions)</tooltip>
   </widget>
 </display>

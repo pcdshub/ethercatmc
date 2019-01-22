@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display version="2.0.0">
+  <name>Target</name>
+  <macros>
+    <M1>m1</M1>
+    <M2>m2</M2>
+  </macros>
+  <widget type="label" version="2.0.0">
+    <name>Label_5</name>
+    <text>Target 2D position</text>
+    <x>20</x>
+    <y>20</y>
+    <width>200</width>
+    <height>30</height>
+    <font>
+      <font family="Source Code Pro" style="BOLD" size="18.0">
+      </font>
+    </font>
+  </widget>
+  <widget type="image" version="2.0.0">
+    <name>Image</name>
+    <x>14</x>
+    <y>69</y>
+    <width>640</width>
+    <height>450</height>
+    <color_bar>
+      <visible>false</visible>
+      <bar_size>40</bar_size>
+      <scale_font>
+        <font name="Default" family="Source Sans Pro" style="REGULAR" size="16.0">
+        </font>
+      </scale_font>
+    </color_bar>
+    <actions>
+    </actions>
+    <scripts>
+      <script file="EmbeddedPy">
+        <text><![CDATA[# -----------------------------------------------------------------------------
+# Jython - CSStudio
+# -----------------------------------------------------------------------------
+# Embedded python script
+# -----------------------------------------------------------------------------
+# ESS ERIC - ICS HWI group
+# -----------------------------------------------------------------------------
+# WP12 - douglas.bezerra.beniz@esss.se
+# -----------------------------------------------------------------------------
+from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
+
+pos_x = PVUtil.getDouble(pvs[0])
+pos_y = PVUtil.getDouble(pvs[1])
+
+pvs[2].setValue(pos_x)
+pvs[3].setValue(pos_y)]]></text>
+        <pv_name>loc://pos_x(0)</pv_name>
+        <pv_name>loc://pos_y(0)</pv_name>
+        <pv_name trigger="false">$(P)$(M1).VAL</pv_name>
+        <pv_name trigger="false">$(P)$(M2).VAL</pv_name>
+      </script>
+      <script file="EmbeddedPy">
+        <text><![CDATA[# -----------------------------------------------------------------------------
+# Jython - CSStudio
+# -----------------------------------------------------------------------------
+# Embedded python script
+# -----------------------------------------------------------------------------
+# ESS ERIC - ICS HWI group
+# -----------------------------------------------------------------------------
+# WP12 - douglas.bezerra.beniz@esss.se
+# -----------------------------------------------------------------------------
+from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
+
+llm_motor1 = PVUtil.getDouble(pvs[0])
+hlm_motor1 = PVUtil.getDouble(pvs[1])
+llm_motor2 = PVUtil.getDouble(pvs[2])
+hlm_motor2 = PVUtil.getDouble(pvs[3])
+
+widget.setPropertyValue('x_axis.minimum', llm_motor1)
+widget.setPropertyValue('x_axis.maximum', hlm_motor1)
+widget.setPropertyValue('y_axis.minimum', llm_motor2)
+widget.setPropertyValue('y_axis.maximum', hlm_motor2)
+]]></text>
+        <pv_name>$(P)$(M1).LLM</pv_name>
+        <pv_name>$(P)$(M1).HLM</pv_name>
+        <pv_name>$(P)$(M2).LLM</pv_name>
+        <pv_name>$(P)$(M2).HLM</pv_name>
+      </script>
+    </scripts>
+    <border_alarm_sensitive>false</border_alarm_sensitive>
+    <autoscale>false</autoscale>
+    <x_pv>loc://pos_x(0)</x_pv>
+    <y_pv>loc://pos_y(0)</y_pv>
+    <cursor_crosshair>true</cursor_crosshair>
+    <rois>
+      <roi>
+        <name>ROI 0</name>
+        <color>
+          <color name="PRIMARY-DARK" red="31" green="83" blue="102">
+          </color>
+        </color>
+        <visible>false</visible>
+        <interactive>false</interactive>
+        <x_pv></x_pv>
+        <y_pv></y_pv>
+        <width_pv></width_pv>
+        <height_pv></height_pv>
+        <file></file>
+      </roi>
+    </rois>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>motor2Label_1</name>
+    <pv_name>$(P)$(M2).DESC</pv_name>
+    <x>650</x>
+    <y>43</y>
+    <width>140</width>
+    <transparent>true</transparent>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>motor1Label_1</name>
+    <pv_name>$(P)$(M1).DESC</pv_name>
+    <x>56</x>
+    <y>565</y>
+    <width>190</width>
+    <transparent>true</transparent>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>motor2Scale</name>
+    <pv_name>$(P)$(M2).RBV</pv_name>
+    <x>710</x>
+    <y>64</y>
+    <width>39</width>
+    <height>415</height>
+    <horizontal>false</horizontal>
+    <level_hihi>-10.0</level_hihi>
+    <level_high>-5.0</level_high>
+    <level_low>5.0</level_low>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>motor1Scale</name>
+    <pv_name>$(P)$(M1).RBV</pv_name>
+    <x>50</x>
+    <y>529</y>
+    <width>610</width>
+    <height>40</height>
+    <level_hihi>-10.0</level_hihi>
+    <level_high>-5.0</level_high>
+    <level_low>5.0</level_low>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>loc://pos_x(0)</pv_name>
+    <x>190</x>
+    <y>565</y>
+    <width>70</width>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update_1</name>
+    <pv_name>loc://pos_y(0)</pv_name>
+    <x>681</x>
+    <y>480</y>
+    <width>70</width>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+</display>

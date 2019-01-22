@@ -19,7 +19,7 @@
   </widget>
   <widget type="group" version="2.0.0">
     <name>Group</name>
-    <x>252</x>
+    <x>14</x>
     <y>42</y>
     <width>212</width>
     <height>305</height>
@@ -106,14 +106,12 @@
         </color>
       </tag_color>
       <tag_visible>true</tag_visible>
-      <minimum></minimum>
-      <maximum></maximum>
       <fine_increment>0.5</fine_increment>
     </widget>
   </widget>
   <widget type="group" version="2.0.0">
     <name>Group</name>
-    <x>14</x>
+    <x>252</x>
     <y>42</y>
     <width>210</width>
     <height>305</height>
@@ -200,57 +198,53 @@
         </color>
       </tag_color>
       <tag_visible>true</tag_visible>
-      <minimum></minimum>
-      <maximum></maximum>
       <fine_increment>0.5</fine_increment>
     </widget>
   </widget>
-  <widget type="scaledslider" version="2.0.0">
-    <name>motor1Scale</name>
-    <pv_name>$(P)$(M1).RBV</pv_name>
-    <x>14</x>
-    <y>390</y>
-    <width>450</width>
-    <height>40</height>
-    <level_hihi>$(P)$(M1).HLM</level_hihi>
-    <level_high>$(P)$(M1).HLM</level_high>
-    <level_low>$(P)$(M1).LLM</level_low>
-    <level_lolo>$(P)$(M1).LLM</level_lolo>
-    <show_hihi>false</show_hihi>
-    <show_high>false</show_high>
-    <show_low>false</show_low>
-    <show_lolo>false</show_lolo>
-  </widget>
-  <widget type="scaledslider" version="2.0.0">
-    <name>motor2Scale</name>
-    <pv_name>$(P)$(M2).RBV</pv_name>
-    <x>14</x>
-    <y>458</y>
-    <width>450</width>
-    <height>40</height>
-    <level_hihi>$(P)$(M2).HLM</level_hihi>
-    <level_high>$(P)$(M2).HLM</level_high>
-    <level_low>$(P)$(M2).LLM</level_low>
-    <level_lolo>$(P)$(M2).LLM</level_lolo>
-    <show_hihi>false</show_hihi>
-    <show_high>false</show_high>
-    <show_low>false</show_low>
-    <show_lolo>false</show_lolo>
-  </widget>
   <widget type="textupdate" version="2.0.0">
-    <name>motor1Label_1</name>
-    <pv_name>$(P)$(M1).DESC</pv_name>
+    <name>motor2Label_1</name>
+    <pv_name>$(P)$(M2).DESC</pv_name>
     <x>24</x>
     <y>370</y>
     <width>180</width>
     <transparent>true</transparent>
   </widget>
   <widget type="textupdate" version="2.0.0">
-    <name>motor2Label_1</name>
-    <pv_name>$(P)$(M2).DESC</pv_name>
+    <name>motor1Label_1</name>
+    <pv_name>$(P)$(M1).DESC</pv_name>
     <x>24</x>
-    <y>437</y>
+    <y>444</y>
     <width>180</width>
     <transparent>true</transparent>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>motor2Scale</name>
+    <pv_name>$(P)$(M2).RBV</pv_name>
+    <x>14</x>
+    <y>391</y>
+    <width>450</width>
+    <height>40</height>
+    <level_hihi>-10.0</level_hihi>
+    <level_high>-5.0</level_high>
+    <level_low>5.0</level_low>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>motor1Scale</name>
+    <pv_name>$(P)$(M1).RBV</pv_name>
+    <x>14</x>
+    <y>464</y>
+    <width>450</width>
+    <height>40</height>
+    <level_hihi>-10.0</level_hihi>
+    <level_high>-5.0</level_high>
+    <level_low>5.0</level_low>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
   </widget>
 </display>
