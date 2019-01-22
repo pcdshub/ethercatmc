@@ -57,10 +57,6 @@ def experimentProcedure():
         # pvs[17] = loc://arrayPointsY
         # pvs[18] = loc://stop
         # pvs[19] = loc://updateMessage
-        # pvs[20] = loc://xAxisMinimum
-        # pvs[21] = loc://xAxisMaximum
-        # pvs[22] = loc://yAxisMinimum
-        # pvs[23] = loc://yAxisMaximum
         # -------------------------------------------------------------------------
         # logical representation of PVs
         # -------------------------------------------------------------------------
@@ -82,10 +78,10 @@ def experimentProcedure():
         integrationTime     = PVUtil.getInt(pvs[15])
         stopExperiment      = PVUtil.getInt(pvs[18])
         updateMessage       = PVUtil.getInt(pvs[19])
-        xAxisMinimum        = PVUtil.getInt(pvs[20])
-        xAxisMaximum        = PVUtil.getInt(pvs[21])
-        yAxisMinimum        = PVUtil.getInt(pvs[22])
-        yAxisMaximum        = PVUtil.getInt(pvs[23])
+        # -------------------------------------------------------------------------
+        # getting the current display
+        # -------------------------------------------------------------------------
+        display = widget.getDisplayModel()
 
         if trigger:
             pvs[0].setValue(0)
@@ -98,6 +94,7 @@ def experimentProcedure():
                 logger.info("end motor1: %d" % endPosMotor1)
                 logger.info("start motor2: %d" % startPosMotor2)
                 logger.info("end motor1: %d" % endPosMotor2)
+                sleep(0.1)          # just to be sure it started
                 pvs[8].setValue(startPosMotor1)
                 pvs[12].setValue(startPosMotor2)
                 dmovMotor1 = PVUtil.getInt(pvs[9])
@@ -109,25 +106,31 @@ def experimentProcedure():
                     if verifyStop():
                         return 0
                 # generate points for axis x
-                goingPoints = range(startPosMotor1, endPosMotor1, (endPosMotor1-startPosMotor1)/numPointsMotor1)
+                goingPoints = range(startPosMotor1, endPosMotor1+1, (endPosMotor1-startPosMotor1)/numPointsMotor1)
                 logger.info("going points: %s" % str(goingPoints))
-                returningPoints = range(endPosMotor1, startPosMotor1, (endPosMotor1-startPosMotor1)/numPointsMotor1 *-1)
+                returningPoints = range(endPosMotor1, startPosMotor1-1, (endPosMotor1-startPosMotor1)/numPointsMotor1 *-1)
                 logger.info("returning points: %s" % str(returningPoints))
                 curPoints       = []
                 arrayPointsX    = []
                 arrayPointsY    = []
                 going           = True
                 pvs[19].setValue("Starting the scan procedure...")
-                pvs[20].setValue(startPosMotor1)      # xAxisMinimum
-                pvs[21].setValue(endPosMotor1)        # xAxisMaximum
-                pvs[22].setValue(startPosMotor2)      # yAxisMinimum
+                # -----------------------------------------------------------------
+                # gets the XY graphic component from display (which has been captured using correspondent widget model)
+                scanXYPlot = display.runtimeChildren().getChildByName('scanXYPlot')
+                scanXYPlot.setPropertyValue('x_axis.minimum', startPosMotor1-1)
+                scanXYPlot.setPropertyValue('x_axis.maximum', endPosMotor1+1)
+                scanXYPlot.setPropertyValue('y_axes[0].minimum', startPosMotor2-1)
                 # ---------------------------------------------------------------------
                 # external loop is the axis y
                 for pointY in range(startPosMotor2, endPosMotor2, (endPosMotor2-startPosMotor2)/numPointsMotor2):
                     if verifyStop():
                         return 0
-                    pvs[23].setValue(pointY)        # yAxisMaximum
                     pvs[12].setValue(pointY)        # $(P)$(M2).VAL
+                    # -----------------------------------------------------------------
+                    scanXYPlot.setPropertyValue('y_axes[0].maximum', pointY+1)
+                    # -----------------------------------------------------------------
+                    sleep(0.1)          # just to be sure it started
                     dmovMotor2 = PVUtil.getInt(pvs[13])
                     while not dmovMotor2:
                         sleep(0.1)
@@ -144,6 +147,7 @@ def experimentProcedure():
                     # -----------------------------------------------------------------
                     for pointX in curPoints:
                         pvs[8].setValue(pointX)
+                        sleep(0.1)          # just to be sure it started
                         dmovMotor1 = PVUtil.getInt(pvs[9])
                         while not dmovMotor1:
                             sleep(0.1)

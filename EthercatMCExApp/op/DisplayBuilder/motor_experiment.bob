@@ -99,7 +99,7 @@
     <corner_height>15</corner_height>
   </widget>
   <widget type="xyplot" version="2.0.0">
-    <name>Scan_x_y_plot</name>
+    <name>scanXYPlot</name>
     <x>317</x>
     <y>75</y>
     <width>770</width>
@@ -107,55 +107,6 @@
     <title>Position trace</title>
     <show_toolbar>true</show_toolbar>
     <show_legend>false</show_legend>
-    <rules>
-      <rule name="Update x_axis.minimum" prop_id="x_axis.minimum" out_exp="true">
-        <exp bool_exp="1==1">
-          <expression>pv0</expression>
-        </exp>
-        <pv_name trigger="false">loc://xAxisMinimum(0)</pv_name>
-      </rule>
-      <rule name="Update x_axis.maximum" prop_id="x_axis.maximum" out_exp="true">
-        <exp bool_exp="1==1">
-          <expression>pv0</expression>
-        </exp>
-        <pv_name trigger="false">loc://xAxisMaximum(0)</pv_name>
-      </rule>
-      <rule name="Update y_axis.minimum" prop_id="y_axes[0].minimum" out_exp="true">
-        <exp bool_exp="1==1">
-          <expression>pv0</expression>
-        </exp>
-        <pv_name trigger="false">loc://yAxisMinimum(0)</pv_name>
-      </rule>
-      <rule name="Update y_axis.maximum" prop_id="y_axes[0].maximum" out_exp="true">
-        <exp bool_exp="1==1">
-          <expression>pv0</expression>
-        </exp>
-        <pv_name trigger="false">loc://yAxisMaximum(0)</pv_name>
-      </rule>
-    </rules>
-    <scripts>
-      <script file="EmbeddedPy">
-        <text><![CDATA[# Embedded python script
-from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
-#print 'Hello'
-# widget.setPropertyValue('text', PVUtil.getString(pvs[0]))
-#if "getDataBrowserModel" in dir(widget):
-#    # For BOY code that uses databrowser3
-#    model = widget.getDataBrowserModel()
-#else:
-#    # For BOY code that uses databrowser2
-#    model = widget.controller.model
-#model.updateChanges()
-widget.setPropertyValue('x_axis.minimum', PVUtil.getInt(pvs[0]))
-widget.setPropertyValue('x_axis.maximum', PVUtil.getInt(pvs[1]))
-widget.setPropertyValue('y_axes[0].minimum', PVUtil.getInt(pvs[2]))
-widget.setPropertyValue('y_axes[0].maximum', PVUtil.getInt(pvs[3]))]]></text>
-        <pv_name>loc://xAxisMinimum</pv_name>
-        <pv_name>loc://xAxisMaximum</pv_name>
-        <pv_name>loc://yAxisMinimum</pv_name>
-        <pv_name>loc://yAxisMaximum</pv_name>
-      </script>
-    </scripts>
     <tooltip>$(traces[0].y_pv)
 $(traces[0].x_pv)</tooltip>
     <x_axis>
@@ -256,10 +207,6 @@ $(traces[0].x_pv)</tooltip>
         <pv_name trigger="false">loc://arrayPointsY()</pv_name>
         <pv_name trigger="false">loc://stop(0)</pv_name>
         <pv_name trigger="false">loc://updateMessage("")</pv_name>
-        <pv_name trigger="false">loc://xAxisMinimum</pv_name>
-        <pv_name trigger="false">loc://xAxisMaximum</pv_name>
-        <pv_name trigger="false">loc://yAxisMinimum</pv_name>
-        <pv_name trigger="false">loc://yAxisMaximum</pv_name>
       </script>
     </scripts>
     <tooltip>$(actions)</tooltip>
@@ -366,14 +313,22 @@ $(traces[0].x_pv)</tooltip>
 # Embedded python script
 from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
 
-startX = int(round(PVUtil.getDouble(pvs[0])))
-endX   = int(round(PVUtil.getDouble(pvs[1])))
+#logger = ScriptUtil.getLogger()
+
+startX    = int(round(PVUtil.getDouble(pvs[0])))
+endX      = int(round(PVUtil.getDouble(pvs[1])))
+numPoints = int(round(PVUtil.getDouble(pvs[2])))
 
 deltaX = endX - startX
+#logger.info("deltaX: %d" % deltaX)
 
-widget.setPropertyValue("maximum", deltaX)]]></text>
+widget.setPropertyValue("maximum", deltaX)
+
+if numPoints > deltaX:
+    pvs[2].setValue(deltaX)]]></text>
           <pv_name>loc://startPosMotor1(0)</pv_name>
           <pv_name>loc://endPosMotor1(10)</pv_name>
+          <pv_name trigger="false">loc://numPointsMotor1(15)</pv_name>
         </script>
       </scripts>
       <minimum>2.0</minimum>
@@ -469,14 +424,23 @@ widget.setPropertyValue("maximum", deltaX)]]></text>
 # Embedded python script
 from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
 
-startY = int(round(PVUtil.getDouble(pvs[0])))
-endY   = int(round(PVUtil.getDouble(pvs[1])))
+#logger = ScriptUtil.getLogger()
+
+startY    = int(round(PVUtil.getDouble(pvs[0])))
+endY      = int(round(PVUtil.getDouble(pvs[1])))
+numPoints = int(round(PVUtil.getDouble(pvs[2])))
 
 deltaY = endY - startY
+#logger.info("deltaX: %d" % deltaX)
 
-widget.setPropertyValue("maximum", deltaY)]]></text>
+widget.setPropertyValue("maximum", deltaY)
+
+if numPoints > deltaY:
+    pvs[2].setValue(deltaY)
+]]></text>
           <pv_name>loc://startPosMotor2(-10)</pv_name>
           <pv_name>loc://endPosMotor2(10)</pv_name>
+          <pv_name trigger="false">loc://numPointsMotor2(15)</pv_name>
         </script>
       </scripts>
       <minimum>2.0</minimum>
@@ -549,37 +513,5 @@ widget.setPropertyValue("maximum", deltaY)]]></text>
       </color>
     </foreground_color>
     <transparent>true</transparent>
-  </widget>
-  <widget type="textupdate" version="2.0.0">
-    <name>Text Update</name>
-    <pv_name>loc://xAxisMinimum</pv_name>
-    <x>50</x>
-    <y>560</y>
-    <width>140</width>
-    <height>30</height>
-  </widget>
-  <widget type="textupdate" version="2.0.0">
-    <name>Text Update_1</name>
-    <pv_name>loc://xAxisMaximum</pv_name>
-    <x>220</x>
-    <y>560</y>
-    <width>140</width>
-    <height>30</height>
-  </widget>
-  <widget type="textupdate" version="2.0.0">
-    <name>Text Update_2</name>
-    <pv_name>loc://yAxisMinimum</pv_name>
-    <x>390</x>
-    <y>560</y>
-    <width>140</width>
-    <height>30</height>
-  </widget>
-  <widget type="textupdate" version="2.0.0">
-    <name>Text Update_3</name>
-    <pv_name>loc://yAxisMaximum</pv_name>
-    <x>560</x>
-    <y>560</y>
-    <width>140</width>
-    <height>30</height>
   </widget>
 </display>
