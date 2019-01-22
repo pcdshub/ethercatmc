@@ -69,7 +69,7 @@
       <name>stopMotor2Button</name>
       <actions>
         <action type="write_pv">
-          <pv_name>$(P)$(M1).STOP</pv_name>
+          <pv_name>$(P)$(M2).STOP</pv_name>
           <value>1</value>
           <description>StopMotor</description>
         </action>

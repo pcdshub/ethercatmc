@@ -86,25 +86,10 @@ widget.setPropertyValue('y_axis.maximum', hlm_motor2)
     </scripts>
     <border_alarm_sensitive>false</border_alarm_sensitive>
     <autoscale>false</autoscale>
+    <cursor_info_pv>loc://cursor(0)</cursor_info_pv>
     <x_pv>loc://pos_x(0)</x_pv>
     <y_pv>loc://pos_y(0)</y_pv>
     <cursor_crosshair>true</cursor_crosshair>
-    <rois>
-      <roi>
-        <name>ROI 0</name>
-        <color>
-          <color name="PRIMARY-DARK" red="31" green="83" blue="102">
-          </color>
-        </color>
-        <visible>false</visible>
-        <interactive>false</interactive>
-        <x_pv></x_pv>
-        <y_pv></y_pv>
-        <width_pv></width_pv>
-        <height_pv></height_pv>
-        <file></file>
-      </roi>
-    </rois>
   </widget>
   <widget type="textupdate" version="2.0.0">
     <name>motor2Label_1</name>
@@ -119,14 +104,14 @@ widget.setPropertyValue('y_axis.maximum', hlm_motor2)
     <name>motor1Label_1</name>
     <pv_name>$(P)$(M1).DESC</pv_name>
     <x>56</x>
-    <y>565</y>
+    <y>563</y>
     <width>190</width>
     <transparent>true</transparent>
   </widget>
   <widget type="scaledslider" version="2.0.0">
     <name>motor2Scale</name>
     <pv_name>$(P)$(M2).RBV</pv_name>
-    <x>710</x>
+    <x>689</x>
     <y>64</y>
     <width>39</width>
     <height>415</height>
@@ -143,7 +128,7 @@ widget.setPropertyValue('y_axis.maximum', hlm_motor2)
     <name>motor1Scale</name>
     <pv_name>$(P)$(M1).RBV</pv_name>
     <x>50</x>
-    <y>529</y>
+    <y>525</y>
     <width>610</width>
     <height>40</height>
     <level_hihi>-10.0</level_hihi>
@@ -157,17 +142,81 @@ widget.setPropertyValue('y_axis.maximum', hlm_motor2)
   <widget type="textupdate" version="2.0.0">
     <name>Text Update</name>
     <pv_name>loc://pos_x(0)</pv_name>
-    <x>190</x>
-    <y>565</y>
+    <x>320</x>
+    <y>563</y>
     <width>70</width>
     <horizontal_alignment>1</horizontal_alignment>
   </widget>
   <widget type="textupdate" version="2.0.0">
     <name>Text Update_1</name>
     <pv_name>loc://pos_y(0)</pv_name>
-    <x>681</x>
-    <y>480</y>
-    <width>70</width>
+    <x>728</x>
+    <y>261</y>
+    <width>62</width>
     <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="group" version="2.0.0">
+    <name>Group</name>
+    <x>680</x>
+    <y>517</y>
+    <width>30</width>
+    <height>30</height>
+    <style>3</style>
+    <transparent>true</transparent>
+    <widget type="action_button" version="3.0.0">
+      <name>stopBothMotors</name>
+      <actions execute_as_one="true">
+        <action type="write_pv">
+          <pv_name>$(P)$(M1).STOP</pv_name>
+          <value>1</value>
+          <description>StopMotor1</description>
+        </action>
+        <action type="write_pv">
+          <pv_name>$(P)$(M2).STOP</pv_name>
+          <value>1</value>
+          <description>StopMotor2</description>
+        </action>
+      </actions>
+      <text></text>
+      <x>5</x>
+      <y>5</y>
+      <width>25</width>
+      <height>25</height>
+      <foreground_color>
+        <color name="MEDM_COLOR_31" red="249" green="218" blue="60">
+        </color>
+      </foreground_color>
+      <background_color>
+        <color name="alarm" red="253" green="0" blue="0">
+        </color>
+      </background_color>
+    </widget>
+    <widget type="action_button" version="3.0.0">
+      <name>stopBothMotorsFront</name>
+      <actions execute_as_one="true">
+        <action type="write_pv">
+          <pv_name>$(P)$(M1).STOP</pv_name>
+          <value>1</value>
+          <description>StopMotor1</description>
+        </action>
+        <action type="write_pv">
+          <pv_name>$(P)$(M2).STOP</pv_name>
+          <value>1</value>
+          <description>StopMotor2</description>
+        </action>
+      </actions>
+      <text></text>
+      <width>25</width>
+      <height>25</height>
+      <foreground_color>
+        <color name="MEDM_COLOR_31" red="249" green="218" blue="60">
+        </color>
+      </foreground_color>
+      <background_color>
+        <color name="alarm" red="253" green="0" blue="0">
+        </color>
+      </background_color>
+      <tooltip>$(actions)</tooltip>
+    </widget>
   </widget>
 </display>
