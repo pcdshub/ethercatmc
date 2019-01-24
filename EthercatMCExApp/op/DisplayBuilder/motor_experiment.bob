@@ -207,6 +207,12 @@ $(traces[0].x_pv)</tooltip>
         <pv_name trigger="false">loc://arrayPointsY()</pv_name>
         <pv_name trigger="false">loc://stop(0)</pv_name>
         <pv_name trigger="false">loc://updateMessage("")</pv_name>
+        <pv_name trigger="false">$(P)$(M1):x_axis_minimum</pv_name>
+        <pv_name trigger="false">$(P)$(M1):x_axis_maximum</pv_name>
+        <pv_name trigger="false">$(P)$(M2):y_axis_minimum</pv_name>
+        <pv_name trigger="false">$(P)$(M2):y_axis_maximum</pv_name>
+        <pv_name trigger="false">$(P)arrayPointsX</pv_name>
+        <pv_name trigger="false">$(P)arrayPointsY</pv_name>
       </script>
     </scripts>
     <tooltip>$(actions)</tooltip>
