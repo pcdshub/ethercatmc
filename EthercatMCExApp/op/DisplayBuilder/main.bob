@@ -218,6 +218,7 @@
       </color>
     </background_color>
     <tooltip>$(actions)</tooltip>
+    <enabled>false</enabled>
   </widget>
   <widget type="action_button" version="3.0.0">
     <name>targetButton</name>
