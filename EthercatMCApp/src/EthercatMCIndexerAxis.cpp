@@ -181,7 +181,6 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisN
   }
   /* Set the module name to "" if we have FILE/LINE enabled by asyn */
   if (pasynTrace->getTraceInfoMask(pC_->pasynUserController_) & ASYN_TRACEINFO_SOURCE) modNamEMC = "";
-  initialPoll();
 }
 
 extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisNo,
@@ -211,9 +210,8 @@ void EthercatMCIndexerAxis::handleDisconnect(asynStatus status)
               "%s Communication error(%d)\n", modNamEMC, axisNo_);
   }
   memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
-  //drvlocal.MCU_nErrorId = 0;
   setIntegerParam(pC_->motorStatusCommsError_, 1);
-  //callParamCallbacksUpdateError();
+  callParamCallbacks();
 }
 
 void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset)
@@ -223,26 +221,6 @@ void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned
             modNamEMC, axisNo_, iTypCode, iOffset);
   drvlocal.iTypCode = iTypCode;
   drvlocal.iOffset = iOffset;
-}
-
-
-asynStatus EthercatMCIndexerAxis::initialPoll(void)
-{
-  asynStatus status = asynSuccess;
-
-  if (!drvlocal.dirty.initialPollNeeded)
-    return asynSuccess;
-
-#if 1
-  return status;
-#else
-  status = initialPollInternal();
-  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-            "%sinitialPoll(%d) status=%d\n",
-            modNamEMC, axisNo_, status);
-  if (status == asynSuccess) drvlocal.dirty.initialPollNeeded = 0;
-  return status;
-#endif
 }
 
 
@@ -429,7 +407,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
                   pasynManager->strStatus(status), (int)status);
       }
     }
-    {
+    if (!status) {
       unsigned statusReasonAux;
       size_t lenInPlc = 2;
       unsigned reg = 4;
@@ -437,11 +415,14 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       bool nowMoving = false;
       drvlocal.hasError = 0;
       status = pC_->getPlcMemoryUint(drvlocal.iOffset + reg * lenInPlc,
-                                          &statusReasonAux, lenInPlc);
+                                     &statusReasonAux, lenInPlc);
       if (status) {
         asynPrint(pC_->pasynUserController_, traceMask,
                   "%spoll(%d) status=%d\n",
                   modNamEMC, axisNo_, (int)status);
+        drvlocal.old_tatusReasonAux = 0;
+      } else {
+        setIntegerParam(pC_->motorStatusCommsError_, 0);
       }
       if (!status && (statusReasonAux != drvlocal.old_tatusReasonAux)) {
         int hls = 0;
@@ -487,7 +468,6 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
         setIntegerParam(pC_->motorStatusMoving_, nowMoving);
         setIntegerParam(pC_->motorStatusDone_, !nowMoving);
-        setIntegerParam(pC_->motorStatusCommsError_, 0);
         setIntegerParam(pC_->motorStatusLowLimit_, lls);
         setIntegerParam(pC_->motorStatusHighLimit_, hls);
         setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);

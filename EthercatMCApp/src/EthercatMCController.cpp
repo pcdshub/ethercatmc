@@ -302,6 +302,7 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     /* Connected -> Disconnected */
     int i;
     ctrlLocal.isConnected = 0;
+    ctrlLocal.initialPollDone = 1;
     setMCUErrMsg("MCU Disconnected");
     for (i=0; i<numAxes_; i++) {
       EthercatMCAxis *pAxis=getAxis(i);

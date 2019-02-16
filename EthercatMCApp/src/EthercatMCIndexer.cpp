@@ -121,7 +121,7 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect();
   if (status) return asynError;
   nvals = sscanf(inString_, "%u", &iRes);
   if (nvals == 1) {
@@ -142,7 +142,6 @@ asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
                                                   int *value,
                                                   size_t lenInPlc)
 {
-  int traceMask = 0;
   int nvals;
   int iRes;
   asynStatus status;
@@ -165,7 +164,7 @@ asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect();
   if (status) return status;
 
   nvals = sscanf(inString_, "%d", &iRes);
@@ -242,7 +241,6 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
                                                     double *value,
                                                     size_t lenInPlc)
 {
-  int traceMask = 0;
   int nvals;
   double fRes;
   asynStatus status;
@@ -260,7 +258,7 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect();
   if (status) return status;
 
   nvals = sscanf(inString_, "%lf", &fRes);

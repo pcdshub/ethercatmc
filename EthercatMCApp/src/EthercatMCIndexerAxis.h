@@ -19,7 +19,6 @@ public:
   asynStatus stop(double acceleration);
   void handleDisconnect(asynStatus status);
   void setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset);
-  asynStatus initialPoll(void);
   asynStatus poll(bool *moving);
   asynStatus resetAxis(void);
   asynStatus setClosedLoop(bool closedLoop);
@@ -38,6 +37,7 @@ private:
       unsigned iTypCode;
       unsigned iOffset;
       unsigned old_tatusReasonAux;
+      unsigned old_cmdSubParamIndex;
       unsigned int hasError :1;
   } drvlocal;
 
