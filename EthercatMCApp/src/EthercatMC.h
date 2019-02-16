@@ -113,7 +113,14 @@ typedef struct {
   int motorDiffPostion;     /* Not in struct. Calculated in poll() */
 } st_axis_status_type;
 
-class epicsShareClass EthercatMCAxis : public asynMotorAxis
+class epicsShareClass EthercatMCBaseAxis : public asynMotorAxis
+{
+public:
+  EthercatMCBaseAxis(class EthercatMCController *pC, int axisNo);
+  virtual void       handleDisconnect(asynStatus status);
+};
+
+class epicsShareClass EthercatMCAxis : public EthercatMCBaseAxis
 {
 public:
   /* These are the methods we override from the base class */
@@ -318,8 +325,8 @@ public:
   asynStatus setMCUErrMsg(const char *value);
   asynStatus configController(int needOk, const char *value);
   asynStatus writeReadOnErrorDisconnect(void);
-  EthercatMCAxis* getAxis(asynUser *pasynUser);
-  EthercatMCAxis* getAxis(int axisNo);
+  EthercatMCBaseAxis* getAxis(asynUser *pasynUser);
+  EthercatMCBaseAxis* getAxis(int axisNo);
   protected:
   void handleStatusChange(asynStatus status);
   /* Indexer */

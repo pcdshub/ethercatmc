@@ -77,7 +77,7 @@ extern "C" const char *idxStatusCodeTypeToStr(idxStatusCodeType idxStatusCode)
  */
 EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisNo,
                                              int axisFlags, const char *axisOptionsStr)
-  : asynMotorAxis(pC, axisNo),
+  : EthercatMCBaseAxis(pC, axisNo),
     pC_(pC)
 {
 #ifdef motorFlagsDriverUsesEGUString

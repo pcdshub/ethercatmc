@@ -3,7 +3,7 @@ extern "C" {
                                   int axisFlags, const char *axisOptionsStr);
 };
 
-class epicsShareClass EthercatMCIndexerAxis : public asynMotorAxis
+class epicsShareClass EthercatMCIndexerAxis : public EthercatMCBaseAxis
 {
 public:
   /* These are the methods we override from the base class */

@@ -298,13 +298,14 @@ asynStatus EthercatMCController::setMCUErrMsg(const char *value)
 void EthercatMCController::handleStatusChange(asynStatus status)
 {
 
+  ctrlLocal.initialPollDone = 0;
   if (status && ctrlLocal.isConnected) {
     /* Connected -> Disconnected */
     int i;
     ctrlLocal.isConnected = 0;
     setMCUErrMsg("MCU Disconnected");
     for (i=0; i<numAxes_; i++) {
-      EthercatMCAxis *pAxis=getAxis(i);
+      EthercatMCBaseAxis *pAxis=getAxis(i);
       if (!pAxis) continue;
       pAxis->handleDisconnect(status);
     }
@@ -331,20 +332,20 @@ void EthercatMCController::report(FILE *fp, int level)
   asynMotorController::report(fp, level);
 }
 
-/** Returns a pointer to an EthercatMCAxis object.
+/** Returns a pointer to an EthercatMCBaseAxis object.
   * Returns NULL if the axis number encoded in pasynUser is invalid.
   * \param[in] pasynUser asynUser structure that encodes the axis index number. */
-EthercatMCAxis* EthercatMCController::getAxis(asynUser *pasynUser)
+EthercatMCBaseAxis* EthercatMCController::getAxis(asynUser *pasynUser)
 {
-  return static_cast<EthercatMCAxis*>(asynMotorController::getAxis(pasynUser));
+  return static_cast<EthercatMCBaseAxis*>(asynMotorController::getAxis(pasynUser));
 }
 
-/** Returns a pointer to an EthercatMCAxis object.
+/** Returns a pointer to an EthercatMCBaseAxis object.
   * Returns NULL if the axis number encoded in pasynUser is invalid.
   * \param[in] axisNo Axis index number. */
-EthercatMCAxis* EthercatMCController::getAxis(int axisNo)
+EthercatMCBaseAxis* EthercatMCController::getAxis(int axisNo)
 {
-  return static_cast<EthercatMCAxis*>(asynMotorController::getAxis(axisNo));
+  return static_cast<EthercatMCBaseAxis*>(asynMotorController::getAxis(axisNo));
 }
 
 

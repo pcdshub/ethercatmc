@@ -39,6 +39,13 @@ const char *modNamEMC = "EthercatMCAxis:: ";
 // These are the EthercatMCAxis methods
 //
 
+EthercatMCBaseAxis::EthercatMCBaseAxis(EthercatMCController *pC, int axisNo)
+  : asynMotorAxis(pC, axisNo)
+{
+  ;
+}
+
+
 /** Creates a new EthercatMCAxis object.
  * \param[in] pC Pointer to the EthercatMCController to which this axis belongs.
  * \param[in] axisNo Index number of this axis, range 1 to pC->numAxes_. (0 is not used)
@@ -48,7 +55,7 @@ const char *modNamEMC = "EthercatMCAxis:: ";
  */
 EthercatMCAxis::EthercatMCAxis(EthercatMCController *pC, int axisNo,
                      int axisFlags, const char *axisOptionsStr)
-  : asynMotorAxis(pC, axisNo),
+  : EthercatMCBaseAxis(pC, axisNo),
     pC_(pC)
 {
 #ifdef motorFlagsDriverUsesEGUString

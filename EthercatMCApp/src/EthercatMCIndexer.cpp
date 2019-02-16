@@ -121,7 +121,7 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect(); //writeReadControllerPrint(traceMask);
   if (status) return asynError;
   nvals = sscanf(inString_, "%u", &iRes);
   if (nvals == 1) {
@@ -142,7 +142,7 @@ asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
                                                   int *value,
                                                   size_t lenInPlc)
 {
-  int traceMask = 0;
+  //int traceMask = 0;
   int nvals;
   int iRes;
   asynStatus status;
@@ -165,7 +165,7 @@ asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect(); //writeReadControllerPrint(traceMask);
   if (status) return status;
 
   nvals = sscanf(inString_, "%d", &iRes);
@@ -184,14 +184,14 @@ asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
                                                          char *value,
                                                          size_t len)
 {
-  int traceMask = 0;
+  //int traceMask = 0;
   asynStatus status;
 
   snprintf(outString_, sizeof(outString_),
            "ADSPORT=%u/.ADR.16#%X,16#%X,%d,30?",
            adsport,
            indexGroup, indexOffset, (int)len);
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect(); //writeReadControllerPrint(traceMask);
   if (status) {
     asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%scommand=\"%s\" response=\"%s\"\n",
@@ -242,7 +242,7 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
                                                     double *value,
                                                     size_t lenInPlc)
 {
-  int traceMask = 0;
+  //int traceMask = 0;
   int nvals;
   double fRes;
   asynStatus status;
@@ -260,7 +260,7 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
+  status = writeReadOnErrorDisconnect(); // writeReadControllerPrint(traceMask);
   if (status) return status;
 
   nvals = sscanf(inString_, "%lf", &fRes);
@@ -348,12 +348,12 @@ asynStatus EthercatMCController::getPlcMemoryBytes(unsigned indexOffset,
 
 
     if (lenInPlc) {
-      int traceMask = 0;
+      //int traceMask = 0;
       snprintf(outString_, sizeof(outString_),
                "ADSPORT=%u/.ADR.16#%X,16#%X,%u,17?",
                adsport,
                indexGroup, indexOffset, (unsigned)lenInPlc);
-      status = writeReadControllerPrint(traceMask);
+      status = writeReadOnErrorDisconnect(); // writeReadControllerPrint(traceMask);
       if (status) return status;
       nvals = sscanf(inString_, "%u", &res);
       asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
