@@ -118,6 +118,11 @@ class epicsShareClass EthercatMCBaseAxis : public asynMotorAxis
 public:
   EthercatMCBaseAxis(class EthercatMCController *pC, int axisNo);
   virtual void       handleDisconnect(asynStatus status);
+  virtual asynStatus move(double position, int relative, double min_velocity, double max_velocity, double acceleration);
+  virtual asynStatus moveVelocity(double min_velocity, double max_velocity, double acceleration);
+  virtual asynStatus home(double min_velocity, double max_velocity, double acceleration, int forwards);
+  virtual asynStatus stop(double acceleration);
+  virtual asynStatus poll(bool *moving);
 };
 
 class epicsShareClass EthercatMCAxis : public EthercatMCBaseAxis
