@@ -20,6 +20,14 @@ FILENAME... EthercatMCController.cpp
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
+#ifndef VERSION_INT
+#  define VERSION_INT(V,R,M,P) ( ((V)<<24) | ((R)<<16) | ((M)<<8) | (P))
+#endif
+
+#define MOTOR_ASYN_VERSION_INT VERSION_INT(ASYN_VERSION,ASYN_REVISION,ASYN_MODIFICATION,0)
+
+#define VERSION_INT_4_32 VERSION_INT(4,32,0,0)
+
 const static char *const strEthercatMCCreateController = "EthercatMCCreateController";
 const static char *const strEthercatMCConfigController = "EthercatMCConfigController";
 const static char *const strEthercatMCConfigOrDie      = "EthercatMCConfigOrDie";
@@ -30,6 +38,28 @@ const static char *const strCtrlReset = ".ctrl.ErrRst";
 
 const static char *const modulName = "EthercatMCAxis::";
 
+static void connectCallback(asynUser *pasynUser, asynException exception)
+{
+  EthercatMCController* pController = (EthercatMCController*)pasynUser->userPvt;
+
+  int connected = 0;
+  asynStatus status;
+  if (exception == asynExceptionConnect) {
+    status = pasynManager->isConnected(pasynUser, &connected);
+    asynPrint(pasynUser, ASYN_TRACE_INFO,
+              " %s connectCallback:  connected=%d status=%s (%d)\n",
+              modulName, connected,
+              pasynManager->strStatus(status), (int)status);
+    if (status && !connected) {
+      //pController->ctrlLocal.initialPollDone = 0;
+      pController->handleStatusChange(asynError);
+    }
+  } else {
+    asynPrint(pasynUser, ASYN_TRACE_FLOW,
+              "XXXXXXXXXXX %s exception=%d\n",
+              modulName, (int)exception);
+  }
+}
 /** Creates a new EthercatMCController object.
   * \param[in] portName          The name of the asyn port that will be created for this driver
   * \param[in] MotorPortName     The name of the drvAsynSerialPort that was created previously to connect to the EthercatMC controller
@@ -112,6 +142,12 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   if (status) {
     asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
               "%s cannot connect to motor controller\n", modulName);
+  }
+  status =  pasynManager->exceptionCallbackAdd(pasynUserController_, connectCallback);
+  if(status != asynSuccess){
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
+              "%s exceptionCallbackAdd failed\n", modulName);
+
   }
   startPoller(movingPollPeriod, idlePollPeriod, 2);
 }
@@ -311,6 +347,7 @@ void EthercatMCController::handleStatusChange(asynStatus status)
   } else if (!status && !ctrlLocal.isConnected) {
     /* Disconnected -> Connected */
     ctrlLocal.isConnected = 1;
+    ctrlLocal.initialPollDone = 0;
     setMCUErrMsg("MCU Cconnected");
   }
 }

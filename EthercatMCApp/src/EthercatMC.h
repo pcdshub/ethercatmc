@@ -320,8 +320,8 @@ public:
   asynStatus writeReadOnErrorDisconnect(void);
   EthercatMCAxis* getAxis(asynUser *pasynUser);
   EthercatMCAxis* getAxis(int axisNo);
-  protected:
   void handleStatusChange(asynStatus status);
+  protected:
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned indexOffset,
                                unsigned devNum, unsigned infoType);
