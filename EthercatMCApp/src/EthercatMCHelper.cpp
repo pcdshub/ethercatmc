@@ -17,14 +17,19 @@
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
-asynStatus EthercatMCAxis::writeReadControllerPrint(void)
+asynStatus EthercatMCAxis::writeReadControllerPrint(int traceMask)
 {
   asynStatus status = pC_->writeReadOnErrorDisconnect();
-  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+  asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,
             pasynManager->strStatus(status), (int)status);
   return status;
+}
+
+asynStatus EthercatMCAxis::writeReadControllerPrint(void)
+{
+  return writeReadControllerPrint(ASYN_TRACE_INFO);
 }
 
 /** Writes a command to the axis, and expects a logical ack from the controller
@@ -34,7 +39,7 @@ asynStatus EthercatMCAxis::writeReadControllerPrint(void)
  *
  * When the communictaion fails ot times out, writeReadOnErrorDisconnect() is called
  */
-asynStatus EthercatMCAxis::writeReadACK(void)
+asynStatus EthercatMCAxis::writeReadACK(int traceMask)
 {
   asynStatus status = pC_->writeReadOnErrorDisconnect();
   switch (status) {
@@ -82,13 +87,17 @@ asynStatus EthercatMCAxis::writeReadACK(void)
     default:
       break;
   }
-  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+  asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,
             pasynManager->strStatus(status), (int)status);
   return status;
 }
 
+asynStatus EthercatMCAxis::writeReadACK(void)
+{
+  return writeReadACK(ASYN_TRACE_INFO);
+}
 
 /** Sets an integer or boolean value on an axis
  * the values in the controller must be updated

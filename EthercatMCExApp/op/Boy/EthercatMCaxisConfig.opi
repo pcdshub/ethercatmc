@@ -807,7 +807,17 @@ $(pv_value)</tooltip>
     <height>15</height>
     <horizontal_alignment>0</horizontal_alignment>
     <name>Label Template_16</name>
-    <rules />
+    <rules>
+      <rule name="TxtRefVelo-RB-Visible" prop_id="visible" out_exp="false">
+        <exp bool_exp="pv0==17">
+          <value>false</value>
+        </exp>
+        <exp bool_exp="pv0!=17">
+          <value>true</value>
+        </exp>
+        <pv trig="true">$(P)$(R)RefVelo-RB.STAT</pv>
+      </rule>
+    </rules>
     <scale_options>
       <width_scalable>true</width_scalable>
       <height_scalable>true</height_scalable>
@@ -869,6 +879,15 @@ $(pv_value)</tooltip>
           <value>9</value>
         </exp>
         <pv trig="true">$(pv_name)</pv>
+      </rule>
+      <rule name="RefVelo-RB-Visible" prop_id="visible" out_exp="false">
+        <exp bool_exp="pv0==17">
+          <value>false</value>
+        </exp>
+        <exp bool_exp="pv0!=17">
+          <value>true</value>
+        </exp>
+        <pv trig="true">$(P)$(R)RefVelo-RB.STAT</pv>
       </rule>
     </rules>
     <scale_options>
