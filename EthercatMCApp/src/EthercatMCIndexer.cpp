@@ -730,9 +730,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
         {
           EthercatMCIndexerAxis *pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
           if (!pAxis) {
-            int axisFlags = 0;
-            const char *axisOptionsStr = "";
-            pAxis = new EthercatMCIndexerAxis(this, axisNo, axisFlags, axisOptionsStr);
+            pAxis = new EthercatMCIndexerAxis(this, axisNo);
           }
           asynPrint(pasynUserController_, ASYN_TRACE_INFO,
                     "%sTypeCode(%d) iTypCode=%x pAxis=%p\n",

@@ -19,8 +19,6 @@
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
-#define WAITNUMPOLLSBEFOREREADY 3
-
 typedef enum {
   idxStatusCodeRESET    = 0,
   idxStatusCodeIDLE     = 1,
@@ -75,8 +73,7 @@ extern "C" const char *idxStatusCodeTypeToStr(idxStatusCodeType idxStatusCode)
  *
  * Initializes register numbers, etc.
  */
-EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisNo,
-                                             int axisFlags, const char *axisOptionsStr)
+EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisNo)
   : asynMotorAxis(pC, axisNo),
     pC_(pC)
 {
@@ -86,14 +83,8 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisN
 #ifdef motorFlagsAdjAfterHomedString
     setIntegerParam(pC_->motorFlagsAdjAfterHomed_, 1);
 #endif
-#ifdef motorWaitPollsBeforeReadyString
-  setIntegerParam(pC_->motorWaitPollsBeforeReady_ , WAITNUMPOLLSBEFOREREADY);
-#endif
   memset(&drvlocal, 0, sizeof(drvlocal));
   memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
-  //drvlocal.old_eeAxisError = eeAxisErrorIOCcomError;
-  //drvlocal.axisFlags = axisFlags;
-
   /* We pretend to have an encoder (fActPosition) */
   setIntegerParam(pC_->motorStatusHasEncoder_, 1);
 #ifdef motorFlagsNoStopProblemString
@@ -113,71 +104,9 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisN
     setIntegerParam(pC_->motorShowPowerOff_, 1);
 #endif
   drvlocal.scaleFactor = 1.0;
-  if (axisFlags & AMPLIFIER_ON_FLAG_USING_CNEN) {
-    setIntegerParam(pC->motorStatusGainSupport_, 1);
-  }
-  if (axisOptionsStr && axisOptionsStr[0]) {
-    const char * const encoder_is_str = "encoder=";
-    const char * const cfgfile_str = "cfgFile=";
-    const char * const cfgDebug_str = "getDebugText=";
-#ifndef motorFlagsDriverUsesEGUString
-    const char * const stepSize_str = "stepSize=";
-#endif
-    const char * const homProc_str = "HomProc=";
-    const char * const homPos_str  = "HomPos=";
-    const char * const adsPort_str  = "adsPort=";
-    const char * const scaleFactor_str = "scaleFactor=";
-
-    char *pOptions = strdup(axisOptionsStr);
-    char *pThisOption = pOptions;
-    char *pNextOption = pOptions;
-
-    while (pNextOption && pNextOption[0]) {
-      pNextOption = strchr(pNextOption, ';');
-      if (pNextOption) {
-        *pNextOption = '\0'; /* Terminate */
-        pNextOption++;       /* Jump to (possible) next */
-      }
-      if (!strncmp(pThisOption, encoder_is_str, strlen(encoder_is_str))) {
-        pThisOption += strlen(encoder_is_str);
-        drvlocal.externalEncoderStr = strdup(pThisOption);
-      }  else if (!strncmp(pThisOption, cfgfile_str, strlen(cfgfile_str))) {
-        pThisOption += strlen(cfgfile_str);
-        //drvlocal.cfgfileStr = strdup(pThisOption);
-      } else if (!strncmp(pThisOption, cfgDebug_str, strlen(cfgDebug_str))) {
-        pThisOption += strlen(cfgDebug_str);
-        //drvlocal.cfgDebug_str = strdup(pThisOption);
-#ifndef motorFlagsDriverUsesEGUString
-      } else if (!strncmp(pThisOption, stepSize_str, strlen(stepSize_str))) {
-        pThisOption += strlen(stepSize_str);
-        /* This option is obsolete, depending on motor */
-        drvlocal.scaleFactor = atof(pThisOption);
-#endif
-      } else if (!strncmp(pThisOption, adsPort_str, strlen(adsPort_str))) {
-        pThisOption += strlen(adsPort_str);
-        int adsPort = atoi(pThisOption);
-        if (adsPort > 0) {
-          drvlocal.adsPort = (unsigned)adsPort;
-        }
-      } else if (!strncmp(pThisOption, homProc_str, strlen(homProc_str))) {
-        pThisOption += strlen(homProc_str);
-        int homProc = atoi(pThisOption);
-        setIntegerParam(pC_->EthercatMCHomProc_, homProc);
-      } else if (!strncmp(pThisOption, homPos_str, strlen(homPos_str))) {
-        pThisOption += strlen(homPos_str);
-        double homPos = atof(pThisOption);
-        setDoubleParam(pC_->EthercatMCHomPos_, homPos);
-      } else if (!strncmp(pThisOption, scaleFactor_str, strlen(scaleFactor_str))) {
-        pThisOption += strlen(scaleFactor_str);
-        drvlocal.scaleFactor = atof(pThisOption);
-      }
-      pThisOption = pNextOption;
-    }
-    free(pOptions);
-  }
+  setIntegerParam(pC->motorStatusGainSupport_, 1);
   /* Set the module name to "" if we have FILE/LINE enabled by asyn */
   if (pasynTrace->getTraceInfoMask(pC_->pasynUserController_) & ASYN_TRACEINFO_SOURCE) modNamEMC = "";
-  initialPoll();
 }
 
 extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisNo,

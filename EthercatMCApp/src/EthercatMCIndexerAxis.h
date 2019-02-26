@@ -7,8 +7,7 @@ class epicsShareClass EthercatMCIndexerAxis : public asynMotorAxis
 {
 public:
   /* These are the methods we override from the base class */
-  EthercatMCIndexerAxis(class EthercatMCController *pC, int axisNo,
-                        int axisFlags, const char *axisOptionsStr);
+  EthercatMCIndexerAxis(class EthercatMCController *pC, int axisNo);
   void report(FILE *fp, int level);
   asynStatus move(double position, int relative, double min_velocity, double max_velocity, double acceleration);
   asynStatus moveVelocity(double min_velocity, double max_velocity, double acceleration);
