@@ -887,6 +887,11 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                           case PARAM_IDX_HOME_POSITION_FLOAT32:
                             pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
                             break;
+                          case PARAM_IDX_FUN_REFERENCE:
+#ifdef  motorNotHomedProblemString
+                            pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
+#endif
+                            break;
                           }
                         }
                       }

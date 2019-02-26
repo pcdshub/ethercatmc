@@ -112,10 +112,6 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisN
 #ifdef motorShowPowerOffString
     setIntegerParam(pC_->motorShowPowerOff_, 1);
 #endif
-#ifdef  motorNotHomedProblemString
-    setIntegerParam(pC_->motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
-#endif
-
   drvlocal.scaleFactor = 1.0;
   if (axisFlags & AMPLIFIER_ON_FLAG_USING_CNEN) {
     setIntegerParam(pC->motorStatusGainSupport_, 1);

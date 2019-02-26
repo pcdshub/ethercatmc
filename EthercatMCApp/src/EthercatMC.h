@@ -310,6 +310,7 @@ public:
 #define PARAM_IDX_MICROSTEPS_FLOAT32           67
 #define PARAM_IDX_STEPS_PER_UNIT_FLOAT32       68
 #define PARAM_IDX_HOME_POSITION_FLOAT32        69
+#define PARAM_IDX_FUN_REFERENCE               133
 
   EthercatMCController(const char *portName, const char *EthercatMCPortName, int numAxes, double movingPollPeriod, double idlePollPeriod);
 
