@@ -355,6 +355,8 @@ public:
     unsigned int initialPollDone;
   } ctrlLocal;
 
+  unsigned adsport;
+
   /* First parameter */
   int EthercatMCErr_;
   int EthercatMCStatusCode_;

@@ -335,90 +335,82 @@ asynStatus EthercatMCIndexerAxis::stop(double acceleration )
  * \param[out] moving A flag that is set indicating that the axis is moving (true) or done (false). */
 asynStatus EthercatMCIndexerAxis::poll(bool *moving)
 {
+  static unsigned indexGroup = 0x4020;
   asynStatus status = asynSuccess;
   if (drvlocal.iTypCode && drvlocal.iOffset) {
+    int nvals;
     unsigned traceMask = ASYN_TRACE_INFO;
     double actPosition = 0.0;
-    {
-      size_t lenInPlc = 4;
-      unsigned regSize = 2;
-      unsigned reg = 0;
-      status = pC_->getPlcMemoryDouble(drvlocal.iOffset + reg * regSize,
-                                       &actPosition, lenInPlc);
-      if (!status) {
-        setDoubleParam(pC_->motorPosition_, actPosition);
-      } else {
-        asynPrint(pC_->pasynUserController_, traceMask,
-                  "%sout=%s in=%s status=%s (%d)\n",
-                  modNamEMC, pC_->outString_, pC_->inString_,
-                  pasynManager->strStatus(status), (int)status);
-      }
+    unsigned statusReasonAux;
+    bool nowMoving = false;
+    snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;ADSPORT=%u/.ADR.16#%X,16#%X,2,18?",
+             pC_->adsport,
+             indexGroup, drvlocal.iOffset,        /* Actual value on pos 0 */
+             pC_->adsport,
+             indexGroup, drvlocal.iOffset + 8);   /* CmdStatusAux value on pos 8 */
+
+    status = pC_->writeReadOnErrorDisconnect();
+    if (status) {
+      return status;
     }
-    {
-      unsigned statusReasonAux;
-      size_t lenInPlc = 2;
-      unsigned reg = 4;
-      idxStatusCodeType idxStatusCode;
-      bool nowMoving = false;
-      drvlocal.hasError = 0;
-      status = pC_->getPlcMemoryUint(drvlocal.iOffset + reg * lenInPlc,
-                                          &statusReasonAux, lenInPlc);
-      if (status) {
-        asynPrint(pC_->pasynUserController_, traceMask,
-                  "%spoll(%d) status=%d\n",
-                  modNamEMC, axisNo_, (int)status);
+    nvals = sscanf(pC_->inString_, "%lf;%u",
+                   &actPosition, &statusReasonAux);
+    if (nvals != 2) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%snvals=%d command=\"%s\" response=\"%s\"\n",
+                modNamEMC, nvals, pC_->outString_, pC_->inString_);
+      return asynError;
+    }
+
+    setDoubleParam(pC_->motorPosition_, actPosition);
+    drvlocal.hasError = 0;
+    if (statusReasonAux != drvlocal.old_tatusReasonAux) {
+      int powerIsOn = 1; /* Unless powerOff */
+      int statusValid = 0;
+      idxStatusCodeType idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
+      setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
+      asynPrint(pC_->pasynUserController_, traceMask,
+                "%spoll(%d) pos=%f statusReasonAux=0x%x %d (%s)\n",
+                modNamEMC, axisNo_,
+                actPosition,
+                statusReasonAux, idxStatusCode,
+                idxStatusCodeTypeToStr(idxStatusCode));
+      switch (idxStatusCode) {
+        /* After RESET, START, STOP the bits are not valid */
+      case idxStatusCodeIDLE:
+      case idxStatusCodeWARN:
+        statusValid = 1;
+        break;
+      case idxStatusCodePOWEROFF:
+        statusValid = 1;
+        powerIsOn = 0;
+        break;
+      case idxStatusCodeBUSY:
+        statusValid = 1;
+        nowMoving = true;
+        break;
+      case idxStatusCodeERROR:
+        statusValid = 1;
+        drvlocal.hasError = 1;
+        break;
+      default:
+        drvlocal.hasError = 1;
       }
-      if (!status && (statusReasonAux != drvlocal.old_tatusReasonAux)) {
-        int hls = 0;
-        int lls = 0;
-        int powerIsOn = 1; /* Unless powerOff */
-        idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
-#ifdef EthercatMCStatusCodeString
-        setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
-#endif
-        asynPrint(pC_->pasynUserController_, traceMask,
-                  "%spoll(%d) pos=%f statusReasonAux=0x%x %d (%s)\n",
-                  modNamEMC, axisNo_,
-                  actPosition,
-                  statusReasonAux, idxStatusCode,
-                  idxStatusCodeTypeToStr(idxStatusCode));
-        switch (idxStatusCode) {
-          case idxStatusCodeRESET:
-            drvlocal.hasError = 1;
-            break;
-          case idxStatusCodeIDLE:
-            break;
-          case idxStatusCodePOWEROFF:
-            powerIsOn = 0;
-            break;
-          case idxStatusCodeWARN:
-            break;
-          case idxStatusCodeBUSY:
-            nowMoving = true;
-            break;
-          case idxStatusCodeSTOP:
-            nowMoving = true;
-            break;
-          case idxStatusCodeERROR:
-          default:
-            drvlocal.hasError = 1;
-        }
-        if ((idxStatusCode == idxStatusCodeWARN) ||
-            (idxStatusCode == idxStatusCodeERROR)) {
-          hls = statusReasonAux & 0x0800 ? 1 : 0;
-          lls = statusReasonAux & 0x0400 ? 1 : 0;
-        }
-        *moving = nowMoving;
-        setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
-        setIntegerParam(pC_->motorStatusMoving_, nowMoving);
-        setIntegerParam(pC_->motorStatusDone_, !nowMoving);
-        setIntegerParam(pC_->motorStatusCommsError_, 0);
+      if (statusValid) {
+        int hls = statusReasonAux & 0x0800 ? 1 : 0;
+        int lls = statusReasonAux & 0x0400 ? 1 : 0;
         setIntegerParam(pC_->motorStatusLowLimit_, lls);
         setIntegerParam(pC_->motorStatusHighLimit_, hls);
-        setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
-
-        drvlocal.old_tatusReasonAux = statusReasonAux;
+        setIntegerParam(pC_->motorStatusMoving_, nowMoving);
+        setIntegerParam(pC_->motorStatusDone_, !nowMoving);
       }
+      *moving = nowMoving;
+      setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
+      setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
+
+      setIntegerParam(pC_->motorStatusCommsError_, 0);
+      drvlocal.old_tatusReasonAux = statusReasonAux;
     }
     callParamCallbacks();
   }

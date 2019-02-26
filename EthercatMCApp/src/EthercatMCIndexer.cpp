@@ -29,7 +29,6 @@ static unsigned indexGroup = 0x4020;
 #define PARAM_IF_CMD_READONLY                      0xC000
 #define PARAM_IF_CMD_RETRY_LATER                   0xE000
 
-unsigned adsport = 851;
 #define MAX_ADSPORT 853
 
 #ifndef ASYN_TRACE_INFO
@@ -614,6 +613,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   int      axisNo = 0;
 
   memset(&descVersAuthors, 0, sizeof(descVersAuthors));
+  adsport = 851;
   while ((adsport < MAX_ADSPORT) && !version) {
     double tmp_version;
     unsigned int iTmpVer = 0;
