@@ -210,7 +210,7 @@ asynStatus EthercatMCAxis::readBackSoftLimits(void)
     fValueHigh = fValueLow = 0.0;
     return asynError;
   }
-  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+  asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
             "%sout=%s in=%s CHLM_En=%d CHLM=%f CLLM_En=%d CLLM=%f\n",
             modNamEMC, pC_->outString_, pC_->inString_,
             iValueHigh, fValueHigh, iValueLow, fValueLow);
@@ -270,7 +270,7 @@ asynStatus EthercatMCAxis::readScaling(int axisID)
            0x5000 + axisID, 0x23,  // UREV
            0x7000 + axisID, 0x101  // RefVelo
            );
-  status = writeReadControllerPrint();
+  status = pC_->writeReadOnErrorDisconnect();
   if (status) return status;
   nvals = sscanf(pC_->inString_, "%lf;%lf;%lf",
                  &srev, &urev, &refVelo);
@@ -323,7 +323,7 @@ asynStatus EthercatMCAxis::readMonitoring(int axisID)
            0x6000 + axisID, 0x12,  // PosLag
            0x6000 + axisID, 0x13,  // PosLag_Tim
            0x6000 + axisID, 0x10); // Poslag_En
-  status = writeReadControllerPrint();
+  status = pC_->writeReadOnErrorDisconnect();
   if (status) return status;
   nvals = sscanf(pC_->inString_, "%lf;%lf;%d;%lf;%lf;%d",
                  &rdbd, &rdbd_tim, &rdbd_en, &poslag, &poslag_tim, &poslag_en
@@ -385,28 +385,37 @@ asynStatus EthercatMCAxis::readBackVelocities(int axisID)
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%svelo=%f vmax=%f jvel=%f accs=%f hvel=%f\n",
             modNamEMC, velo, vmax, jvel, accs, velToHom);
-  pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgVELO_, velo / scaleFactor);
+  if (velo > 0.0) {
+    pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgVELO_, velo / scaleFactor);
 #ifdef motorDefVelocityROString
-  setDoubleParam(pC_->motorDefVelocityRO_, velo / scaleFactor);
+    setDoubleParam(pC_->motorDefVelocityRO_, velo / scaleFactor);
 #endif
+  }
 
-  pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgVMAX_, vmax / scaleFactor);
+  if (vmax > 0.0) {
+    pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgVMAX_, vmax / scaleFactor);
 #ifdef motorMaxVelocityROString
-  setDoubleParam(pC_->motorMaxVelocityRO_, vmax / scaleFactor);
+    setDoubleParam(pC_->motorMaxVelocityRO_, vmax / scaleFactor);
 #endif
-
-  pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgJVEL_, jvel / scaleFactor);
+  }
+  if (jvel > 0.0) {
+    pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgJVEL_, jvel / scaleFactor);
 #ifdef motorDefJogVeloROString
-  setDoubleParam(pC_->motorDefJogVeloRO_, jvel / scaleFactor);
+    setDoubleParam(pC_->motorDefJogVeloRO_, jvel / scaleFactor);
 #endif
+  }
+  if (velToHom > 0.0) {
 #ifdef motorDefHomeVeloROString
-  setDoubleParam(pC_->motorDefHomeVeloRO_, velToHom / scaleFactor);
+    setDoubleParam(pC_->motorDefHomeVeloRO_, velToHom / scaleFactor);
 #endif
+  }
 
-  pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgACCS_, accs / scaleFactor);
+  if (accs > 0.0) {
+    pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgACCS_, accs / scaleFactor);
 #ifdef motorDefJogAccROString
-  setDoubleParam(pC_->motorDefJogAccRO_, accs / scaleFactor);
+    setDoubleParam(pC_->motorDefJogAccRO_, accs / scaleFactor);
 #endif
+  }
   return asynSuccess;
 }
 
@@ -1444,7 +1453,6 @@ asynStatus EthercatMCAxis::setIntegerParam(int function, int value)
   if (function == pC_->motorUpdateStatus_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetIntegerParam(%d motorUpdateStatus_)=%d\n", modNamEMC, axisNo_, value);
-
   } else if (function == pC_->motorStatusCommsError_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
               "%ssetIntegerParam(%d pC_->motorStatusCommsError_)=%d\n",
@@ -1456,12 +1464,6 @@ asynStatus EthercatMCAxis::setIntegerParam(int function, int value)
       drvlocal.MCU_nErrorId = 0;
       callParamCallbacksUpdateError();
     }
-#ifdef motorRecDirectionString
-  } else if (function == pC_->motorRecDirection_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetIntegerParam(%d motorRecDirection_)=%d\n",
-              modNamEMC, axisNo_, value);
-#endif
 #ifdef motorPowerAutoOnOffString
   } else if (function == pC_->motorPowerAutoOnOff_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
@@ -1561,14 +1563,6 @@ asynStatus EthercatMCAxis::setDoubleParam(int function, double value)
   } else if (function == pC_->motorAccel_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetDoubleParam(%d motorAccel_)=%g\n", modNamEMC, axisNo_, value);
-#if 0
-  } else if (function == pC_->motorPosition_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "setDoubleParam(%d motorPosition_=%g\n", axisNo_, value);
-  } else if (function == pC_->motorEncoderPosition_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "setDoubleParam(%d motorEncoderPosition_=%g\n", axisNo_, value);
-#endif
   } else if (function == pC_->motorDeferMoves_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetDoubleParam(%d motmotorDeferMoves_=%g\n", modNamEMC, axisNo_, value);
@@ -1578,18 +1572,6 @@ asynStatus EthercatMCAxis::setDoubleParam(int function, double value)
   } else if (function == pC_->motorResolution_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetDoubleParam(%d motorResolution_=%g\n",  modNamEMC, axisNo_, value);
-  } else if (function == pC_->motorEncoderRatio_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetDoubleParam(%d motorEncoderRatio_)=%g\n", modNamEMC, axisNo_, value);
-  } else if (function == pC_->motorPGain_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetDoubleParam(%d motorPGain_oveRel_)=%g\n", modNamEMC, axisNo_, value);
-  } else if (function == pC_->motorIGain_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetDoubleParam(%d motorIGain_oveRel_)=%g\n", modNamEMC, axisNo_, value);
-  } else if (function == pC_->motorDGain_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetDoublmotor(%d motorDGain_oveRel_)=%g\n", modNamEMC, axisNo_, value);
     /* Limits handled above */
 
 #ifdef motorPowerOnDelayString
@@ -1615,11 +1597,6 @@ asynStatus EthercatMCAxis::setDoubleParam(int function, double value)
   } else if (function == pC_->motorStatus_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetDoubleParam(%d motorStatus_)=%g\n", modNamEMC, axisNo_, value);
-#ifdef motorRecOffsetString
-  } else if (function == pC_->motorRecOffset_) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%ssetDoubleParam(%d motorRecOffset_)=%g\n", modNamEMC, axisNo_, value);
-#endif
 #ifdef EthercatMCHVELFRMString
   } else if (function == pC_->EthercatMCHVELfrm_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
