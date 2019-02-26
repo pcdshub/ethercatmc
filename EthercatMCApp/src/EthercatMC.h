@@ -130,7 +130,7 @@ class epicsShareClass EthercatMCAxis : public EthercatMCBaseAxis
 public:
   /* These are the methods we override from the base class */
   EthercatMCAxis(class EthercatMCController *pC, int axisNo,
-            int axisFlags, const char *axisOptionsStr);
+                 int axisFlags, const char *axisOptionsStr);
   void report(FILE *fp, int level);
   asynStatus mov2(double posEGU, int nCommand, double maxVeloEGU, double accEGU);
   asynStatus move(double position, int relative, double min_velocity, double max_velocity, double acceleration);

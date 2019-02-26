@@ -25,7 +25,6 @@ const static char *const strEthercatMCConfigController = "EthercatMCConfigContro
 const static char *const strEthercatMCConfigOrDie      = "EthercatMCConfigOrDie";
 const static char *const strEthercatMCReadController   = "EthercatMCReadController";
 const static char *const strEthercatMCCreateAxisDef    = "EthercatMCCreateAxis";
-const static char *const strEthercatMCCreateIndexerAxisDef = "EthercatMCCreateIndexerAxis";
 const static char *const strCtrlReset = ".ctrl.ErrRst";
 
 const static char *const modulName = "EthercatMCAxis::";
@@ -406,25 +405,12 @@ static const iocshArg * const EthercatMCCreateAxisArgs[] = {&EthercatMCCreateAxi
                                                             &EthercatMCCreateAxisArg1,
                                                             &EthercatMCCreateAxisArg2,
                                                             &EthercatMCCreateAxisArg3};
-static const
-iocshArg * const EthercatMCCreateIndexerAxisArgs[] = {&EthercatMCCreateAxisArg0,
-                                                      &EthercatMCCreateAxisArg1,
-                                                      &EthercatMCCreateAxisArg2,
-                                                      &EthercatMCCreateAxisArg3};
 
 static const iocshFuncDef EthercatMCCreateAxisDef = {strEthercatMCCreateAxisDef, 4,
                                                      EthercatMCCreateAxisArgs};
-static const iocshFuncDef EthercatMCCreateIndexerAxisDef = {strEthercatMCCreateIndexerAxisDef, 4,
-                                                     EthercatMCCreateIndexerAxisArgs};
-
 static void EthercatMCCreateAxisCallFunc(const iocshArgBuf *args)
 {
   EthercatMCCreateAxis(args[0].sval, args[1].ival, args[2].ival, args[3].sval);
-}
-
-static void EthercatMCCreateIndexerAxisCallFunc(const iocshArgBuf *args)
-{
-  EthercatMCCreateIndexerAxis(args[0].sval, args[1].ival, args[2].ival, args[3].sval);
 }
 
 static void EthercatMCControllerRegister(void)
@@ -434,7 +420,6 @@ static void EthercatMCControllerRegister(void)
   iocshRegister(&EthercatMCConfigControllerDef, EthercatMCConfigContollerCallFunc);
   iocshRegister(&EthercatMCReadControllerDef,   EthercatMCReadContollerCallFunc);
   iocshRegister(&EthercatMCCreateAxisDef,       EthercatMCCreateAxisCallFunc);
-  iocshRegister(&EthercatMCCreateIndexerAxisDef,EthercatMCCreateIndexerAxisCallFunc);
 }
 
 extern "C" {
