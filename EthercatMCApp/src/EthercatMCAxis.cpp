@@ -179,25 +179,6 @@ extern "C" int EthercatMCCreateAxis(const char *EthercatMCName, int axisNo,
   return asynSuccess;
 }
 
-/** Connection status is changed, the dirty bits must be set and
- *  the values in the controller must be updated
- * \param[in] AsynStatus status
- *
- * Sets the dirty bits
- */
-void EthercatMCAxis::handleDisconnect(asynStatus status)
-{
-  (void)status;
-  if (!drvlocal.dirty.oldStatusDisconnected) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s Communication error(%d)\n", modNamEMC, axisNo_);
-  }
-  memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
-  drvlocal.MCU_nErrorId = 0;
-  setIntegerParam(pC_->motorStatusCommsError_, 1);
-  callParamCallbacksUpdateError();
-}
-
 
 asynStatus EthercatMCAxis::readBackSoftLimits(void)
 {
@@ -478,7 +459,7 @@ asynStatus EthercatMCAxis::initialPollInternal(void)
       updateMsgTxtFromDriver("No AxisID");
       return asynSuccess;
     case -1:
-      setIntegerParam(pC_->motorStatusCommsError_, 1);
+      //setIntegerParam(pC_->motorStatusCommsError_, 1);
       return asynError;
     case 0:
       return asynSuccess;
@@ -1439,7 +1420,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
   return asynSuccess;
 
   skip:
-  handleDisconnect(asynError);
+  //handleDisconnect(asynError);
   return asynError;
 }
 
@@ -1463,6 +1444,18 @@ asynStatus EthercatMCAxis::setIntegerParam(int function, int value)
   if (function == pC_->motorUpdateStatus_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetIntegerParam(%d motorUpdateStatus_)=%d\n", modNamEMC, axisNo_, value);
+
+  } else if (function == pC_->motorStatusCommsError_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
+              "%ssetIntegerParam(%d pC_->motorStatusCommsError_)=%d\n",
+              modNamEMC, axisNo_, value);
+    if (value && !drvlocal.dirty.oldStatusDisconnected) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%s Communication error(%d)\n", modNamEMC, axisNo_);
+      memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
+      drvlocal.MCU_nErrorId = 0;
+      callParamCallbacksUpdateError();
+    }
 #ifdef motorRecDirectionString
   } else if (function == pC_->motorRecDirection_) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,

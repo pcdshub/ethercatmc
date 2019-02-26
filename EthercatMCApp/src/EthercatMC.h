@@ -208,7 +208,6 @@ private:
     unsigned int adsPort;
   } drvlocal;
 
-  void       handleDisconnect(asynStatus status);
   asynStatus handleConnect(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadControllerPrint(void);
