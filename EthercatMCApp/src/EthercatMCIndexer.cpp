@@ -705,10 +705,10 @@ asynStatus EthercatMCController::initialPollIndexer(void)
           status = readDeviceIndexer(indexerOffset, devNum, infoType16 + auxBitIdx);
           if (!status) {
             getPlcMemoryString(indexerOffset + 1*2,
-                                    auxBitName,
-                                    sizeof(auxBitName));
+                               auxBitName,
+                               sizeof(auxBitName));
             asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                      "%sauxBitName(%d) auxBitName(%02u)=%s\n",
+                      "%sauxBitName[%d] auxBitName(%02u)=%s\n",
                       modNamEMC, axisNo, auxBitIdx, auxBitName);
           }
         }
@@ -732,6 +732,18 @@ asynStatus EthercatMCController::initialPollIndexer(void)
           if (!pAxis) {
             pAxis = new EthercatMCIndexerAxis(this, axisNo);
           }
+          pAxis->setStringParam(EthercatMCaux11_, "High limit");
+          pAxis->setStringParam(EthercatMCaux10_, "Low limit");
+          pAxis->setStringParam(EthercatMCaux9_,  "Timeout, Dynamic problem, timeout");
+          pAxis->setStringParam(EthercatMCaux8_,  "Static problem, inhibit");
+          //pAxis->setStringParam(EthercatMCaux7_,  "Aux 7");
+          //pAxis->setStringParam(EthercatMCaux6_,  "Aux 6");
+          pAxis->setStringParam(EthercatMCaux5_,  "Aux 5");
+          //pAxis->setStringParam(EthercatMCaux4_,  "Aux 4");
+          //pAxis->setStringParam(EthercatMCaux3_,  "Aux 3");
+          //pAxis->setStringParam(EthercatMCaux2_,  "Aux 2");
+          //pAxis->setStringParam(EthercatMCaux1_,  "Aux 1");
+          //pAxis->setStringParam(EthercatMCaux0_,  "Aux 0");
           asynPrint(pasynUserController_, ASYN_TRACE_INFO,
                     "%sTypeCode(%d) iTypCode=%x pAxis=%p\n",
                     modNamEMC, axisNo, iTypCode, pAxis);
