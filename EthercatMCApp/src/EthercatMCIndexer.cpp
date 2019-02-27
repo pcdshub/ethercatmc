@@ -459,40 +459,81 @@ asynStatus EthercatMCController::indexerPrepareParamRead(unsigned indexOffset,
   int traceMask = 0;
   asynStatus status;
   unsigned cmdSubParamIndex;
-  unsigned cmd      = 0x2000 + paramIndex;
-  unsigned cmdAcked = 0x8000 + paramIndex;
+  unsigned cmd = PARAM_IF_CMD_DOREAD + paramIndex;
   unsigned counter = 0;
 
-  if (paramIndex > 0x7F) return asynDisabled;
+  if (paramIndex > 0x7F) {
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%sparamIndex=%u\n",
+              modNamEMC, paramIndex);
+    return asynDisabled;
+  }
   status = indexerParamWaitNotBusy(indexOffset);
-  if (status) return status;
+  if (status) {
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%sout=%s in=%s status=%s (%d)\n",
+              modNamEMC, outString_, inString_,
+              pasynManager->strStatus(status), (int)status);
+    return status;
+  }
 
   status = setPlcMemoryInteger(indexOffset, cmd, 2);
-  if (status) return status;
+  if (status) {
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%sout=%s in=%s status=%s (%d)\n",
+              modNamEMC, outString_, inString_,
+              pasynManager->strStatus(status), (int)status);
+    return status;
+  }
   while (counter < 5) {
     status = getPlcMemoryUint(indexOffset, &cmdSubParamIndex, 2);
     asynPrint(pasynUserController_, traceMask,
               "%sout=%s in=%s status=%s (%d)\n",
               modNamEMC, outString_, inString_,
               pasynManager->strStatus(status), (int)status);
-    if (status) return status;
-    switch (cmdSubParamIndex >> 13) {
-      case 1:
-      case 2:
-      case 3:
-        continue;
-      case 0:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-        break;
+    if (status) {
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sout=%s in=%s status=%s (%d)\n",
+                modNamEMC, outString_, inString_,
+                pasynManager->strStatus(status), (int)status);
+      return status;
     }
-    if (cmdSubParamIndex == cmdAcked) return asynSuccess;
+    switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
+    case PARAM_IF_CMD_INVALID:
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sout=%s in=%s (%x) counter=%u\n",
+                modNamEMC, outString_, inString_, atoi(inString_),
+                counter);
+      return asynError;
+    case PARAM_IF_CMD_DOREAD:
+    case PARAM_IF_CMD_DOWRITE:
+    case PARAM_IF_CMD_BUSY:
+      break;
+    case PARAM_IF_CMD_DONE:
+      asynPrint(pasynUserController_, traceMask,
+                "%sout=%s in=%s (%x) counter=%u\n",
+                modNamEMC, outString_, inString_, atoi(inString_),
+                counter);
+      return asynSuccess;
+    case PARAM_IF_CMD_ERR_NO_IDX:
+    case PARAM_IF_CMD_READONLY:
+    case PARAM_IF_CMD_RETRY_LATER:
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sout=%s in=%s (%x) counter=%u\n",
+                modNamEMC, outString_, inString_, atoi(inString_),
+                counter);
+      return asynError;
+
+    }
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
   }
-  return asynDisabled;
+  status = asynDisabled;
+  asynPrint(pasynUserController_, traceMask,
+            "%sout=%s in=%s (%x) counter=%u status=%s (%d)\n",
+            modNamEMC, outString_, inString_, atoi(inString_), counter,
+            pasynManager->strStatus(status), (int)status);
+  return status;
 }
 
 asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
