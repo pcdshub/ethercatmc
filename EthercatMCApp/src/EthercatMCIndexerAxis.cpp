@@ -154,7 +154,7 @@ void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned
 asynStatus EthercatMCIndexerAxis::initialPoll(void)
 {
   asynStatus status = asynSuccess;
-
+  return asynSuccess;
   if (!drvlocal.dirty.initialPollNeeded)
     return asynSuccess;
 
@@ -404,8 +404,10 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         setIntegerParam(pC_->motorStatusHighLimit_, hls);
         setIntegerParam(pC_->motorStatusMoving_, nowMoving);
         setIntegerParam(pC_->motorStatusDone_, !nowMoving);
+        setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux & 0xFFF);
       }
       *moving = nowMoving;
+      setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
       setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
       setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
 

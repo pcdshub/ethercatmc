@@ -29,6 +29,19 @@ FILENAME...   EthercatMC.h
 #define EthercatMCErrIdString                "ErrId"
 #define EthercatMCStupString                 "Stup"
 #define EthercatMCStatusCodeString           "StatusCode"
+#define EthercatMCStatusBitsString           "StatusBits"
+#define EthercatMCaux0_String                "AuxBit0"
+#define EthercatMCaux1_String                "AuxBit1"
+#define EthercatMCaux2_String                "AuxBit2"
+#define EthercatMCaux3_String                "AuxBit3"
+#define EthercatMCaux4_String                "AuxBit4"
+#define EthercatMCaux5_String                "AuxBit5"
+#define EthercatMCaux6_String                "AuxBit6"
+#define EthercatMCaux7_String                "AuxBit7"
+#define EthercatMCaux8_String                "AuxBit8"
+#define EthercatMCaux9_String                "AuxBit9"
+#define EthercatMCaux10_String               "AuxBit10"
+#define EthercatMCaux11_String               "AuxBit11"
 #define EthercatMCHomProc_RBString           "HomProc-RB"
 #define EthercatMCHomPos_RBString            "HomPos-RB"
 #define EthercatMCHomProcString              "HomProc"
@@ -360,6 +373,19 @@ public:
   /* First parameter */
   int EthercatMCErr_;
   int EthercatMCStatusCode_;
+  int EthercatMCStatusBits_;
+  int EthercatMCaux0_;
+  int EthercatMCaux1_;
+  int EthercatMCaux2_;
+  int EthercatMCaux3_;
+  int EthercatMCaux4_;
+  int EthercatMCaux5_;
+  int EthercatMCaux6_;
+  int EthercatMCaux7_;
+  int EthercatMCaux8_;
+  int EthercatMCaux9_;
+  int EthercatMCaux10_;
+  int EthercatMCaux11_;
   int EthercatMCHomProc_RB_;
   int EthercatMCHomPos_RB_;
   int EthercatMCHomProc_;

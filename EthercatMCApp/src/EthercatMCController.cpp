@@ -67,6 +67,7 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   createParam(EthercatMCHomProcString,       asynParamInt32,       &EthercatMCHomProc_);
   createParam(EthercatMCHomPosString,        asynParamFloat64,     &EthercatMCHomPos_);
   createParam(EthercatMCStatusCodeString,    asynParamInt32,       &EthercatMCStatusCode_);
+  createParam(EthercatMCStatusBitsString,    asynParamInt32,       &EthercatMCStatusBits_);
   createParam(EthercatMCHomProc_RBString,    asynParamInt32,       &EthercatMCHomProc_RB_);
   createParam(EthercatMCHomPos_RBString,     asynParamFloat64,     &EthercatMCHomPos_RB_);
   createParam(EthercatMCVelToHomString,      asynParamFloat64,     &EthercatMCVelToHom_);
@@ -78,6 +79,18 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   createParam(EthercatMCVel_RBString,        asynParamFloat64,     &EthercatMCVel_RB_);
   createParam(EthercatMCAcc_RBString,        asynParamFloat64,     &EthercatMCAcc_RB_);
   createParam(EthercatMCDec_RBString,        asynParamFloat64,     &EthercatMCDec_RB_);
+  createParam(EthercatMCaux0_String,         asynParamOctet,       &EthercatMCaux0_);
+  createParam(EthercatMCaux1_String,         asynParamOctet,       &EthercatMCaux1_);
+  createParam(EthercatMCaux2_String,         asynParamOctet,       &EthercatMCaux2_);
+  createParam(EthercatMCaux3_String,         asynParamOctet,       &EthercatMCaux3_);
+  createParam(EthercatMCaux4_String,         asynParamOctet,       &EthercatMCaux4_);
+  createParam(EthercatMCaux5_String,         asynParamOctet,       &EthercatMCaux5_);
+  createParam(EthercatMCaux6_String,         asynParamOctet,       &EthercatMCaux6_);
+  createParam(EthercatMCaux7_String,         asynParamOctet,       &EthercatMCaux7_);
+  createParam(EthercatMCaux8_String,         asynParamOctet,       &EthercatMCaux8_);
+  createParam(EthercatMCaux9_String,         asynParamOctet,       &EthercatMCaux9_);
+  createParam(EthercatMCaux10_String,        asynParamOctet,       &EthercatMCaux10_);
+  createParam(EthercatMCaux11_String,        asynParamOctet,       &EthercatMCaux11_);
   createParam(EthercatMCCfgVELO_String,      asynParamFloat64,     &EthercatMCCfgVELO_);
   createParam(EthercatMCCfgVMAX_String,      asynParamFloat64,     &EthercatMCCfgVMAX_);
   createParam(EthercatMCCfgJVEL_String,      asynParamFloat64,     &EthercatMCCfgJVEL_);
