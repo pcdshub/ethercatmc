@@ -22,7 +22,7 @@
 /* Static variables */
 /*****************************************************************************/
 
-unsigned int debug_print_flags;
+unsigned int debug_print_flags = 255;
 unsigned int die_on_error_flags = 1;
 
 FILE *stdlog;

@@ -7,6 +7,7 @@
 #include "logerr_info.h"
 #include "cmd_buf.h"
 #include "hw_motor.h"
+#include "indexer.h"
 #include "cmd_EAT.h"
 
 typedef struct
@@ -393,7 +394,7 @@ static int motorHandleADS_ADR(const char *arg)
            type_in_PLC);
 
   if (nvals != 5) return __LINE__;
-  if (adsport != 501) return __LINE__;
+  //if (adsport != 501) return __LINE__;
 
   myarg_1 = strchr(arg, '=');
   if (myarg_1) {
@@ -429,19 +430,37 @@ static int motorHandleADS_ADR(const char *arg)
   if (myarg_1) {
     int res;
     myarg_1++; /* Jump over '?' */
+    LOGINFO6("%s/%s:%d "
+             "adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u\n",
+             __FILE__, __FUNCTION__, __LINE__,
+             adsport,
+             indexGroup,
+             indexOffset,
+             len_in_PLC,
+             type_in_PLC);
     switch (type_in_PLC) {
-      case 5: {
-        double fValue;
-        if (len_in_PLC != 8) return __LINE__;
-        res = motorHandleADS_ADR_getFloat(adsport,
-                                          indexGroup,
-                                          indexOffset,
-                                          &fValue);
-        if (res) return res;
-        cmd_buf_printf("%g", fValue);
-        return -1;
-      }
+      case 4:
+      case 5:
+        {
+          double fValue;
+          if (indexGroup == 0x4020) {
+            res = indexerHandleADS_ADR_getFloat(adsport, indexOffset, len_in_PLC, &fValue);
+          } else if (len_in_PLC != 8) {
+            return __LINE__;
+          } else if (adsport != 501) {
+            return __LINE__;
+          } else {
+            res = motorHandleADS_ADR_getFloat(adsport,
+                                              indexGroup,
+                                              indexOffset,
+                                              &fValue);
+          }
+          if (res) return res;
+          cmd_buf_printf("%g", fValue);
+          return -1;
+        }
         break;
+
       case 2: {
         int res;
         int iValue = -1;
@@ -454,6 +473,17 @@ static int motorHandleADS_ADR(const char *arg)
         cmd_buf_printf("%d", iValue);
         return -1;
       }
+        break;
+      case 18:
+      case 19:
+      case 21: {
+          unsigned uValue;
+          if (indexGroup == 0x4020) {
+            res = indexerHandleADS_ADR_getUInt(adsport, indexOffset, len_in_PLC, &uValue);
+            if (res) return res;
+            cmd_buf_printf("%u", uValue);
+          }
+        }
         break;
       default:
         return __LINE__;

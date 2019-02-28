@@ -71,7 +71,8 @@ MOTOROBJS=\
  $(BIN)/cmd_EAT.o \
  $(BIN)/cmd_IcePAP.o \
  $(BIN)/cmd_TCPsim.o \
- $(BIN)/hw_motor.o
+ $(BIN)/hw_motor.o \
+ $(BIN)/indexer.o
 
 TELOBJS=\
  $(BIN)/main.o \
@@ -139,6 +140,7 @@ $(BIN)/cmd_EAT.o: \
  Makefile \
  cmd_EAT.c \
  hw_motor.h \
+ indexer.h \
  cmd_EAT.h
 	$(CC) -c $(CFLAGS) cmd_EAT.c -o $@
 
@@ -163,6 +165,13 @@ $(BIN)/hw_motor.o: \
  hw_motor.c
 	$(CC) -c $(CFLAGS) hw_motor.c -o $@
 
+
+$(BIN)/indexer.o: \
+ Makefile \
+ indexer.c \
+ hw_motor.h \
+ indexer.h
+	$(CC) -c $(CFLAGS) indexer.c -o $@
 
 $(BIN)/startWinSock.o: \
  Makefile \
