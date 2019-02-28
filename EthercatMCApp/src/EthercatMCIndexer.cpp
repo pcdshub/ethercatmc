@@ -622,6 +622,169 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
 }
 
 
+asynStatus
+EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
+                                                unsigned iOffset,
+                                                unsigned devNum,
+                                                EthercatMCIndexerAxis *pAxis)
+{
+  unsigned axisNo = pAxis->axisNo_;
+  unsigned infoType15 = 15;
+  asynStatus status;
+  unsigned dataIdx;
+
+  status = readDeviceIndexer(indexerOffset, devNum, infoType15);
+  if (status) {
+    return status;
+  }
+  for (dataIdx = 0; dataIdx <= 16; dataIdx++) {
+    unsigned parameters;
+    int traceMask = 0;
+    parameters = -1;
+
+    status = getPlcMemoryUint(indexerOffset + (1 + dataIdx) * 2, &parameters, 2);
+    if (status) {
+      return status;
+    }
+      /* dataIdx == 0 has ACK + infoType/devNum
+         dataIdx == 1 has supported parameters 15..0 */
+    asynPrint(pasynUserController_, traceMask,
+              "%sparameters[%03u..%03u]=0x%04x\n",
+              modNamEMC, dataIdx*16 +15,
+              dataIdx*16, parameters);
+    unsigned regSize = 2;
+    unsigned indexOffset = iOffset + 5*regSize;
+    unsigned bitIdx;
+    double microsteps = 1.0;  /* default */
+    double fullsrev = 200;    /* (default) Full steps/revolution */
+
+    for (bitIdx = 0; bitIdx <= 15; bitIdx++) {
+      unsigned paramIndex = dataIdx*16 + bitIdx;
+      unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
+      if (bitIsSet && (paramIndex < 128)) {
+        status = indexerPrepareParamRead(indexOffset, paramIndex);
+        if (!status) {
+          if (paramIndex < 30) {
+            unsigned iValue = -1;
+            status = getPlcMemoryUint(indexOffset+regSize,
+                                      &iValue, 2*regSize);
+            asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                      "%sparameters(%d)  paramIdx=%u iValue=%u status=%s (%d)\n",
+                      modNamEMC, axisNo, paramIndex, iValue,
+                      pasynManager->strStatus(status), (int)status);
+            if (!status) {
+              switch(paramIndex) {
+              case PARAM_IDX_MICROSTEPS_UINT32:
+                break;
+              case PARAM_IDX_OPMODE_AUTO_UINT32:
+                /* CNEN for EPICS */
+                pAxis->setIntegerParam(motorStatusGainSupport_, 1);
+#ifdef POWERAUTOONOFFMODE2
+                pAxis->setIntegerParam(motorPowerAutoOnOff_, POWERAUTOONOFFMODE2);
+                pAxis->setDoubleParam(motorPowerOnDelay_,   6.0);
+                pAxis->setDoubleParam(motorPowerOffDelay_, -1.0);
+#endif
+                break;
+              }
+            }
+          } else {
+            double fValue = -0.0;
+            status = getPlcMemoryDouble(indexOffset+regSize,
+                                        &fValue, 2*regSize);
+            asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                      "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
+                      modNamEMC, axisNo, paramIndex, fValue,
+                      pasynManager->strStatus(status), (int)status);
+            if (!status) {
+              switch(paramIndex) {
+              case PARAM_IDX_ABS_MIN_FLOAT32:
+                setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
+                pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
+#ifdef motorLowLimitROString
+                setDoubleParam(motorLowLimitRO_, fValue);
+#endif
+                break;
+              case PARAM_IDX_ABS_MAX_FLOAT32:
+                setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
+                pAxis->setDoubleParam(EthercatMCCfgDHLM_, fValue);
+#ifdef motorHighLimitROString
+                setDoubleParam(motorHighLimitRO_, fValue);
+#endif
+                break;
+              case PARAM_IDX_USR_MIN_FLOAT32:
+                break;
+              case PARAM_IDX_USR_MAX_FLOAT32:
+                break;
+              case PARAM_IDX_WRN_MIN_FLOAT32:
+                break;
+              case PARAM_IDX_WRN_MAX_FLOAT32:
+                break;
+              case PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCCfgPOSLAG_RB_, fValue);
+                pAxis->setDoubleParam(EthercatMCCfgPOSLAG_Tim_RB_, 0);
+                setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
+                break;
+              case PARAM_IDX_HYTERESIS_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
+                pAxis->setDoubleParam(EthercatMCCfgRDBD_Tim_RB_, 0);
+                setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
+#ifdef motorRDBDROString
+                pAxis->setDoubleParam(motorRDBDRO_, fValue);
+#endif
+                break;
+              case PARAM_IDX_REFSPEED_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCVelToHom_, fValue);
+                break;
+              case PARAM_IDX_SPEED_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCCfgVELO_, fValue);
+#ifdef motorDefVelocityROString
+                pAxis->setDoubleParam(motorDefVelocityRO_, fValue);
+#endif
+                break;
+              case PARAM_IDX_ACCEL_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCCfgACCS_, fValue);
+#ifdef motorDefJogAccROString
+                pAxis->setDoubleParam(motorDefJogAccRO_, fValue);
+#endif
+                break;
+              case PARAM_IDX_IDLE_CURRENT_FLOAT32:
+                break;
+              case PARAM_IDX_MOVE_CURRENT_FLOAT32:
+                break;
+              case PARAM_IDX_MICROSTEPS_FLOAT32:
+                microsteps = fValue;
+                pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * microsteps);
+                break;
+              case PARAM_IDX_STEPS_PER_UNIT_FLOAT32:
+                {
+                  double urev = fabs(fullsrev / fValue);
+                  pAxis->setDoubleParam(EthercatMCCfgUREV_RB_, urev);
+                }
+                break;
+              case PARAM_IDX_HOME_POSITION_FLOAT32:
+                pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
+                break;
+              case PARAM_IDX_FUN_REFERENCE:
+#ifdef  motorNotHomedProblemString
+                pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
+#endif
+                break;
+              }
+            }
+          }
+        } else {
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                    "%sparameters(%d) paramIdx=%u bitIdx=%u status=%s (%d)\n",
+                    modNamEMC, axisNo, paramIndex, bitIdx,
+                    pasynManager->strStatus(status), (int)status);
+        }
+            }
+    }
+  }
+  return asynSuccess;
+}
+
+
 asynStatus EthercatMCController::poll(void)
 {
   asynStatus status = asynSuccess;
@@ -649,7 +812,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   unsigned infoType5 = 5;
   unsigned infoType6 = 6;
   unsigned infoType7 = 7;
-  unsigned infoType15 = 15;
   unsigned infoType16 = 16;
   int      axisNo = 0;
 
@@ -807,166 +969,21 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     default:
       ;
     }
-    status = readDeviceIndexer(indexerOffset, devNum, infoType15);
-    if (!status) {
-      unsigned dataIdx;
-      unsigned parameters;
-      /*  motors */
-
-      for (dataIdx = 0; dataIdx <= 16; dataIdx++) {
-        parameters = -1;
-        status = getPlcMemoryUint(indexerOffset + (1 + dataIdx) * 2, &parameters, 2);
-        if (!status) {
-          int traceMask = 0;
-          /* dataIdx == 0 has ACK + infoType/devNum
-             dataIdx == 1 has supported parameters 15..0 */
-          asynPrint(pasynUserController_, traceMask,
-                    "%sparameters[%03u..%03u]=0x%04x\n",
-                    modNamEMC, dataIdx*16 +15,
-                    dataIdx*16, parameters);
-          /* param devices */
-          switch (iTypCode) {
-            case 0x5008:
-            case 0x500C:
-              {
-                EthercatMCIndexerAxis *pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
-                unsigned regSize = 2;
-                unsigned indexOffset = iOffset + 5*regSize;
-                unsigned bitIdx;
-                double microsteps = 1.0;  /* default */
-                double fullsrev = 200;    /* (default) Full steps/revolution */
-
-                for (bitIdx = 0; bitIdx <= 15; bitIdx++) {
-                  unsigned paramIndex = dataIdx*16 + bitIdx;
-                  unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
-                  if (bitIsSet && (paramIndex < 128)) {
-                    status = indexerPrepareParamRead(indexOffset, paramIndex);
-                    if (!status) {
-                      if (paramIndex < 30) {
-                        unsigned iValue = -1;
-                        status = getPlcMemoryUint(indexOffset+regSize,
-                                                       &iValue, 2*regSize);
-                        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                                  "%sparameters(%d)  paramIdx=%u iValue=%u status=%s (%d)\n",
-                                  modNamEMC, axisNo, paramIndex, iValue,
-                                  pasynManager->strStatus(status), (int)status);
-                        if (!status) {
-                          switch(paramIndex) {
-                          case PARAM_IDX_MICROSTEPS_UINT32:
-                            break;
-                          case PARAM_IDX_OPMODE_AUTO_UINT32:
-                            /* CNEN for EPICS */
-                            pAxis->setIntegerParam(motorStatusGainSupport_, 1);
-#ifdef POWERAUTOONOFFMODE2
-                            pAxis->setIntegerParam(motorPowerAutoOnOff_, POWERAUTOONOFFMODE2);
-                            pAxis->setDoubleParam(motorPowerOnDelay_,   6.0);
-                            pAxis->setDoubleParam(motorPowerOffDelay_, -1.0);
-#endif
-                            break;
-                          }
-                        }
-                      } else {
-                        double fValue = -0.0;
-                        status = getPlcMemoryDouble(indexOffset+regSize,
-                                                    &fValue, 2*regSize);
-                        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                                  "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
-                                  modNamEMC, axisNo, paramIndex, fValue,
-                                  pasynManager->strStatus(status), (int)status);
-                        if (!status) {
-                          switch(paramIndex) {
-                          case PARAM_IDX_ABS_MIN_FLOAT32:
-                            setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
-                            pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
-#ifdef motorLowLimitROString
-                            setDoubleParam(motorLowLimitRO_, fValue);
-#endif
-                            break;
-                          case PARAM_IDX_ABS_MAX_FLOAT32:
-                            setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
-                            pAxis->setDoubleParam(EthercatMCCfgDHLM_, fValue);
-#ifdef motorHighLimitROString
-                            setDoubleParam(motorHighLimitRO_, fValue);
-#endif
-                            break;
-                          case PARAM_IDX_USR_MIN_FLOAT32:
-                            break;
-                          case PARAM_IDX_USR_MAX_FLOAT32:
-                            break;
-                          case PARAM_IDX_WRN_MIN_FLOAT32:
-                            break;
-                          case PARAM_IDX_WRN_MAX_FLOAT32:
-                            break;
-                          case PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCCfgPOSLAG_RB_, fValue);
-                            pAxis->setDoubleParam(EthercatMCCfgPOSLAG_Tim_RB_, 0);
-                            setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
-                            break;
-                          case PARAM_IDX_HYTERESIS_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
-                            pAxis->setDoubleParam(EthercatMCCfgRDBD_Tim_RB_, 0);
-                            setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
-#ifdef motorRDBDROString
-                            pAxis->setDoubleParam(motorRDBDRO_, fValue);
-#endif
-                            break;
-                          case PARAM_IDX_REFSPEED_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCVelToHom_, fValue);
-                            break;
-                          case PARAM_IDX_SPEED_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCCfgVELO_, fValue);
-#ifdef motorDefVelocityROString
-                            pAxis->setDoubleParam(motorDefVelocityRO_, fValue);
-#endif
-                            break;
-                          case PARAM_IDX_ACCEL_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCCfgACCS_, fValue);
-
-#ifdef motorDefJogAccROString
-                            pAxis->setDoubleParam(motorDefJogAccRO_, fValue);
-#endif
-                            break;
-                          case PARAM_IDX_IDLE_CURRENT_FLOAT32:
-                            break;
-                          case PARAM_IDX_MOVE_CURRENT_FLOAT32:
-                            break;
-                          case PARAM_IDX_MICROSTEPS_FLOAT32:
-                            microsteps = fValue;
-                            pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * microsteps);
-                            break;
-                          case PARAM_IDX_STEPS_PER_UNIT_FLOAT32:
-                            {
-                              double urev = fabs(fullsrev / fValue);
-                              pAxis->setDoubleParam(EthercatMCCfgUREV_RB_, urev);
-                            }
-                            break;
-                          case PARAM_IDX_HOME_POSITION_FLOAT32:
-                            pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
-                            break;
-                          case PARAM_IDX_FUN_REFERENCE:
-#ifdef  motorNotHomedProblemString
-                            pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
-#endif
-                            break;
-                          }
-                        }
-                      }
-                    } else {
-                      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                                "%sparameters(%d) paramIdx=%u bitIdx=%u status=%s (%d)\n",
-                                modNamEMC, axisNo, paramIndex, bitIdx,
-                                pasynManager->strStatus(status), (int)status);
-                    }
-                  }
-                }
-              }
-            break;
-          default:
-            ;
-          }
-        }
+    /* param devices */
+    switch (iTypCode) {
+    case 0x5008:
+    case 0x500C:
+      {
+        EthercatMCIndexerAxis *pAxis;
+        pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+        IndexerReadAxisParameters(indexerOffset,
+                                  iOffset,
+                                  devNum,
+                                  pAxis);
       }
+      break;
     }
+      // IndexerReadParameters(indexerOffset, iOffset, devNum, iTypCode, axisNo);
   }
   if (status) goto endPollIndexer;
 

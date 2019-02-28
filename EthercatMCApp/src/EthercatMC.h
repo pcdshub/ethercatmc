@@ -302,6 +302,8 @@ private:
   friend class EthercatMCController;
 };
 
+class EthercatMCIndexerAxis;
+
 class epicsShareClass EthercatMCController : public asynMotorController {
 public:
 #define PARAM_IDX_OPMODE_AUTO_UINT32            1
@@ -338,6 +340,10 @@ public:
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned indexOffset,
                                unsigned devNum, unsigned infoType);
+  asynStatus IndexerReadAxisParameters(unsigned indexerOffset,
+                                       unsigned iOffset,
+                                       unsigned devNum,
+                                       EthercatMCIndexerAxis *pAxis);
   asynStatus poll(void);
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
