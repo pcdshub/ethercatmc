@@ -28,6 +28,20 @@ FILENAME...   EthercatMC.h
 #define EthercatMCErrString                  "MCUErr"
 #define EthercatMCErrIdString                "ErrId"
 #define EthercatMCStupString                 "Stup"
+#define EthercatMCStatusCodeString           "StatusCode"
+#define EthercatMCStatusBitsString           "StatusBits"
+#define EthercatMCaux0_String                "AuxBit0"
+#define EthercatMCaux1_String                "AuxBit1"
+#define EthercatMCaux2_String                "AuxBit2"
+#define EthercatMCaux3_String                "AuxBit3"
+#define EthercatMCaux4_String                "AuxBit4"
+#define EthercatMCaux5_String                "AuxBit5"
+#define EthercatMCaux6_String                "AuxBit6"
+#define EthercatMCaux7_String                "AuxBit7"
+#define EthercatMCreason8_String             "ReasonBit8"
+#define EthercatMCreason9_String             "ReasonBit9"
+#define EthercatMCreason10_String            "ReasonBit10"
+#define EthercatMCreason11_String            "ReasonBit11"
 #define EthercatMCHomProc_RBString           "HomProc-RB"
 #define EthercatMCHomPos_RBString            "HomPos-RB"
 #define EthercatMCHomProcString              "HomProc"
@@ -59,6 +73,8 @@ FILENAME...   EthercatMC.h
 #define EthercatMCCfgPOSLAG_RBString         "CfgPOSLAG-RB"
 #define EthercatMCCfgPOSLAG_Tim_RBString     "CfgPOSLAG-Tim-RB"
 #define EthercatMCCfgPOSLAG_En_RBString      "CfgPOSLAG-En-RB"
+#define EthercatMCCfgDESC_RBString           "CfgDESC-RB"
+#define EthercatMCCfgEGU_RBString            "CfgEGU-RB"
 
 
 #define EthercatMCMCUErrMsgString            "MCUErrMsg"
@@ -73,6 +89,7 @@ extern "C" {
                                           const char *outdata, size_t outlen,
                                           char *indata, size_t inlen);
   asynStatus checkACK(const char *outdata, size_t outlen, const char *indata);
+  const char *plcUnitTxtFromUnitCode(unsigned unitCode);
 }
 
 typedef struct {
@@ -204,8 +221,8 @@ private:
     unsigned int adsPort;
   } drvlocal;
 
-  void       handleDisconnect(asynStatus status);
   asynStatus handleConnect(void);
+  asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadControllerPrint(void);
   asynStatus readConfigLine(const char *line, const char **errorTxt_p);
   asynStatus readConfigFile(void);
@@ -217,6 +234,7 @@ private:
   asynStatus readBackVelocities(int axisID);
   asynStatus initialPoll(void);
   asynStatus initialPollInternal(void);
+  asynStatus writeReadACK(int traceMask);
   asynStatus writeReadACK(void);
   asynStatus setValueOnAxis(const char* var, int value);
   asynStatus setValueOnAxisVerify(const char *var, const char *rbvar,
@@ -284,8 +302,31 @@ private:
   friend class EthercatMCController;
 };
 
+class EthercatMCIndexerAxis;
+
 class epicsShareClass EthercatMCController : public asynMotorController {
 public:
+#define PARAM_IDX_OPMODE_AUTO_UINT32            1
+#define PARAM_IDX_MICROSTEPS_UINT32             2
+#define PARAM_IDX_ABS_MIN_FLOAT32              30
+#define PARAM_IDX_ABS_MAX_FLOAT32              31
+#define PARAM_IDX_USR_MIN_FLOAT32              32
+#define PARAM_IDX_USR_MAX_FLOAT32              33
+#define PARAM_IDX_WRN_MIN_FLOAT32              34
+#define PARAM_IDX_WRN_MAX_FLOAT32              35
+#define PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32    55
+#define PARAM_IDX_HYTERESIS_FLOAT32            56
+#define PARAM_IDX_REFSPEED_FLOAT32             58
+#define PARAM_IDX_VBAS_FLOAT32                 59
+#define PARAM_IDX_SPEED_FLOAT32                60
+#define PARAM_IDX_ACCEL_FLOAT32                61
+#define PARAM_IDX_IDLE_CURRENT_FLOAT32         62
+#define PARAM_IDX_MOVE_CURRENT_FLOAT32         64
+#define PARAM_IDX_MICROSTEPS_FLOAT32           67
+#define PARAM_IDX_STEPS_PER_UNIT_FLOAT32       68
+#define PARAM_IDX_HOME_POSITION_FLOAT32        69
+#define PARAM_IDX_FUN_REFERENCE               133
+
   EthercatMCController(const char *portName, const char *EthercatMCPortName, int numAxes, double movingPollPeriod, double idlePollPeriod);
 
   void report(FILE *fp, int level);
@@ -296,14 +337,61 @@ public:
   EthercatMCAxis* getAxis(int axisNo);
   protected:
   void handleStatusChange(asynStatus status);
+  /* Indexer */
+  asynStatus readDeviceIndexer(unsigned indexOffset,
+                               unsigned devNum, unsigned infoType);
+  asynStatus IndexerReadAxisParameters(unsigned indexerOffset,
+                                       unsigned iOffset,
+                                       unsigned devNum,
+                                       EthercatMCIndexerAxis *pAxis);
+  asynStatus poll(void);
+  asynStatus initialPollIndexer(void);
+  asynStatus writeReadControllerPrint(int traceMask);
+  asynStatus getPlcMemoryBytes(unsigned indexOffset,
+                               unsigned char  *value, size_t len);
+  asynStatus getPlcMemoryUint(unsigned indexOffset,
+                              unsigned *value, size_t lenInPlc);
+  asynStatus getPlcMemorySint(unsigned indexOffset,
+                              int *value, size_t lenInPlc);
+  asynStatus getPlcMemoryString(unsigned indexOffset,
+                                char *value, size_t len);
+  asynStatus setPlcMemoryInteger(unsigned indexOffset,
+                                 int value, size_t lenInPlc);
+  asynStatus getPlcMemoryDouble(unsigned indexOffset,
+                                double *value, size_t lenInPlc);
+  asynStatus setPlcMemoryDouble(unsigned indexOffset,
+                                double value, size_t lenInPlc);
+
+  asynStatus indexerParamWaitNotBusy(unsigned indexOffset);
+  asynStatus indexerPrepareParamRead(unsigned indexOffset, unsigned paramIndex);
+  asynStatus indexerParamWrite(unsigned paramIfOffset, unsigned paramIndex,
+                               double value);
+
   struct {
     unsigned int local_no_ASYN_;
     unsigned int hasConfigError;
     unsigned int isConnected;
+    unsigned int initialPollDone;
   } ctrlLocal;
+
+  unsigned adsport;
 
   /* First parameter */
   int EthercatMCErr_;
+  int EthercatMCStatusCode_;
+  int EthercatMCStatusBits_;
+  int EthercatMCaux0_;
+  int EthercatMCaux1_;
+  int EthercatMCaux2_;
+  int EthercatMCaux3_;
+  int EthercatMCaux4_;
+  int EthercatMCaux5_;
+  int EthercatMCaux6_;
+  int EthercatMCaux7_;
+  int EthercatMCreason8_;
+  int EthercatMCreason9_;
+  int EthercatMCreason10_;
+  int EthercatMCreason11_;
   int EthercatMCHomProc_RB_;
   int EthercatMCHomPos_RB_;
   int EthercatMCHomProc_;
@@ -345,8 +433,10 @@ public:
   int EthercatMCCfgDLLM_;
   int EthercatMCCfgDHLM_En_;
   int EthercatMCCfgDLLM_En_;
-  int EthercatMCErrId_;
+  int EthercatMCCfgDESC_RB_;
+  int EthercatMCCfgEGU_RB_;
   int EthercatMCStup_;
+  int EthercatMCErrId_;
   /* Last parameter */
 
   #define FIRST_VIRTUAL_PARAM EthercatMCErr_
@@ -354,4 +444,5 @@ public:
   #define NUM_VIRTUAL_MOTOR_PARAMS ((int) (&LAST_VIRTUAL_PARAM - &FIRST_VIRTUAL_PARAM + 1))
 
   friend class EthercatMCAxis;
+  friend class EthercatMCIndexerAxis;
 };
