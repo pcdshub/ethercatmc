@@ -3553,7 +3553,7 @@ $(pv_value)</tooltip>
     <scripts />
     <show_boolean_label>true</show_boolean_label>
     <square_led>false</square_led>
-    <tooltip>AUX 11</tooltip>
+    <tooltip>Reason 11</tooltip>
     <visible>true</visible>
     <widget_type>LED</widget_type>
     <width>20</width>
@@ -3596,7 +3596,7 @@ $(pv_value)</tooltip>
     <name>Text Input Template_52</name>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(M)-AuxBit11</pv_name>
+    <pv_name>$(P)$(M)-ReasonBit11</pv_name>
     <pv_value />
     <rotation_angle>0.0</rotation_angle>
     <rules>
@@ -3683,7 +3683,7 @@ $(pv_value)</tooltip>
     <scripts />
     <show_boolean_label>true</show_boolean_label>
     <square_led>false</square_led>
-    <tooltip>AUX 10</tooltip>
+    <tooltip>Reason 10</tooltip>
     <visible>true</visible>
     <widget_type>LED</widget_type>
     <width>20</width>
@@ -3726,7 +3726,7 @@ $(pv_value)</tooltip>
     <name>Text Input Template_52</name>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(M)-AuxBit10</pv_name>
+    <pv_name>$(P)$(M)-ReasonBit10</pv_name>
     <pv_value />
     <rotation_angle>0.0</rotation_angle>
     <rules>
@@ -3813,7 +3813,7 @@ $(pv_value)</tooltip>
     <scripts />
     <show_boolean_label>true</show_boolean_label>
     <square_led>false</square_led>
-    <tooltip>AUX 9</tooltip>
+    <tooltip>REASON 9</tooltip>
     <visible>true</visible>
     <widget_type>LED</widget_type>
     <width>20</width>
@@ -3856,7 +3856,7 @@ $(pv_value)</tooltip>
     <name>Text Input Template_52</name>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(M)-AuxBit9</pv_name>
+    <pv_name>$(P)$(M)-ReasonBit9</pv_name>
     <pv_value />
     <rotation_angle>0.0</rotation_angle>
     <rules>
@@ -3943,7 +3943,7 @@ $(pv_value)</tooltip>
     <scripts />
     <show_boolean_label>true</show_boolean_label>
     <square_led>false</square_led>
-    <tooltip>AUX 8</tooltip>
+    <tooltip>reason 8</tooltip>
     <visible>true</visible>
     <widget_type>LED</widget_type>
     <width>20</width>
@@ -3986,7 +3986,7 @@ $(pv_value)</tooltip>
     <name>Text Input Template_52</name>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(M)-AuxBit8</pv_name>
+    <pv_name>$(P)$(M)-ReasonBit8</pv_name>
     <pv_value />
     <rotation_angle>0.0</rotation_angle>
     <rules>

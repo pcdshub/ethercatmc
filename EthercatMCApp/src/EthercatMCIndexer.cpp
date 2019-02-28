@@ -911,10 +911,10 @@ asynStatus EthercatMCController::initialPollIndexer(void)
         if (!pAxis) {
           pAxis = new EthercatMCIndexerAxis(this, axisNo);
         }
-        pAxis->setStringParam(EthercatMCaux11_, "High limit");
-        pAxis->setStringParam(EthercatMCaux10_, "Low limit");
-        pAxis->setStringParam(EthercatMCaux9_,  "Dynamic problem, timeout");
-        pAxis->setStringParam(EthercatMCaux8_,  "Static problem, inhibit");
+        pAxis->setStringParam(EthercatMCreason11_, "High limit");
+        pAxis->setStringParam(EthercatMCreason10_, "Low limit");
+        pAxis->setStringParam(EthercatMCreason9_,  "Dynamic problem, timeout");
+        pAxis->setStringParam(EthercatMCreason8_,  "Static problem, inhibit");
 #if 0
         pAxis->setStringParam(EthercatMCaux7_,  "Aux 7");
         pAxis->setStringParam(EthercatMCaux6_,  "Aux 6");

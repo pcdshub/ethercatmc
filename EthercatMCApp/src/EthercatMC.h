@@ -38,10 +38,10 @@ FILENAME...   EthercatMC.h
 #define EthercatMCaux5_String                "AuxBit5"
 #define EthercatMCaux6_String                "AuxBit6"
 #define EthercatMCaux7_String                "AuxBit7"
-#define EthercatMCaux8_String                "AuxBit8"
-#define EthercatMCaux9_String                "AuxBit9"
-#define EthercatMCaux10_String               "AuxBit10"
-#define EthercatMCaux11_String               "AuxBit11"
+#define EthercatMCreason8_String             "ReasonBit8"
+#define EthercatMCreason9_String             "ReasonBit9"
+#define EthercatMCreason10_String            "ReasonBit10"
+#define EthercatMCreason11_String            "ReasonBit11"
 #define EthercatMCHomProc_RBString           "HomProc-RB"
 #define EthercatMCHomPos_RBString            "HomPos-RB"
 #define EthercatMCHomProcString              "HomProc"
@@ -388,10 +388,10 @@ public:
   int EthercatMCaux5_;
   int EthercatMCaux6_;
   int EthercatMCaux7_;
-  int EthercatMCaux8_;
-  int EthercatMCaux9_;
-  int EthercatMCaux10_;
-  int EthercatMCaux11_;
+  int EthercatMCreason8_;
+  int EthercatMCreason9_;
+  int EthercatMCreason10_;
+  int EthercatMCreason11_;
   int EthercatMCHomProc_RB_;
   int EthercatMCHomPos_RB_;
   int EthercatMCHomProc_;
