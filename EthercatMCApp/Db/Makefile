@@ -19,6 +19,7 @@ DB += EthercatMC.template
 DB += EthercatMCdebug.template
 DB += EthercatMChome.template
 DB += EthercatMCindexer.template
+DB += EthercatMCreadback.template
 DB += EthercatMCslit_soft.template
 DB += EthercatMCslit_hard.template
 DB += EthercatMCslitAvoidCollSoftlimits.template
