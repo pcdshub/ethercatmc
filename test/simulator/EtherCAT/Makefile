@@ -138,6 +138,7 @@ $(BIN)/cmd_Sim.o: \
 
 $(BIN)/cmd_EAT.o: \
  Makefile \
+ ads_defines.h \
  cmd_EAT.c \
  hw_motor.h \
  indexer.h \

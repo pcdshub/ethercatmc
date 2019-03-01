@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "ads_defines.h"
 #include "sock-util.h"
 #include "logerr_info.h"
 #include "cmd_buf.h"
@@ -368,7 +369,7 @@ static int motorHandleADS_ADR_putFloat(unsigned adsport,
 /*
   ADSPORT=501/.ADR.16#5001,16#B,2,2=1;
 */
-static int motorHandleADS_ADR(const char *arg)
+static int cmdEAThandleADS_ADR(const char *arg)
 {
   const char *myarg_1 = NULL;
   unsigned adsport = 0;
@@ -384,14 +385,15 @@ static int motorHandleADS_ADR(const char *arg)
                  &len_in_PLC,
                  &type_in_PLC);
   LOGINFO6("%s/%s:%d "
-           "nvals=%d adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u\n",
+           "nvals=%d adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u arg=%s\n",
            __FILE__, __FUNCTION__, __LINE__,
            nvals,
            adsport,
            indexGroup,
            indexOffset,
            len_in_PLC,
-           type_in_PLC);
+           type_in_PLC,
+           arg);
 
   if (nvals != 5) return __LINE__;
   //if (adsport != 501) return __LINE__;
@@ -400,51 +402,86 @@ static int motorHandleADS_ADR(const char *arg)
   if (myarg_1) {
     myarg_1++; /* Jump over '=' */
     switch (type_in_PLC) {
-      case 5: {
+      case ADST_REAL32__4:
+      case ADST_REAL64__5: {
         double fValue;
-        if (len_in_PLC != 8) return __LINE__;
         nvals = sscanf(myarg_1, "%lf", &fValue);
         if (nvals != 1) return __LINE__;
-        return motorHandleADS_ADR_putFloat(adsport,
-                                        indexGroup,
-                                        indexOffset,
-                                        fValue);
+        if (indexGroup == 0x4020) {
+          return indexerHandleADS_ADR_putFloat(adsport,
+                                               indexOffset,
+                                               len_in_PLC,
+                                               fValue);
+        } else if (len_in_PLC != 8) {
+          return __LINE__;
+        } else if (adsport != 501) {
+          return __LINE__;
+        } else {
+          return motorHandleADS_ADR_putFloat(adsport,
+                                             indexGroup,
+                                             indexOffset,
+                                             fValue);
+        }
       }
-        break;
-      case 2: {
+      break;
+      case ADST_INT16__2: {
         int iValue;
-        if (len_in_PLC != 2) return __LINE__;
         nvals = sscanf(myarg_1, "%d", &iValue);
         if (nvals != 1) return __LINE__;
+        if (indexGroup == 0x4020) {
+          return indexerHandleADS_ADR_putUInt(adsport,
+                                              indexOffset,
+                                              len_in_PLC,
+                                              (unsigned)iValue);
+        }
+        if (len_in_PLC != 2) return __LINE__;
         return motorHandleADS_ADR_putInt(adsport,
-                                      indexGroup,
-                                      indexOffset,
-                                      iValue);
+                                         indexGroup,
+                                         indexOffset,
+                                         iValue);
       }
+        break;
+      case ADST_UINT16__18:
+      case ADST_UINT32__19:
+        //case ADST_UINT64:
+        {
+          unsigned uValue;
+          nvals = sscanf(myarg_1, "%u", &uValue);
+          if (nvals != 1) return __LINE__;
+          if (indexGroup == 0x4020) {
+            return indexerHandleADS_ADR_putUInt(adsport,
+                                                indexOffset,
+                                                len_in_PLC,
+                                                uValue);
+          }
+        }
         break;
       default:
         return __LINE__;
     }
   }
   myarg_1 = strchr(arg, '?');
+  LOGINFO6("%s/%s:%d "
+           "myarg_1=%s type_in_PLC=%u\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           myarg_1 ? myarg_1 : "NULL",
+           type_in_PLC);
+
   if (myarg_1) {
     int res;
     myarg_1++; /* Jump over '?' */
-    LOGINFO6("%s/%s:%d "
-             "adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u\n",
-             __FILE__, __FUNCTION__, __LINE__,
-             adsport,
-             indexGroup,
-             indexOffset,
-             len_in_PLC,
-             type_in_PLC);
     switch (type_in_PLC) {
-      case 4:
-      case 5:
+      case ADST_REAL32__4:
+      case ADST_REAL64__5:
         {
-          double fValue;
+          double fValue = 0.0;
           if (indexGroup == 0x4020) {
             res = indexerHandleADS_ADR_getFloat(adsport, indexOffset, len_in_PLC, &fValue);
+            LOGINFO6("%s/%s:%d "
+                     "res=%d fValue=%f\n",
+                     __FILE__, __FUNCTION__, __LINE__,
+                     res, fValue);
+
           } else if (len_in_PLC != 8) {
             return __LINE__;
           } else if (adsport != 501) {
@@ -461,7 +498,7 @@ static int motorHandleADS_ADR(const char *arg)
         }
         break;
 
-      case 2: {
+      case ADST_INT16__2: {
         int res;
         int iValue = -1;
         if (len_in_PLC != 2) return __LINE__;
@@ -474,19 +511,33 @@ static int motorHandleADS_ADR(const char *arg)
         return -1;
       }
         break;
-      case 18:
-      case 19:
-      case 21: {
-          unsigned uValue;
+      case ADST_UINT16__18:
+      case ADST_UINT32__19:
+        //case ADST_UINT64__21:
+        {
+          unsigned uValue = 0;
           if (indexGroup == 0x4020) {
             res = indexerHandleADS_ADR_getUInt(adsport, indexOffset, len_in_PLC, &uValue);
+            LOGINFO6("%s/%s:%d "
+                     "res=%d uValue=%u\n",
+                     __FILE__, __FUNCTION__, __LINE__,
+                     res, uValue);
             if (res) return res;
             cmd_buf_printf("%u", uValue);
+            return -1;
           }
         }
         break;
       default:
-        return __LINE__;
+        RETURN_ERROR_OR_DIE(__LINE__,
+                            "%s/%s:%d "
+                            "adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u\n",
+                            __FILE__, __FUNCTION__, __LINE__,
+                            adsport,
+                            indexGroup,
+                            indexOffset,
+                            len_in_PLC,
+                            type_in_PLC);
     }
   }
   return __LINE__;
@@ -531,7 +582,7 @@ static void motorHandleOneArg(const char *myarg_1)
     nvals = sscanf(myarg_1, "%u/.ADR%c", &adsport, &dot_tmp);
     if (nvals == 2 && dot_tmp == '.') {
       /* .ADR commands are handled here */
-      err_code = motorHandleADS_ADR(myarg_1);
+      err_code = cmdEAThandleADS_ADR(myarg_1);
       if (err_code == -1) return;
       if (err_code == 0) {
         cmd_buf_printf("OK");

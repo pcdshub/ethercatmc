@@ -4,6 +4,8 @@
 extern unsigned int debug_print_flags;
 extern unsigned int die_on_error_flags;
 
+extern FILE *stdlog;
+
 #define PRINT_STDOUT_BIT0() (debug_print_flags & 1)
 #define PRINT_STDOUT_BIT1() (debug_print_flags & (1<<1))
 #define PRINT_STDOUT_BIT2() (debug_print_flags & (1<<2))
@@ -77,6 +79,7 @@ do {                                             \
   do {                                          \
     cmd_buf_printf("Error: ");                  \
     cmd_buf_printf(fmt, ##__VA_ARGS__);         \
+    if (DIE_ON_ERROR_BIT0()) (void)fprintf(stdlog, "Error: ");   \
     if (DIE_ON_ERROR_BIT0()) (void)fprintf(stdlog, fmt, ##__VA_ARGS__);   \
     if (DIE_ON_ERROR_BIT0()) (void)fprintf(stdlog, "%s", "\n"); \
     if (DIE_ON_ERROR_BIT1())  exit(2);          \

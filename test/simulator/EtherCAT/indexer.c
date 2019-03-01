@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "logerr_info.h"
 #include "indexer.h"
 
 static union {
@@ -51,6 +52,21 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
   return 2;
 }
 
+int indexerHandleADS_ADR_putUInt(unsigned adsport,
+                                 unsigned indexOffset,
+                                 unsigned len_in_PLC,
+                                 unsigned uValue)
+{
+  init();
+  LOGINFO3("%s/%s:%d adsport=%u indexOffset=%u len_in_PLC=%u uValue=%u\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           adsport,
+           indexOffset,
+           len_in_PLC,
+           uValue);
+  return 1;
+}
+
 int indexerHandleADS_ADR_getFloat(unsigned adsport,
                                   unsigned indexOffset,
                                   unsigned len_in_PLC,
@@ -71,6 +87,13 @@ int indexerHandleADS_ADR_getFloat(unsigned adsport,
 }
 
 
-
+int indexerHandleADS_ADR_putFloat(unsigned adsport,
+                                  unsigned indexOffset,
+                                  unsigned len_in_PLC,
+                                  double fValue)
+{
+  init();
+  return 0;
+};
 
 
