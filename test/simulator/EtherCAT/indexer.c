@@ -29,6 +29,12 @@ typedef struct {
 } indexerInfoType0_type;
 
 typedef struct {
+  char name[33]; /* leave one byte for trailing '\0' */
+} indexerInfoType4_type;
+
+
+
+typedef struct {
   uint16_t  typeCode;
   uint16_t  size;
   uint16_t  offset;
@@ -66,6 +72,7 @@ static union {
     /* Area for the indexer. union of the different info types */
     union {
       indexerInfoType0_type infoType0;
+      indexerInfoType4_type infoType4;
       } indexer;
     } memoryStruct;
 } idxData;
@@ -117,6 +124,19 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
         idxData.memoryStruct.indexer.infoType0.absMax = indexerDeviceAbsStraction[devNo].absMax;
       }
       idxData.memoryWords[INDEXEROFFSET / 2] |= 0x8000; /* ACK */
+      return 0;
+    case 4:
+      /* Note: infoType4 is one declared one by shorter,
+         (see above) so that we have a trailing '\0' */
+      if (!devNum) {
+        ; /* The indexer himself. */
+      } else {
+        /* get values from device table */
+        unsigned devNo = devNum -1;
+        strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
+                indexerDeviceAbsStraction[devNo].name,
+                sizeof(idxData.memoryStruct.indexer.infoType4.name));
+      }
       return 0;
     default:
       return __LINE__;
