@@ -17,5 +17,8 @@ int indexerHandleADS_ADR_putFloat(unsigned adsport,
                                   unsigned indexOffset,
                                   unsigned len_in_PLC,
                                   double fValue);
-
+int indexerHandleADS_ADR_getString(unsigned adsport,
+                                   unsigned indexOffset,
+                                   unsigned len_in_PLC,
+                                   char **sValue);
 #endif

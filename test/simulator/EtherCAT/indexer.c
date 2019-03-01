@@ -256,3 +256,12 @@ int indexerHandleADS_ADR_putFloat(unsigned adsport,
 };
 
 
+int indexerHandleADS_ADR_getString(unsigned adsport,
+                                   unsigned indexOffset,
+                                   unsigned len_in_PLC,
+                                   char **sValue)
+{
+  init();
+  *sValue = (char *)&idxData.memoryBytes[indexOffset];
+  return 0;
+};
