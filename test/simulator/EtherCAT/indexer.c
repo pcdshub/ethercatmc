@@ -138,6 +138,10 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
                 sizeof(idxData.memoryStruct.indexer.infoType4.name));
       }
       return 0;
+    case 5: /* version */
+    case 6: /* author 1 */
+    case 7: /* author 2 */
+      return 0;
     default:
       return __LINE__;
     }
