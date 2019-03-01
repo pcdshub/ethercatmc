@@ -6,6 +6,36 @@
 #include "logerr_info.h"
 #include "indexer.h"
 
+
+#define INDEXEROFFSET    62
+#define DEVICE0_OFFSET  100
+
+typedef struct {
+  uint16_t  typeCode;
+  uint16_t  size;
+  uint16_t  offset;
+  uint8_t   flags;
+  uint32_t  allFlags;
+  uint16_t  parameters[16]; /* counting 0..15 */
+  char      name[34];
+  char      aux[8][34];
+  float     absMin;
+  float     absMax;
+} indexerDeviceAbsStraction_type;
+
+indexerDeviceAbsStraction_type indexerDeviceAbsStraction[1] =
+  {
+    { 0x5008, 0x08,  DEVICE0_OFFSET, 0,
+      0,
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      "motor1",
+      { "", "", "", "", "", "", "", "" },
+      5.0, 175.0 }
+  };
+
+
+
+
 static union {
   uint8_t memoryBytes[1024];
   struct {
@@ -21,12 +51,25 @@ static void init(void)
   if (initDone) return;
   memset (&idxData, 0, sizeof(idxData));
   idxData.memoryStruct.magic = 2015.02;
-  idxData.memoryStruct.offset = 62;
+  idxData.memoryStruct.offset = INDEXEROFFSET;
 
   initDone = 1;
 }
 
+static int indexerHandleIndexerCmd(unsigned indexOffset,
+                                   unsigned len_in_PLC,
+                                   unsigned uValue)
+{
+  unsigned devNum = uValue & 0xFF;
+  unsigned infoType = (uValue >> 8) & 0xFF;
+  LOGINFO3("%s/%s:%d indexOffset=%u len_in_PLC=%u uValue=%u devNum=%u infoType=%u\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           indexOffset, len_in_PLC,
+           uValue, devNum, infoType);
+  return __LINE__;
+}
 
+/*************************************************************************/
 int indexerHandleADS_ADR_getUInt(unsigned adsport,
                                 unsigned indexOffset,
                                 unsigned len_in_PLC,
@@ -35,7 +78,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
   unsigned ret;
   init();
   if (indexOffset + len_in_PLC >= sizeof(idxData))
-    return 1;
+    return __LINE__;
   if (len_in_PLC == 2) {
     ret = idxData.memoryBytes[indexOffset] +
       (idxData.memoryBytes[indexOffset + 1] << 8);
@@ -49,7 +92,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
     *uValue = ret;
     return 0;
   }
-  return 2;
+  return __LINE__;
 }
 
 int indexerHandleADS_ADR_putUInt(unsigned adsport,
@@ -64,7 +107,13 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
            indexOffset,
            len_in_PLC,
            uValue);
-  return 1;
+  switch(indexOffset) {
+    case INDEXEROFFSET:
+      return indexerHandleIndexerCmd(indexOffset, len_in_PLC, uValue);
+    default:
+      break;
+    }
+  return __LINE__;
 }
 
 int indexerHandleADS_ADR_getFloat(unsigned adsport,
@@ -83,7 +132,7 @@ int indexerHandleADS_ADR_getFloat(unsigned adsport,
     *fValue = (double)fRet;
     return 0;
   }
-  return 2;
+  return __LINE__;
 }
 
 
