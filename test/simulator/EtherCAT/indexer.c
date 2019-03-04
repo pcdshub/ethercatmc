@@ -198,7 +198,10 @@ static void init_axis(int axis_no)
     //cmd_Motor_cmd[axis_no].inTargetPositionMonitorEnabled = 1;
     setMRES_23(axis_no, UREV);
     setMRES_24(axis_no, SREV);
+    cmd_Motor_cmd[axis_no].fVelocity = 1;
+    cmd_Motor_cmd[axis_no].fAcceleration = 1;
 
+    setAmplifierPercent(axis_no, 1);
     init_done[axis_no] = 1;
   }
 }
@@ -267,15 +270,15 @@ indexerMotorStatusRead(unsigned motor_axis_no,
 
 
 
-static int indexerHandleIndexerCmd(unsigned indexOffset,
+static int indexerHandleIndexerCmd(unsigned offset,
                                    unsigned len_in_PLC,
                                    unsigned uValue)
 {
   unsigned devNum = uValue & 0xFF;
   unsigned infoType = (uValue >> 8) & 0x7F;
-  LOGINFO3("%s/%s:%d indexOffset=%u len_in_PLC=%u uValue=%u devNum=%u infoType=%u\n",
+  LOGINFO3("%s/%s:%d offset=%u len_in_PLC=%u uValue=%u devNum=%u infoType=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
-           indexOffset, len_in_PLC,
+           offset, len_in_PLC,
            uValue, devNum, infoType);
   memset(&idxData.memoryStruct.indexer, 0, sizeof(idxData.memoryStruct.indexer));
   idxData.memoryStruct.indexer_ack = uValue;
@@ -375,38 +378,38 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
 
 /*************************************************************************/
 int indexerHandleADS_ADR_getUInt(unsigned adsport,
-                                 unsigned indexOffset,
+                                 unsigned offset,
                                  unsigned len_in_PLC,
                                  unsigned *uValue)
 {
   unsigned ret;
   init();
-  if (indexOffset + len_in_PLC >= sizeof(idxData))
+  if (offset + len_in_PLC >= sizeof(idxData))
     return __LINE__;
   if (len_in_PLC == 2) {
-    if (indexOffset == offsetMotor1StatusReasonAux) {
+    if (offset == offsetMotor1StatusReasonAux) {
       unsigned motor = 1;
       ret = indexerMotorStatusRead(motor, &idxData.memoryStruct.motor1);
       *uValue = ret;
       return 0;
     }
-    ret = idxData.memoryBytes[indexOffset] +
-      (idxData.memoryBytes[indexOffset + 1] << 8);
+    ret = idxData.memoryBytes[offset] +
+      (idxData.memoryBytes[offset + 1] << 8);
     *uValue = ret;
-    LOGINFO3("%s/%s:%d adsport=%u indexOffset=%u len_in_PLC=%u mot1=%u ret=%u (0x%x)\n",
+    LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u mot1=%u ret=%u (0x%x)\n",
              __FILE__, __FUNCTION__, __LINE__,
              adsport,
-             indexOffset,
+             offset,
              len_in_PLC,
              offsetMotor1StatusReasonAux,
              ret, ret);
 
     return 0;
   } else if (len_in_PLC == 4) {
-    ret = idxData.memoryBytes[indexOffset] +
-      (idxData.memoryBytes[indexOffset + 1] << 8) +
-      (idxData.memoryBytes[indexOffset + 2] << 16) +
-      (idxData.memoryBytes[indexOffset + 3] << 24);
+    ret = idxData.memoryBytes[offset] +
+      (idxData.memoryBytes[offset + 1] << 8) +
+      (idxData.memoryBytes[offset + 2] << 16) +
+      (idxData.memoryBytes[offset + 3] << 24);
     *uValue = ret;
     return 0;
   }
@@ -414,20 +417,20 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
 }
 
 int indexerHandleADS_ADR_putUInt(unsigned adsport,
-                                 unsigned indexOffset,
+                                 unsigned offset,
                                  unsigned len_in_PLC,
                                  unsigned uValue)
 {
   init();
-  LOGINFO3("%s/%s:%d adsport=%u indexOffset=%u len_in_PLC=%u uValue=%u\n",
+  LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
            adsport,
-           indexOffset,
+           offset,
            len_in_PLC,
            uValue);
-  if (indexOffset == offsetIndexer) {
-    return indexerHandleIndexerCmd(indexOffset, len_in_PLC, uValue);
-  } else if (indexOffset == offsetMotor1StatusReasonAux) {
+  if (offset == offsetIndexer) {
+    return indexerHandleIndexerCmd(offset, len_in_PLC, uValue);
+  } else if (offset == offsetMotor1StatusReasonAux) {
     indexerDevice5008interface_type *pIndexerDevice5008interface;
     pIndexerDevice5008interface = &idxData.memoryStruct.motor1;
     pIndexerDevice5008interface->statusReasonAux = uValue;
@@ -438,17 +441,17 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
 }
 
 int indexerHandleADS_ADR_getFloat(unsigned adsport,
-                                  unsigned indexOffset,
+                                  unsigned offset,
                                   unsigned len_in_PLC,
                                   double *fValue)
 {
   float fRet;
   init();
-  if (indexOffset + len_in_PLC >= sizeof(idxData))
+  if (offset + len_in_PLC >= sizeof(idxData))
     return 1;
   if (len_in_PLC == 4) {
     memcpy(&fRet,
-           &idxData.memoryBytes[indexOffset],
+           &idxData.memoryBytes[offset],
            sizeof(fRet));
     *fValue = (double)fRet;
     return 0;
@@ -458,7 +461,7 @@ int indexerHandleADS_ADR_getFloat(unsigned adsport,
 
 
 int indexerHandleADS_ADR_putFloat(unsigned adsport,
-                                  unsigned indexOffset,
+                                  unsigned offset,
                                   unsigned len_in_PLC,
                                   double fValue)
 {
@@ -468,11 +471,11 @@ int indexerHandleADS_ADR_putFloat(unsigned adsport,
 
 
 int indexerHandleADS_ADR_getString(unsigned adsport,
-                                   unsigned indexOffset,
+                                   unsigned offset,
                                    unsigned len_in_PLC,
                                    char **sValue)
 {
   init();
-  *sValue = (char *)&idxData.memoryBytes[indexOffset];
+  *sValue = (char *)&idxData.memoryBytes[offset];
   return 0;
 };
