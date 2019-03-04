@@ -343,6 +343,9 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     double actPosition = 0.0;
     unsigned statusReasonAux;
     bool nowMoving = false;
+    int powerIsOn = 1; /* Unless powerOff */
+    int statusValid = 0;
+    idxStatusCodeType idxStatusCode;
     snprintf(pC_->outString_, sizeof(pC_->outString_),
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;ADSPORT=%u/.ADR.16#%X,16#%X,2,18?",
              pC_->adsport,
@@ -365,55 +368,52 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
 
     setDoubleParam(pC_->motorPosition_, actPosition);
     drvlocal.hasError = 0;
+    idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
+    setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     if (statusReasonAux != drvlocal.old_tatusReasonAux) {
-      int powerIsOn = 1; /* Unless powerOff */
-      int statusValid = 0;
-      idxStatusCodeType idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
-      setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
       asynPrint(pC_->pasynUserController_, traceMask,
                 "%spoll(%d) pos=%f statusReasonAux=0x%x %d (%s)\n",
                 modNamEMC, axisNo_,
                 actPosition,
                 statusReasonAux, idxStatusCode,
                 idxStatusCodeTypeToStr(idxStatusCode));
-      switch (idxStatusCode) {
-        /* After RESET, START, STOP the bits are not valid */
-      case idxStatusCodeIDLE:
-      case idxStatusCodeWARN:
-        statusValid = 1;
-        break;
-      case idxStatusCodePOWEROFF:
-        statusValid = 1;
-        powerIsOn = 0;
-        break;
-      case idxStatusCodeBUSY:
-        statusValid = 1;
-        nowMoving = true;
-        break;
-      case idxStatusCodeERROR:
-        statusValid = 1;
-        drvlocal.hasError = 1;
-        break;
-      default:
-        drvlocal.hasError = 1;
-      }
-      if (statusValid) {
-        int hls = statusReasonAux & 0x0800 ? 1 : 0;
-        int lls = statusReasonAux & 0x0400 ? 1 : 0;
-        setIntegerParam(pC_->motorStatusLowLimit_, lls);
-        setIntegerParam(pC_->motorStatusHighLimit_, hls);
-        setIntegerParam(pC_->motorStatusMoving_, nowMoving);
-        setIntegerParam(pC_->motorStatusDone_, !nowMoving);
-        setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux & 0xFFF);
-      }
-      *moving = nowMoving;
-      setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
-      setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
-      setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
-
-      setIntegerParam(pC_->motorStatusCommsError_, 0);
-      drvlocal.old_tatusReasonAux = statusReasonAux;
     }
+    switch (idxStatusCode) {
+      /* After RESET, START, STOP the bits are not valid */
+    case idxStatusCodeIDLE:
+    case idxStatusCodeWARN:
+      statusValid = 1;
+      break;
+    case idxStatusCodePOWEROFF:
+      statusValid = 1;
+      powerIsOn = 0;
+      break;
+    case idxStatusCodeBUSY:
+      statusValid = 1;
+      nowMoving = true;
+      break;
+    case idxStatusCodeERROR:
+      statusValid = 1;
+      drvlocal.hasError = 1;
+      break;
+    default:
+      drvlocal.hasError = 1;
+    }
+    if (statusValid) {
+      int hls = statusReasonAux & 0x0800 ? 1 : 0;
+      int lls = statusReasonAux & 0x0400 ? 1 : 0;
+      setIntegerParam(pC_->motorStatusLowLimit_, lls);
+      setIntegerParam(pC_->motorStatusHighLimit_, hls);
+      setIntegerParam(pC_->motorStatusMoving_, nowMoving);
+      setIntegerParam(pC_->motorStatusDone_, !nowMoving);
+      setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux & 0xFFF);
+    }
+    *moving = nowMoving;
+    setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
+    setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
+    setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
+    setIntegerParam(pC_->motorStatusCommsError_, 0);
+    drvlocal.old_tatusReasonAux = statusReasonAux;
     callParamCallbacks();
   }
 
