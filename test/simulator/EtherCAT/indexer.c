@@ -47,9 +47,7 @@ typedef struct {
 typedef struct {
   uint16_t  typeCode;
   uint16_t  size;
-  uint16_t  offset;
   uint16_t  unitCode;
-  uint32_t  allFlags;
   uint16_t  parameters[16]; /* counting 0..15 */
   char      devName[34];
   char      auxName[8][34];
@@ -61,16 +59,14 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
 {
   /* device 0, the indexer itself */
   { TYPECODE_INDEXER, SIZE_INDEXER,
-    0, /*offsetIndexer */ UNITCODE_NONE,
-    0,
+    UNITCODE_NONE,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "indexer",
     { "", "", "", "", "", "", "", "" },
     0.0, 0.0
   },
   { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
-    0, /*offsetDevice_1 */ UNITCODE_MM,
-    0,
+    UNITCODE_MM,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "motor1",
     { "", "", "", "", "", "homing", "@home", "homed" },
@@ -224,6 +220,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
   if (indexOffset + len_in_PLC >= sizeof(idxData))
     return __LINE__;
   if (len_in_PLC == 2) {
+
     ret = idxData.memoryBytes[indexOffset] +
       (idxData.memoryBytes[indexOffset + 1] << 8);
     *uValue = ret;
