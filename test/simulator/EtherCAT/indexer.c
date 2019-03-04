@@ -10,11 +10,21 @@
 #include "logerr_info.h"
 #include "indexer.h"
 
+/* type codes and sizes */
+#define TYPECODE_INDEXER               0
+#define SIZE_INDEXER                  38
+#define TYPECODE_PARAMDEVICE_5008 0x5008
+#define SIZE_PARAMDEVICE_5008        0x8
+
+
+/* Well known unit codes */
+#define UNITCODE_NONE                    0
+#define UNITCODE_MM                  0xc04
 
 /* In the memory bytes, the indexer starts at 64 */
-static unsigned INDEXEROFFSET;
+static unsigned offsetIndexer;
 /*  Device 1 is at here, leaving some space */
-#define DEVICE1_OFFSET  100
+#define offsetDevice_1                 100
 
 /* Info types of the indexer */
 typedef struct {
@@ -38,8 +48,7 @@ typedef struct {
   uint16_t  typeCode;
   uint16_t  size;
   uint16_t  offset;
-  uint16_t  unit;
-  uint8_t   flags;
+  uint16_t  unitCode;
   uint32_t  allFlags;
   uint16_t  parameters[16]; /* counting 0..15 */
   char      name[34];
@@ -51,14 +60,16 @@ typedef struct {
 indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
 {
   /* device 0, the indexer itself */
-  { 0, 38,  0 /* INDEXEROFFSET */, 0, 0,
+  { TYPECODE_INDEXER, SIZE_INDEXER,
+    0, /*offsetIndexer */ UNITCODE_NONE,
     0,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "indexer",
     { "", "", "", "", "", "", "", "" },
-    0.1, 0.2
+    0.0, 0.0
   },
-  { 0x5008, 0x8,  DEVICE1_OFFSET, 0xc04, 0,
+  { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
+    0, /*offsetDevice_1 */ UNITCODE_MM,
     0,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "motor1",
@@ -92,14 +103,14 @@ static void init(void)
   if (initDone) return;
   memset (&idxData, 0, sizeof(idxData));
   idxData.memoryStruct.magic = 2015.02;
-  idxData.memoryStruct.offset = INDEXEROFFSET;
-  INDEXEROFFSET =
+  idxData.memoryStruct.offset = offsetIndexer;
+  offsetIndexer =
     (unsigned)((void*)&idxData.memoryStruct.indexer_ack - (void*)&idxData);
-  idxData.memoryStruct.offset = INDEXEROFFSET;
+  idxData.memoryStruct.offset = offsetIndexer;
 
-  LOGINFO3("%s/%s:%d INDEXEROFFSET=%u\n",
+  LOGINFO3("%s/%s:%d offsetIndexer=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
-           INDEXEROFFSET);
+           offsetIndexer);
 
   initDone = 1;
 }
@@ -127,7 +138,7 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
       idxData.memoryStruct.indexer.infoType0.typeCode = indexerDeviceAbsStraction[devNum].typeCode;
       idxData.memoryStruct.indexer.infoType0.size = indexerDeviceAbsStraction[devNum].size;
       idxData.memoryStruct.indexer.infoType0.offset = 100 + 16 * devNum; /* TODO */
-      idxData.memoryStruct.indexer.infoType0.unit = indexerDeviceAbsStraction[devNum].unit;
+      idxData.memoryStruct.indexer.infoType0.unit = indexerDeviceAbsStraction[devNum].unitCode;
       /* TODO: calc the flags from lenght of AUX strings */
       //idxData.memoryStruct.indexer.infoType0.flagsLow = indexerDeviceAbsStraction[devNum].flagsLow;
       //idxData.memoryStruct.indexer.infoType0.flagsHigh = indexerDeviceAbsStraction[devNum].flagsHigh;
@@ -135,7 +146,7 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
       idxData.memoryStruct.indexer.infoType0.absMax = indexerDeviceAbsStraction[devNum].absMax;
       if (!devNum) {
         /* The indexer himself. */
-        idxData.memoryStruct.indexer.infoType0.offset = INDEXEROFFSET;
+        idxData.memoryStruct.indexer.infoType0.offset = offsetIndexer;
         idxData.memoryStruct.indexer.infoType0.flagsHigh = 0x8000; /* extended indexer */
       }
       LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%u size=%u offset=%u ack=0x%x\n",
@@ -220,7 +231,7 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
            indexOffset,
            len_in_PLC,
            uValue);
-  if (indexOffset == INDEXEROFFSET) {
+  if (indexOffset == offsetIndexer) {
     return indexerHandleIndexerCmd(indexOffset, len_in_PLC, uValue);
   }
   return __LINE__;
