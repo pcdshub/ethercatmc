@@ -949,21 +949,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
             }
           }
         }
-        {
-          int validSoftlimits = 0; // fAbsMax > fAbsMin;
-
-          if (fAbsMin <= -3.402824e+38 && fAbsMax >= 3.402822e+38)
-            validSoftlimits = 0;
-
-          pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
-          setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
-          setStringParam(axisNo,  EthercatMCCfgEGU_RB_, plcUnitTxtFromUnitCode(iUnit));
-          /* Soft limits */
-          setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, validSoftlimits);
-          setDoubleParam(axisNo,  EthercatMCCfgDHLM_,    fAbsMax);
-          setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, validSoftlimits);
-          setDoubleParam(axisNo,  EthercatMCCfgDLLM_,    fAbsMin);
-        }
       }
       break;
     default:
@@ -974,13 +959,34 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     case 0x5008:
     case 0x500C:
       {
+        int validSoftlimits = fAbsMax > fAbsMin;
         EthercatMCIndexerAxis *pAxis;
+        if (fAbsMin <= -3.402824e+38 && fAbsMax >= 3.402822e+38)
+          validSoftlimits = 0;
+
         pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+        /* Soft limits */
+        /*  absolute values become read only limits */
+        pAxis->setIntegerParam(EthercatMCCfgDHLM_En_, validSoftlimits);
+        pAxis->setDoubleParam( EthercatMCCfgDHLM_,    fAbsMax);
+        pAxis->setIntegerParam(EthercatMCCfgDLLM_En_, validSoftlimits);
+        pAxis->setDoubleParam( EthercatMCCfgDLLM_,    fAbsMin);
+#ifdef motorHighLimitROString
+        if (validSoftlimits) {
+          pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);
+          pAxis->setDoubleParam(motorLowLimitRO_,  fAbsMin);
+        }
+#endif
+        /* More parameters */
         IndexerReadAxisParameters(indexerOffset,
                                   iOffset,
                                   devNum,
                                   pAxis);
+        pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
+        setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
+        setStringParam(axisNo,  EthercatMCCfgEGU_RB_, plcUnitTxtFromUnitCode(iUnit));
       }
+
       break;
     }
       // IndexerReadParameters(indexerOffset, iOffset, devNum, iTypCode, axisNo);
