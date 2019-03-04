@@ -51,8 +51,8 @@ typedef struct {
   uint16_t  unitCode;
   uint32_t  allFlags;
   uint16_t  parameters[16]; /* counting 0..15 */
-  char      name[34];
-  char      aux[8][34];
+  char      devName[34];
+  char      auxName[8][34];
   float     absMin;
   float     absMax;
 } indexerDeviceAbsStraction_type;
@@ -73,7 +73,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
     0,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "motor1",
-    { "", "", "", "", "", "", "", "" },
+    { "", "", "", "", "", "homing", "@home", "homed" },
     5.0, 175.0
   }
 };
@@ -148,14 +148,32 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
         /* The indexer himself. */
         idxData.memoryStruct.indexer.infoType0.offset = offsetIndexer;
         idxData.memoryStruct.indexer.infoType0.flagsHigh = 0x8000; /* extended indexer */
+      } else {
+        unsigned auxIdx;
+        unsigned flagsLow = 0;
+        unsigned maxAuxIdx;
+        maxAuxIdx = sizeof(indexerDeviceAbsStraction[devNum].auxName) /
+          sizeof(indexerDeviceAbsStraction[devNum].auxName[0]);
+
+        for (auxIdx = maxAuxIdx; auxIdx; auxIdx--) {
+          if (strlen(indexerDeviceAbsStraction[devNum].auxName[auxIdx])) {
+            flagsLow |= 1;
+          }
+          flagsLow = flagsLow << 1;
+          LOGINFO3("%s/%s:%d auxIdx=%u flagsLow=0x%x\n",
+                   __FILE__, __FUNCTION__, __LINE__,
+                   auxIdx, flagsLow);
+        }
+        idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
       }
-      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%u size=%u offset=%u ack=0x%x\n",
+      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%u size=%u offset=%u flagsLow=0x%xack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
                &idxData, &idxData.memoryStruct.indexer,
                (unsigned)((void*)&idxData.memoryStruct.indexer - (void*)&idxData),
                idxData.memoryStruct.indexer.infoType0.typeCode,
                idxData.memoryStruct.indexer.infoType0.size,
                idxData.memoryStruct.indexer.infoType0.offset,
+               idxData.memoryStruct.indexer.infoType0.flagsLow,
                idxData.memoryStruct.indexer_ack);
 
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
@@ -163,11 +181,11 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
     case 4:
       /* get values from device table */
       strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
-              indexerDeviceAbsStraction[devNum].name,
+              indexerDeviceAbsStraction[devNum].devName,
               sizeof(idxData.memoryStruct.indexer.infoType4.name));
       LOGINFO3("%s/%s:%d devName=%s idxName=%s\n",
                __FILE__, __FUNCTION__, __LINE__,
-               indexerDeviceAbsStraction[devNum].name,
+               indexerDeviceAbsStraction[devNum].devName,
                &idxData.memoryStruct.indexer.infoType4.name[0]);
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
@@ -181,6 +199,15 @@ static int indexerHandleIndexerCmd(unsigned indexOffset,
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
     default:
+      if (infoType >= 16 && infoType <= 23) {
+        /* Support for aux bits 7..0
+           Bits 23..16 are not (yet) supported */
+        strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
+                indexerDeviceAbsStraction[devNum].auxName[infoType-16],
+                sizeof(idxData.memoryStruct.indexer.infoType4.name));
+        idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+        return 0;
+      }
       return __LINE__;
     }
   return __LINE__;
