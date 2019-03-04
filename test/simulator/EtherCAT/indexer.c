@@ -133,6 +133,7 @@ static union {
 
 static int initDone = 0;
 static unsigned offsetMotor1StatusReasonAux;
+static unsigned offsetMotor1ActualValue;
 
 /* values commanded to the motor */
 static cmd_Motor_cmd_type cmd_Motor_cmd[MAX_AXES];
@@ -154,6 +155,9 @@ static void init(void)
 
   offsetMotor1StatusReasonAux =
     (unsigned)((void*)&idxData.memoryStruct.motor1.statusReasonAux - (void*)&idxData);
+
+  offsetMotor1ActualValue =
+    (unsigned)((void*)&idxData.memoryStruct.motor1.actualValue - (void*)&idxData);
   initDone = 1;
 }
 
@@ -386,6 +390,8 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
   init();
   if (offset + len_in_PLC >= sizeof(idxData))
     return __LINE__;
+  if (offset & 0x1) /* Must be even */
+    return __LINE__;
   if (len_in_PLC == 2) {
     if (offset == offsetMotor1StatusReasonAux) {
       unsigned motor = 1;
@@ -393,8 +399,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
       *uValue = ret;
       return 0;
     }
-    ret = idxData.memoryBytes[offset] +
-      (idxData.memoryBytes[offset + 1] << 8);
+    ret = idxData.memoryWords[offset / 2];
     *uValue = ret;
     LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u mot1=%u ret=%u (0x%x)\n",
              __FILE__, __FUNCTION__, __LINE__,
@@ -406,10 +411,8 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
 
     return 0;
   } else if (len_in_PLC == 4) {
-    ret = idxData.memoryBytes[offset] +
-      (idxData.memoryBytes[offset + 1] << 8) +
-      (idxData.memoryBytes[offset + 2] << 16) +
-      (idxData.memoryBytes[offset + 3] << 24);
+    ret = idxData.memoryWords[offset / 2] +
+      (idxData.memoryWords[(offset / 2) + 1] <<16);
     *uValue = ret;
     return 0;
   }
@@ -450,9 +453,17 @@ int indexerHandleADS_ADR_getFloat(unsigned adsport,
   if (offset + len_in_PLC >= sizeof(idxData))
     return 1;
   if (len_in_PLC == 4) {
-    memcpy(&fRet,
-           &idxData.memoryBytes[offset],
-           sizeof(fRet));
+    if (offset == offsetMotor1ActualValue) {
+      int motor_axis_no = 1;
+      fRet = getMotorPos(motor_axis_no);
+      memcpy(&idxData.memoryBytes[offset],
+             &fRet,
+             sizeof(fRet));
+    } else {
+      memcpy(&fRet,
+             &idxData.memoryBytes[offset],
+             sizeof(fRet));
+    }
     *fValue = (double)fRet;
     return 0;
   }
@@ -466,7 +477,22 @@ int indexerHandleADS_ADR_putFloat(unsigned adsport,
                                   double fValue)
 {
   init();
-  return 0;
+  LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u fValue=%f\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           adsport,
+           offset,
+           len_in_PLC,
+           fValue);
+  if (offset + len_in_PLC >= sizeof(idxData))
+    return 1;
+  if (len_in_PLC == 4) {
+    float fFloat = (float)fValue;
+    memcpy(&idxData.memoryBytes[offset],
+           &fFloat,
+           len_in_PLC);
+    return 0;
+  }
+  return __LINE__;
 };
 
 
