@@ -215,23 +215,27 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
             "%smove (%d) position=%f relative=%d minVelocity=%f maxVelocity=%f acceleration=%f\n",
             "EthercatMCIndexerAxis", axisNo_,
             position, relative, minVelocity, maxVelocity, acceleration);
-  status = pC_->indexerParamWrite(paramIfOffset,
-                                  PARAM_IDX_SPEED_FLOAT32, maxVelocity);
-  if (status) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%smove (%d) status=%s (%d)\n",
-              "EthercatMCIndexerAxis", axisNo_,
-              pasynManager->strStatus(status), (int)status);
-    return status;
+  if (maxVelocity > 0.0) {
+    status = pC_->indexerParamWrite(paramIfOffset,
+                                    PARAM_IDX_SPEED_FLOAT32, maxVelocity);
+    if (status) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%smove (%d) status=%s (%d)\n",
+                "EthercatMCIndexerAxis", axisNo_,
+                pasynManager->strStatus(status), (int)status);
+      return status;
+    }
   }
-  status = pC_->indexerParamWrite(paramIfOffset,
-                                  PARAM_IDX_ACCEL_FLOAT32, acceleration);
-  if (status) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%smove (%d) status=%s (%d)\n",
-              "EthercatMCIndexerAxis", axisNo_,
-              pasynManager->strStatus(status), (int)status);
-    return status;
+  if (acceleration > 0.0) {
+    status = pC_->indexerParamWrite(paramIfOffset,
+                                    PARAM_IDX_ACCEL_FLOAT32, acceleration);
+    if (status) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%smove (%d) status=%s (%d)\n",
+                "EthercatMCIndexerAxis", axisNo_,
+                pasynManager->strStatus(status), (int)status);
+      return status;
+    }
   }
 
   /* Write the position into offset 4 */
