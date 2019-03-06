@@ -104,7 +104,6 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC, int axisN
     setIntegerParam(pC_->motorShowPowerOff_, 1);
 #endif
   drvlocal.scaleFactor = 1.0;
-  setIntegerParam(pC->motorStatusGainSupport_, 1);
   /* Set the module name to "" if we have FILE/LINE enabled by asyn */
   if (pasynTrace->getTraceInfoMask(pC_->pasynUserController_) & ASYN_TRACEINFO_SOURCE) modNamEMC = "";
 }
