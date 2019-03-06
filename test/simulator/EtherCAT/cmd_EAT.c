@@ -561,7 +561,8 @@ static int cmdEAThandleADS_ADR(const char *arg)
 
 static void motorHandleOneArg(const char *myarg_1)
 {
-  static const char * const ADSPORT_sFeaturesQ_str = "ADSPORT=852/.THIS.sFeatures?";
+  static const char * const ADSPORT851_sFeaturesQ_str = "ADSPORT=851/.THIS.sFeatures?";
+  static const char * const ADSPORT852_sFeaturesQ_str = "ADSPORT=852/.THIS.sFeatures?";
   static const char * const THIS_stStettings_nADSPort_str = ".THIS.stSettings.nADSPort=";
   const char *myarg = myarg_1;
   int iValue = 0;
@@ -569,8 +570,13 @@ static void motorHandleOneArg(const char *myarg_1)
   int motor_axis_no = 0;
   int nvals = 0;
 
+  /* ADSPORT=851/.THIS.sFeatures? */
+  if (0 == strcmp(myarg_1, ADSPORT851_sFeaturesQ_str)) {
+    cmd_buf_printf("%s", "");
+    return;
+  }
   /* ADSPORT=852/.THIS.sFeatures? */
-  if (0 == strcmp(myarg_1, ADSPORT_sFeaturesQ_str)) {
+  if (0 == strcmp(myarg_1, ADSPORT852_sFeaturesQ_str)) {
     cmd_buf_printf("%s", "sim");
     return;
   }
@@ -786,6 +792,11 @@ static void motorHandleOneArg(const char *myarg_1)
     printf("%s/%s:%d %s(%d)\n",  __FILE__, __FUNCTION__, __LINE__,
            myarg_1, motor_axis_no);
     cmd_buf_printf("%d", motor_axis_no);
+    return;
+  }
+  /* stAxisStatusV2? */
+  if (0 == strcmp(myarg_1, "stAxisStatusV2?")) {
+    cmd_buf_printf("");
     return;
   }
   /* stAxisStatus? */
