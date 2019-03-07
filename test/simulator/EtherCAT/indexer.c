@@ -42,6 +42,45 @@ typedef enum {
 } idxStatusCodeType;
 
 
+/* Param interface
+ The bit 15..13 are coded like this: */
+#define PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK         0xE000
+#define PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK         0x1FFF
+
+#define PARAM_IF_CMD_INVALID                       0x0000
+#define PARAM_IF_CMD_DOREAD                        0x2000
+#define PARAM_IF_CMD_DOWRITE                       0x4000
+#define PARAM_IF_CMD_BUSY                          0x6000
+#define PARAM_IF_CMD_DONE                          0x8000
+#define PARAM_IF_CMD_ERR_NO_IDX                    0xA000
+#define PARAM_IF_CMD_READONLY                      0xC000
+#define PARAM_IF_CMD_RETRY_LATER                   0xE000
+
+/* Param index values */
+#define PARAM_IDX_OPMODE_AUTO_UINT32            1
+#define PARAM_IDX_MICROSTEPS_UINT32             2
+#define PARAM_IDX_ABS_MIN_FLOAT32              30
+#define PARAM_IDX_ABS_MAX_FLOAT32              31
+#define PARAM_IDX_USR_MIN_FLOAT32              32
+#define PARAM_IDX_USR_MAX_FLOAT32              33
+#define PARAM_IDX_WRN_MIN_FLOAT32              34
+#define PARAM_IDX_WRN_MAX_FLOAT32              35
+#define PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32    55
+#define PARAM_IDX_HYTERESIS_FLOAT32            56
+#define PARAM_IDX_REFSPEED_FLOAT32             58
+#define PARAM_IDX_VBAS_FLOAT32                 59
+#define PARAM_IDX_SPEED_FLOAT32                60
+#define PARAM_IDX_ACCEL_FLOAT32                61
+#define PARAM_IDX_IDLE_CURRENT_FLOAT32         62
+#define PARAM_IDX_MOVE_CURRENT_FLOAT32         64
+#define PARAM_IDX_MICROSTEPS_FLOAT32           67
+#define PARAM_IDX_STEPS_PER_UNIT_FLOAT32       68
+#define PARAM_IDX_HOME_POSITION_FLOAT32        69
+#define PARAM_IDX_FUN_REFERENCE               133
+
+
+
+
 /* In the memory bytes, the indexer starts at 64 */
 static unsigned offsetIndexer;
 
@@ -61,7 +100,9 @@ typedef struct {
   char name[33]; /* leave one byte for trailing '\0' */
 } indexerInfoType4_type;
 
-
+typedef struct {
+  uint16_t  parameters[16]; /* counting 0..15 */
+} indexerInfoType15_type;
 
 typedef struct {
   uint16_t  typeCode;
@@ -74,6 +115,15 @@ typedef struct {
   float     absMax;
 } indexerDeviceAbsStraction_type;
 
+
+/*
+ * The param interface structure
+ * Obs: this struct is "un-aligned" in memory
+ */
+typedef struct {
+  uint16_t  paramCtrl;
+  float     paramValue;
+} indexerParam5008interface_type;
 
 /* The paramDevice structure.
    floating point values are 4 bytes long,
@@ -99,7 +149,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
   },
   { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
     UNITCODE_MM,
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0x1000,0,0,0,0,0,0,0,0,0,0,0,0},
     "SimAxis1",
     { "", "", "", "", "", "homing", "@home", "homed" },
     5.0, 175.0
@@ -124,8 +174,9 @@ static union {
     uint16_t indexer_ack;
     /* Area for the indexer. union of the different info types */
     union {
-      indexerInfoType0_type infoType0;
-      indexerInfoType4_type infoType4;
+      indexerInfoType0_type  infoType0;
+      indexerInfoType4_type  infoType4;
+      indexerInfoType15_type infoType15;
       } indexer;
     indexerDevice5008interface_type motor1;
     } memoryStruct;
@@ -134,6 +185,7 @@ static union {
 static int initDone = 0;
 static unsigned offsetMotor1StatusReasonAux;
 static unsigned offsetMotor1ActualValue;
+static unsigned offsetMotor1ParamInterface;
 
 /* values commanded to the motor */
 static cmd_Motor_cmd_type cmd_Motor_cmd[MAX_AXES];
@@ -149,15 +201,20 @@ static void init(void)
     (unsigned)((void*)&idxData.memoryStruct.indexer_ack - (void*)&idxData);
   idxData.memoryStruct.offset = offsetIndexer;
 
-  LOGINFO3("%s/%s:%d offsetIndexer=%u\n",
-           __FILE__, __FUNCTION__, __LINE__,
-           offsetIndexer);
-
   offsetMotor1StatusReasonAux =
     (unsigned)((void*)&idxData.memoryStruct.motor1.statusReasonAux - (void*)&idxData);
-
   offsetMotor1ActualValue =
     (unsigned)((void*)&idxData.memoryStruct.motor1.actualValue - (void*)&idxData);
+  offsetMotor1ParamInterface =
+    (unsigned)((void*)&idxData.memoryStruct.motor1.paramCtrl - (void*)&idxData);
+
+  LOGINFO3("%s/%s:%d offsetIndexer=%u offsetMotor1StatusReasonAux=%u"
+           " offsetMotor1ActualValue=%u offsetMotor1ParamInterface=%u\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           offsetIndexer,
+           offsetMotor1StatusReasonAux,
+           offsetMotor1ActualValue,
+           offsetMotor1ParamInterface);
   initDone = 1;
 }
 
@@ -271,7 +328,33 @@ indexerMotorStatusRead(unsigned motor_axis_no,
 }
 
 
+/* Return a parameter.
+   All return values are returned as double,
+   the call will convert into int32 or real32 if needed
+*/
+static unsigned
+indexerMotorParamRead(unsigned motor_axis_no,
+                      unsigned paramIndex,
+                      double *fRet)
 
+{
+  uint16_t ret = paramIndex | PARAM_IF_CMD_DONE;
+  if (motor_axis_no >= MAX_AXES) {
+    return PARAM_IF_CMD_ERR_NO_IDX;
+  }
+
+  init_axis((int)motor_axis_no);
+
+  switch(paramIndex) {
+    case PARAM_IDX_SPEED_FLOAT32:
+      *fRet = cmd_Motor_cmd[motor_axis_no].fVelocity;
+      return ret;
+    default:
+      break;
+  }
+
+  return PARAM_IF_CMD_ERR_NO_IDX;
+}
 
 
 static int indexerHandleIndexerCmd(unsigned offset,
@@ -333,7 +416,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
       }
-      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%u size=%u offset=%u flagsLow=0x%xack=0x%x\n",
+      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%xack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
                &idxData, &idxData.memoryStruct.indexer,
                (unsigned)((void*)&idxData.memoryStruct.indexer - (void*)&idxData),
@@ -362,7 +445,9 @@ static int indexerHandleIndexerCmd(unsigned offset,
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
     case 15:
-      /* TODO: parameter */
+      memcpy(&idxData.memoryStruct.indexer.infoType15,
+              indexerDeviceAbsStraction[devNum].parameters,
+              sizeof(idxData.memoryStruct.indexer.infoType15));
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
     default:
@@ -425,12 +510,12 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
                                  unsigned uValue)
 {
   init();
-  LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u\n",
+  LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)\n",
            __FILE__, __FUNCTION__, __LINE__,
            adsport,
            offset,
            len_in_PLC,
-           uValue);
+           uValue, uValue);
   if (offset == offsetIndexer) {
     return indexerHandleIndexerCmd(offset, len_in_PLC, uValue);
   } else if (offset == offsetMotor1StatusReasonAux) {
@@ -438,6 +523,34 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
     pIndexerDevice5008interface = &idxData.memoryStruct.motor1;
     pIndexerDevice5008interface->statusReasonAux = uValue;
     return 0;
+  } else if (offset == offsetMotor1ParamInterface) {
+    unsigned motor_axis_no = 1;
+    unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
+    unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
+    if (paramCommand == PARAM_IF_CMD_DOREAD) {
+      double fRet;
+      uint16_t ret;
+      /* do the read */
+      ret = indexerMotorParamRead(motor_axis_no,
+                                  paramIndex,
+                                  &fRet);
+      LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u ret=%x fRet=%f\n",
+               __FILE__, __FUNCTION__, __LINE__,
+               motor_axis_no, paramIndex, ret, fRet);
+
+      /* put DONE (or ERROR) into the process image */
+      idxData.memoryWords[offset / 2] = ret;
+      if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
+        float fFloat = (float)fRet;
+        switch(paramIndex) {
+          case PARAM_IDX_SPEED_FLOAT32:
+            memcpy(&idxData.memoryWords[(offset/2) + 1],
+                   &fFloat, 4);
+            break;
+        }
+      }
+      return 0;
+    }
   }
 
   return __LINE__;
