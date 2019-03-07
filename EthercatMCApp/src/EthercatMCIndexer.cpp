@@ -111,17 +111,6 @@ extern "C" {
 
 */
 
-asynStatus EthercatMCController::writeReadControllerPrint(int traceMask)
-{
-  asynStatus status = writeReadOnErrorDisconnect();
-  if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-  asynPrint(pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, outString_, inString_,
-            pasynManager->strStatus(status), (int)status);
-  return status;
-}
-
 asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
                                                   unsigned *value,
                                                   size_t lenInPlc)

@@ -32,73 +32,6 @@ asynStatus EthercatMCAxis::writeReadControllerPrint(void)
   return writeReadControllerPrint(ASYN_TRACE_INFO);
 }
 
-/** Writes a command to the axis, and expects a logical ack from the controller
- * Outdata is in pC_->outString_
- * Indata is in pC_->inString_
- * The communiction is logged ASYN_TRACE_INFO
- *
- * When the communictaion fails ot times out, writeReadOnErrorDisconnect() is called
- */
-asynStatus EthercatMCAxis::writeReadACK(int traceMask)
-{
-  asynStatus status = pC_->writeReadOnErrorDisconnect();
-  switch (status) {
-    case asynError:
-      return status;
-    case asynSuccess:
-    {
-      const char *semicolon = &pC_->outString_[0];
-      unsigned int numOK = 1;
-      int res = 1;
-      while (semicolon && semicolon[0]) {
-        semicolon = strchr(semicolon, ';');
-        if (semicolon) {
-          numOK++;
-          semicolon++;
-        }
-      }
-      switch(numOK) {
-        case 1: res = strcmp(pC_->inString_, "OK");  break;
-        case 2: res = strcmp(pC_->inString_, "OK;OK");  break;
-        case 3: res = strcmp(pC_->inString_, "OK:OK;OK");  break;
-        case 4: res = strcmp(pC_->inString_, "OK;OK;OK;OK");  break;
-        case 5: res = strcmp(pC_->inString_, "OK;OK;OK;OK;OK");  break;
-        case 6: res = strcmp(pC_->inString_, "OK;OK;OK;OK;OK;OK");  break;
-        case 7: res = strcmp(pC_->inString_, "OK;OK;OK;OK;OK;OK;OK");  break;
-        case 8: res = strcmp(pC_->inString_, "OK;OK;OK;OK;OK;OK;OK;OK");  break;
-        default:
-          ;
-      }
-      if (res) {
-        status = asynError;
-        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                  "%sout=%s in=%s return=%s (%d)\n",
-                  modNamEMC, pC_->outString_, pC_->inString_,
-                  pasynManager->strStatus(status), (int)status);
-        if (!drvlocal.cmdErrorMessage[0]) {
-          snprintf(drvlocal.cmdErrorMessage, sizeof(drvlocal.cmdErrorMessage)-1,
-                   "E: writeReadACK() out=%s in=%s\n",
-                   pC_->outString_, pC_->inString_);
-          /* The poller co-ordinates the writing into the parameter library */
-        }
-        return status;
-      }
-    }
-    default:
-      break;
-  }
-  asynPrint(pC_->pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status);
-  return status;
-}
-
-asynStatus EthercatMCAxis::writeReadACK(void)
-{
-  return writeReadACK(ASYN_TRACE_INFO);
-}
-
 /** Sets an integer or boolean value on an axis
  * the values in the controller must be updated
  * \param[in] name of the variable to be updated
@@ -109,7 +42,7 @@ asynStatus EthercatMCAxis::setValueOnAxis(const char* var, int value)
 {
   snprintf(pC_->outString_, sizeof(pC_->outString_),
            "%sMain.M%d.%s=%d", drvlocal.adsport_str, axisNo_, var, value);
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 /** Sets an integer or boolean value on an axis, read it back and retry if needed
@@ -176,7 +109,7 @@ asynStatus EthercatMCAxis::setValueOnAxis(const char* var, double value)
 {
   snprintf(pC_->outString_, sizeof(pC_->outString_),
            "%sMain.M%d.%s=%g", drvlocal.adsport_str, axisNo_, var, value);
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 /** Sets 2 floating point value on an axis
@@ -192,7 +125,7 @@ asynStatus EthercatMCAxis::setValuesOnAxis(const char* var1, double value1,
            "%sMain.M%d.%s=%g;%sMain.M%d.%s=%g",
            drvlocal.adsport_str, axisNo_, var1, value1,
            drvlocal.adsport_str, axisNo_, var2, value2);
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 
@@ -311,7 +244,7 @@ asynStatus EthercatMCAxis::setSAFValueOnAxis(unsigned indexGroup,
   if (axisID <= 0) return asynError;
   snprintf(pC_->outString_, sizeof(pC_->outString_), "ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
           501, indexGroup + axisID, indexOffset, value);
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 asynStatus EthercatMCAxis::setSAFValueOnAxisVerify(unsigned indexGroup,
@@ -342,7 +275,7 @@ asynStatus EthercatMCAxis::setSAFValueOnAxis(unsigned indexGroup,
   if (axisID <= 0) return asynError;
   snprintf(pC_->outString_, sizeof(pC_->outString_), "ADSPORT=%u/.ADR.16#%X,16#%X,8,5=%g",
           501, indexGroup + axisID, indexOffset, value);
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 asynStatus EthercatMCAxis::setSAFValueOnAxisVerify(unsigned indexGroup,
@@ -597,14 +530,14 @@ asynStatus EthercatMCAxis::readConfigLine(const char *line, const char **errorTx
     while (*cfg_txt_p == ' ') cfg_txt_p++;
 
     snprintf(pC_->outString_, sizeof(pC_->outString_), "%s", cfg_txt_p);
-    status = writeReadACK();
+    status = pC_->writeReadACK(ASYN_TRACE_INFO);
   } else if (!strncmp(setValue_str, line, strlen(setValue_str))) {
     const char *cfg_txt_p = &line[strlen(setValue_str)];
     while (*cfg_txt_p == ' ') cfg_txt_p++;
 
     snprintf(pC_->outString_, sizeof(pC_->outString_), "%s%s",
              drvlocal.adsport_str, cfg_txt_p);
-    status = writeReadACK();
+    status = pC_->writeReadACK(ASYN_TRACE_INFO);
   } else if (!strncmp(setSim_str, line, strlen(setSim_str))) {
     if (drvlocal.supported.bSIM) {
       const char *cfg_txt_p = &line[strlen(setRaw_str)];
@@ -612,7 +545,7 @@ asynStatus EthercatMCAxis::readConfigLine(const char *line, const char **errorTx
 
       snprintf(pC_->outString_, sizeof(pC_->outString_),
                "Sim.M%d.%s", axisNo_, cfg_txt_p);
-      status = writeReadACK();
+      status = pC_->writeReadACK(ASYN_TRACE_INFO);
     } else {
       status = asynSuccess;
     }

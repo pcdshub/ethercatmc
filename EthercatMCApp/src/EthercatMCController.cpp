@@ -301,6 +301,66 @@ asynStatus checkACK(const char *outdata, size_t outlen,
   return res ? asynError : asynSuccess;
 }
 
+asynStatus EthercatMCController::writeReadControllerPrint(int traceMask)
+{
+  asynStatus status = writeReadOnErrorDisconnect();
+  if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+  asynPrint(pasynUserController_, traceMask,
+            "%sout=%s in=%s status=%s (%d)\n",
+            modNamEMC, outString_, inString_,
+            pasynManager->strStatus(status), (int)status);
+  return status;
+}
+
+asynStatus EthercatMCController::writeReadACK(int traceMask)
+{
+  asynStatus status = writeReadOnErrorDisconnect();
+  switch (status) {
+    case asynError:
+      return status;
+    case asynSuccess:
+    {
+      const char *semicolon = &outString_[0];
+      unsigned int numOK = 1;
+      int res = 1;
+      while (semicolon && semicolon[0]) {
+        semicolon = strchr(semicolon, ';');
+        if (semicolon) {
+          numOK++;
+          semicolon++;
+        }
+      }
+      switch(numOK) {
+        case 1: res = strcmp(inString_, "OK");  break;
+        case 2: res = strcmp(inString_, "OK;OK");  break;
+        case 3: res = strcmp(inString_, "OK:OK;OK");  break;
+        case 4: res = strcmp(inString_, "OK;OK;OK;OK");  break;
+        case 5: res = strcmp(inString_, "OK;OK;OK;OK;OK");  break;
+        case 6: res = strcmp(inString_, "OK;OK;OK;OK;OK;OK");  break;
+        case 7: res = strcmp(inString_, "OK;OK;OK;OK;OK;OK;OK");  break;
+        case 8: res = strcmp(inString_, "OK;OK;OK;OK;OK;OK;OK;OK");  break;
+        default:
+          ;
+      }
+      if (res) {
+        status = asynError;
+        asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%sout=%s in=%s return=%s (%d)\n",
+                  modNamEMC, outString_, inString_,
+                  pasynManager->strStatus(status), (int)status);
+        return status;
+      }
+    }
+    default:
+      break;
+  }
+  asynPrint(pasynUserController_, traceMask,
+            "%sout=%s in=%s status=%s (%d)\n",
+            modNamEMC, outString_, inString_,
+            pasynManager->strStatus(status), (int)status);
+  return status;
+}
+
 asynStatus EthercatMCController::setMCUErrMsg(const char *value)
 {
   asynStatus status = setStringParam(EthercatMCMCUErrMsg_, value);

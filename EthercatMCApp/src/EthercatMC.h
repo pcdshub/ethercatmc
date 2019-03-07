@@ -234,8 +234,6 @@ private:
   asynStatus readBackVelocities(int axisID);
   asynStatus initialPoll(void);
   asynStatus initialPollInternal(void);
-  asynStatus writeReadACK(int traceMask);
-  asynStatus writeReadACK(void);
   asynStatus setValueOnAxis(const char* var, int value);
   asynStatus setValueOnAxisVerify(const char *var, const char *rbvar,
                                   int value, unsigned int retryCount);
@@ -347,6 +345,7 @@ public:
   asynStatus poll(void);
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
+  asynStatus writeReadACK(int traceMask);
   asynStatus getPlcMemoryBytes(unsigned indexOffset,
                                unsigned char  *value, size_t len);
   asynStatus getPlcMemoryUint(unsigned indexOffset,

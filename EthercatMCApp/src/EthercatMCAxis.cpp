@@ -637,7 +637,7 @@ asynStatus EthercatMCAxis::mov2(double posEGU, int nCommand, double maxVeloEGU, 
 #ifndef motorWaitPollsBeforeReadyString
   drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
 #endif
-  return writeReadACK();
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 /** Move the axis to a position, either absolute or relative
@@ -743,9 +743,9 @@ asynStatus EthercatMCAxis::home(double minVelocity, double maxVelocity, double a
              drvlocal.adsport_str, axisNo_, homProc,
              drvlocal.adsport_str, axisNo_, homPos,
              drvlocal.adsport_str, axisNo_);
-    return writeReadACK();
+    return pC_->writeReadACK(ASYN_TRACE_INFO);
   }
-    
+
 #ifndef motorWaitPollsBeforeReadyString
   drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
 #endif
@@ -1675,19 +1675,19 @@ asynStatus EthercatMCAxis::setStringParamDbgStrToMcu(const char *value)
     if (!strncmp(value, Main_this_str, strlen(Main_this_str))) {
       snprintf(pC_->outString_, sizeof(pC_->outString_), "%sMain.M%d.%s",
               drvlocal.adsport_str, axisNo_, value + strlen(Main_this_str));
-      return writeReadACK();
+      return pC_->writeReadACK(ASYN_TRACE_INFO);
     }
     /* caput IOC:m1-DbgStrToMCU Sim.this.log=M1.log */
     if (!strncmp(value, Sim_this_str, strlen(Sim_this_str))) {
       snprintf(pC_->outString_, sizeof(pC_->outString_), "Sim.M%d.%s",
               axisNo_, value + strlen(Sim_this_str));
-      return writeReadACK();
+      return pC_->writeReadACK(ASYN_TRACE_INFO);
     }
 #if 0
     nvals = sscanf(value, "Sim.M%u.", &ivalue);
     if (nvals == 1) {
       snprintf(pC_->outString_, sizeof(pC_->outString_), "%s", value);
-      return writeReadACK();
+      return pC_->writeReadACK();
     }
     /* ADR commands integer
      *  # in  target position monitoring
