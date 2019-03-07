@@ -328,7 +328,7 @@ indexerMotorStatusRead(unsigned motor_axis_no,
 }
 
 
-/* Return a parameter.
+/* Reads a parameter.
    All return values are returned as double,
    the call will convert into int32 or real32 if needed
 */
@@ -348,6 +348,33 @@ indexerMotorParamRead(unsigned motor_axis_no,
   switch(paramIndex) {
     case PARAM_IDX_SPEED_FLOAT32:
       *fRet = cmd_Motor_cmd[motor_axis_no].fVelocity;
+      return ret;
+    default:
+      break;
+  }
+
+  return PARAM_IF_CMD_ERR_NO_IDX;
+}
+
+/* Writes a parameter.
+   the call will convert into int32 or real32 if needed
+*/
+static unsigned
+indexerMotorParamWrite(unsigned motor_axis_no,
+                       unsigned paramIndex,
+                       double fValue)
+
+{
+  uint16_t ret = paramIndex | PARAM_IF_CMD_DONE;
+  if (motor_axis_no >= MAX_AXES) {
+    return PARAM_IF_CMD_ERR_NO_IDX;
+  }
+
+  init_axis((int)motor_axis_no);
+
+  switch(paramIndex) {
+    case PARAM_IDX_SPEED_FLOAT32:
+      cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
       return ret;
     default:
       break;
@@ -550,7 +577,24 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
         }
       }
       return 0;
+    } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
+      float fFloat;
+      uint16_t ret = PARAM_IF_CMD_ERR_NO_IDX;
+
+      memcpy(&fFloat, &idxData.memoryWords[(offset/2) + 1], 4);
+      switch(paramIndex) {
+      case PARAM_IDX_SPEED_FLOAT32:
+        ret = indexerMotorParamWrite(motor_axis_no,
+                                     paramIndex,
+                                     (double)fFloat);
+
+        break;
+      }
+      /* put DONE (or ERROR) into the process image */
+      idxData.memoryWords[offset / 2] = ret;
+      return 0;
     }
+
   }
 
   return __LINE__;
