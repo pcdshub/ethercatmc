@@ -65,11 +65,41 @@ extern "C" {
     if (unitCode < sizeof(unitTxts)/sizeof(unitTxts[0]))
       return unitTxts[unitCode];
 
-    switch (unitCode) {
-    case 0xfd04:
-      return "mm";
-    default:
-      return "unit";
+    return "??";
+  }
+  const char *plcUnitPrefixTxt(int prefixCode)
+  {
+    if (prefixCode >= 0) {
+      switch (prefixCode) {
+        case 24:   return "Y";
+        case 21:   return "Z";
+        case 18:   return "E";
+        case 15:   return "P";
+        case 12:   return "T";
+        case 9:    return "G";
+        case 6:    return "M";
+        case 3:    return "k";
+        case 2:    return "h";
+        case 1:    return "da";
+        case 0:    return "";
+      default:
+        return "?";
+      }
+    } else {
+      switch (-prefixCode) {
+        case 1:   return "d";
+        case 2:   return "c";
+        case 3:   return "m";
+        case 6:   return "u";
+        case 9:   return "n";
+        case 12:  return "p";
+        case 15:  return "f";
+        case 18:  return "a";
+        case 21:  return "z";
+        case 24:  return "y";
+      default:
+        return "?";
+      }
     }
   }
 };
@@ -892,9 +922,9 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     }
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sindexerDevice %20s "
-              "TypCode=0x%x Size=%u Offset=%u Unit=%s (0x%x) AllFlags=0x%x AbsMin=%e AbsMax=%e\n",
+              "TypCode=0x%x Size=%u Offset=%u UnitCode=0x%x AllFlags=0x%x AbsMin=%e AbsMax=%e\n",
               modNamEMC, descVersAuthors.desc,
-              iTypCode, iSize, iOffset, plcUnitTxtFromUnitCode(iUnit),
+              iTypCode, iSize, iOffset,
               iUnit, iAllFlags, fAbsMin, fAbsMax);
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sdescVersAuthors(%d)  vers=%s author1=%s author2=%s\n",
@@ -959,6 +989,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     case 0x5008:
     case 0x500C:
       {
+        char unitCodeTxt[40];
         int validSoftlimits = fAbsMax > fAbsMin;
         EthercatMCIndexerAxis *pAxis;
         if (fAbsMin <= -3.0e+38 && fAbsMax >= 3.0e+38)
@@ -984,23 +1015,16 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                                   pAxis);
         pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
         setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
-        setStringParam(axisNo,  EthercatMCCfgEGU_RB_, plcUnitTxtFromUnitCode(iUnit));
+        snprintf(unitCodeTxt, sizeof(unitCodeTxt), "%s%s",
+                 plcUnitPrefixTxt(( (int8_t)((iUnit & 0xFF00)>>8))),
+                 plcUnitTxtFromUnitCode(iUnit & 0xFF));
+        setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
       }
 
       break;
     }
       // IndexerReadParameters(indexerOffset, iOffset, devNum, iTypCode, axisNo);
   }
-  if (status) goto endPollIndexer;
-
-#ifdef XXXEthercatMCrecordDescString
-  setStringParam(EthercatMCrecordDesc_, desc);
-#endif
-
-#ifdef XXXXXEthercatMCrecordEguString
-  setStringParam(EthercatMCrecordEgu_,
-                 plcUnitTxtFromUnitCode(unitCode));
-#endif
 
  endPollIndexer:
   /* Special case: asynDisabled means "no indexer found".
@@ -1009,5 +1033,4 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     return asynSuccess;
   return status;
 
-  //getPlcMemoryBytes(0, &indexerMagic[0], sizeof(indexerMagic));
 }

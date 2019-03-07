@@ -20,7 +20,7 @@
 
 /* Well known unit codes */
 #define UNITCODE_NONE                    0
-#define UNITCODE_MM                 0xfc04
+#define UNITCODE_MM                 0xfd04
 
 typedef enum {
   idxStatusCodeRESET    = 0,
