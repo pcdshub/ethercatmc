@@ -23,6 +23,9 @@ epicsEnvSet("ECAXISFIELDINIT",    "")
 drvAsynIPPortConfigure("$(ASYN_PORT)","$(IPADDR):$(IPPORT)",0,0,0)
 asynOctetSetOutputEos("$(ASYN_PORT)", -1, ";\n")
 asynOctetSetInputEos("$(ASYN_PORT)", -1, ";\n")
+asynShowOption("$(ASYN_PORT)", -1, "disconnectOnReadTimeout")
+asynSetOption("$(ASYN_PORT)", -1, "disconnectOnReadTimeout", "Y")
+asynShowOption("$(ASYN_PORT)", -1, "disconnectOnReadTimeout")
 
 #adsAsynPortDriverConfigure("$(ASYN_PORT)","$(IPADDR)","$(AMSID)",852,1000,0,0,50,100,1000,0)
 

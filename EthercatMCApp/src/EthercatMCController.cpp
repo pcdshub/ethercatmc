@@ -12,6 +12,7 @@ FILENAME... EthercatMCController.cpp
 #include <epicsThread.h>
 
 #include <asynOctetSyncIO.h>
+#include <asynOptionSyncIO.h>
 #include <epicsExport.h>
 #include "EthercatMC.h"
 #include "EthercatMCIndexerAxis.h"
@@ -113,6 +114,13 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
     asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
               "%s cannot connect to motor controller\n", modulName);
   }
+#if 0
+  // asyn/asynPortClient/asynPortClient.h
+  status = pasynOptionSyncIO->setOption(pasynUserController_, "disconnectOnReadTimeout", "Y", 5.0);
+  asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
+            "%s setOption status=%d\n",
+            modulName, (int)status);
+#endif
   startPoller(movingPollPeriod, idlePollPeriod, 2);
 }
 
@@ -298,6 +306,7 @@ asynStatus EthercatMCController::setMCUErrMsg(const char *value)
 void EthercatMCController::handleStatusChange(asynStatus status)
 {
 
+  ctrlLocal.initialPollDone = 0;
   if (status && ctrlLocal.isConnected) {
     /* Connected -> Disconnected */
     int i;
