@@ -19,6 +19,8 @@
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
+static unsigned indexGroup = 0x4020;
+
 typedef enum {
   idxStatusCodeRESET    = 0,
   idxStatusCodeIDLE     = 1,
@@ -204,11 +206,12 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
   unsigned traceMask = ASYN_TRACE_INFO;
     /* param devices look like this
        0x0 Actual value,   32 bit float
-       0x4 Setpoint       32 bit float
+       0x4 Setpoint        32 bit float
        0x8 CmdStatusReason 16 bit integer/bitwise
        0xA ParamCmd        16 bit integer/bitwise
        0xE ParamValue      32 bit float or integer
     */
+  unsigned cmdReason = idxStatusCodeSTART  << 12;
   unsigned paramIfOffset = drvlocal.iOffset + 0xA;
   asynPrint(pC_->pasynUserController_, traceMask,
             "%smove (%d) position=%f relative=%d minVelocity=%f maxVelocity=%f acceleration=%f\n",
@@ -236,31 +239,11 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
       return status;
     }
   }
-
-  /* Write the position into offset 4 */
-  status = pC_->setPlcMemoryDouble(drvlocal.iOffset + 4,
-                                   position, 4 /* lenInPlc */);
-  asynPrint(pC_->pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status);
-  if (status) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%smove (%d) status=%s (%d)\n",
-              "EthercatMCIndexerAxis", axisNo_,
-              pasynManager->strStatus(status), (int)status);
-    return status;
-  } else {
-    unsigned cmdReason = idxStatusCodeSTART  << 12;
-    status = pC_->setPlcMemoryInteger(drvlocal.iOffset + 8,
-                                      cmdReason, 2 /* lenInPlc */);
-    if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-    asynPrint(pC_->pasynUserController_, traceMask,
-              "%sout=%s in=%s status=%s (%d)\n",
-              modNamEMC, pC_->outString_, pC_->inString_,
-              pasynManager->strStatus(status), (int)status);
-  }
-  return status;
+  snprintf(pC_->outString_, sizeof(pC_->outString_),
+           "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f;ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
+           pC_->adsport, indexGroup, drvlocal.iOffset + 4, position,
+           pC_->adsport, indexGroup, drvlocal.iOffset + 8, cmdReason);
+  return pC_->writeReadACK(traceMask);
 }
 
 
