@@ -480,8 +480,8 @@ asynStatus EthercatMCController::indexerPrepareParamRead(unsigned indexOffset,
   status = setPlcMemoryInteger(indexOffset, cmd, 2);
   if (status) {
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sout=%s in=%s status=%s (%d)\n",
-              modNamEMC, outString_, inString_,
+              "%sindexOffset=%u out=%s in=%s (%x) status=%s (%d)\n",
+              modNamEMC, indexOffset, outString_, inString_, atoi(inString_),
               pasynManager->strStatus(status), (int)status);
     return status;
   }
@@ -887,8 +887,11 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                               descVersAuthors.author2,
                               sizeof(descVersAuthors.author2));
     }
+    if (!iTypCode && !iSize && !iOffset) {
+      break; /* End of list ?? */
+    }
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sindexerRequest %20s "
+              "%sindexerDevice %20s "
               "TypCode=0x%x Size=%u Offset=%u Unit=%s (0x%x) AllFlags=0x%x AbsMin=%e AbsMax=%e\n",
               modNamEMC, descVersAuthors.desc,
               iTypCode, iSize, iOffset, plcUnitTxtFromUnitCode(iUnit),
@@ -899,9 +902,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
               descVersAuthors.vers,
               descVersAuthors.author1,
               descVersAuthors.author2);
-    if (!iTypCode && !iSize && !iOffset) {
-      break; /* End of list ?? */
-    }
     switch (iTypCode) {
     case 0x5008:
     case 0x500C:
@@ -961,7 +961,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
       {
         int validSoftlimits = fAbsMax > fAbsMin;
         EthercatMCIndexerAxis *pAxis;
-        if (fAbsMin <= -3.402824e+38 && fAbsMax >= 3.402822e+38)
+        if (fAbsMin <= -3.0e+38 && fAbsMax >= 3.0e+38)
           validSoftlimits = 0;
 
         pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
