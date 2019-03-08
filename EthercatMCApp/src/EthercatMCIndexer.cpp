@@ -639,6 +639,76 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   return asynDisabled;
 }
 
+void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
+                                                  unsigned paramIndex,
+                                                  double fValue)
+{
+  asynMotorAxis *pAxis=getAxis((int)axisNo);
+  switch(paramIndex) {
+  case PARAM_IDX_ABS_MIN_FLOAT32:
+    setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
+    pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
+#ifdef motorLowLimitROString
+    setDoubleParam(motorLowLimitRO_, fValue);
+#endif
+    break;
+  case PARAM_IDX_ABS_MAX_FLOAT32:
+    setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
+    pAxis->setDoubleParam(EthercatMCCfgDHLM_, fValue);
+#ifdef motorHighLimitROString
+    setDoubleParam(motorHighLimitRO_, fValue);
+#endif
+    break;
+  case PARAM_IDX_USR_MIN_FLOAT32:
+    break;
+  case PARAM_IDX_USR_MAX_FLOAT32:
+    break;
+  case PARAM_IDX_WRN_MIN_FLOAT32:
+    break;
+  case PARAM_IDX_WRN_MAX_FLOAT32:
+    break;
+  case PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCCfgPOSLAG_RB_, fValue);
+    pAxis->setDoubleParam(EthercatMCCfgPOSLAG_Tim_RB_, 0);
+    setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
+    break;
+  case PARAM_IDX_HYTERESIS_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
+    pAxis->setDoubleParam(EthercatMCCfgRDBD_Tim_RB_, 0);
+    setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
+#ifdef motorRDBDROString
+    pAxis->setDoubleParam(motorRDBDRO_, fValue);
+#endif
+    break;
+  case PARAM_IDX_REFSPEED_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCVelToHom_, fValue);
+    break;
+  case PARAM_IDX_SPEED_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCCfgVELO_, fValue);
+#ifdef motorDefVelocityROString
+    pAxis->setDoubleParam(motorDefVelocityRO_, fValue);
+#endif
+    break;
+  case PARAM_IDX_ACCEL_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCCfgACCS_, fValue);
+#ifdef motorDefJogAccROString
+    pAxis->setDoubleParam(motorDefJogAccRO_, fValue);
+#endif
+    break;
+  case PARAM_IDX_IDLE_CURRENT_FLOAT32:
+    break;
+  case PARAM_IDX_MOVE_CURRENT_FLOAT32:
+    break;
+  case PARAM_IDX_HOME_POSITION_FLOAT32:
+    pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
+    break;
+  case PARAM_IDX_FUN_REFERENCE:
+#ifdef  motorNotHomedProblemString
+    pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
+#endif
+    break;
+  }
+}
 
 asynStatus
 EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
@@ -714,61 +784,8 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
                       modNamEMC, axisNo, paramIndex, fValue,
                       pasynManager->strStatus(status), (int)status);
             if (!status) {
+              /* The resolution related parameters need special treatment */
               switch(paramIndex) {
-              case PARAM_IDX_ABS_MIN_FLOAT32:
-                setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
-                pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
-#ifdef motorLowLimitROString
-                setDoubleParam(motorLowLimitRO_, fValue);
-#endif
-                break;
-              case PARAM_IDX_ABS_MAX_FLOAT32:
-                setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
-                pAxis->setDoubleParam(EthercatMCCfgDHLM_, fValue);
-#ifdef motorHighLimitROString
-                setDoubleParam(motorHighLimitRO_, fValue);
-#endif
-                break;
-              case PARAM_IDX_USR_MIN_FLOAT32:
-                break;
-              case PARAM_IDX_USR_MAX_FLOAT32:
-                break;
-              case PARAM_IDX_WRN_MIN_FLOAT32:
-                break;
-              case PARAM_IDX_WRN_MAX_FLOAT32:
-                break;
-              case PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCCfgPOSLAG_RB_, fValue);
-                pAxis->setDoubleParam(EthercatMCCfgPOSLAG_Tim_RB_, 0);
-                setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
-                break;
-              case PARAM_IDX_HYTERESIS_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
-                pAxis->setDoubleParam(EthercatMCCfgRDBD_Tim_RB_, 0);
-                setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
-#ifdef motorRDBDROString
-                pAxis->setDoubleParam(motorRDBDRO_, fValue);
-#endif
-                break;
-              case PARAM_IDX_REFSPEED_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCVelToHom_, fValue);
-                break;
-              case PARAM_IDX_SPEED_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCCfgVELO_, fValue);
-#ifdef motorDefVelocityROString
-                pAxis->setDoubleParam(motorDefVelocityRO_, fValue);
-#endif
-                break;
-              case PARAM_IDX_ACCEL_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCCfgACCS_, fValue);
-#ifdef motorDefJogAccROString
-                pAxis->setDoubleParam(motorDefJogAccRO_, fValue);
-#endif
-                break;
-              case PARAM_IDX_IDLE_CURRENT_FLOAT32:
-                break;
-              case PARAM_IDX_MOVE_CURRENT_FLOAT32:
-                break;
               case PARAM_IDX_MICROSTEPS_FLOAT32:
                 microsteps = fValue;
                 pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * microsteps);
@@ -779,14 +796,9 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
                   pAxis->setDoubleParam(EthercatMCCfgUREV_RB_, urev);
                 }
                 break;
-              case PARAM_IDX_HOME_POSITION_FLOAT32:
-                pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
-                break;
-              case PARAM_IDX_FUN_REFERENCE:
-#ifdef  motorNotHomedProblemString
-                pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
-#endif
-                break;
+              default:
+                /* All the others go here */
+                parameterFloatReadBack(axisNo, paramIndex, fValue);
               }
             }
           }

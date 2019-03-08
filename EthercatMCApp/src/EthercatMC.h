@@ -338,6 +338,9 @@ public:
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned indexOffset,
                                unsigned devNum, unsigned infoType);
+  void parameterFloatReadBack(unsigned axisNo,
+                              unsigned paramIndex,
+                              double fValue);
   asynStatus IndexerReadAxisParameters(unsigned indexerOffset,
                                        unsigned iOffset,
                                        unsigned devNum,
