@@ -16,7 +16,6 @@ public:
   asynStatus home(double min_velocity, double max_velocity, double acceleration, int forwards);
   asynStatus stopAxisInternal(const char *function_name, double acceleration);
   asynStatus stop(double acceleration);
-  void handleDisconnect(asynStatus status);
   void setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset);
   asynStatus initialPoll(void);
   asynStatus poll(bool *moving);

@@ -222,16 +222,22 @@ asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
 {
   size_t nwrite;
   asynStatus status = asynError;
-  int eomReason;
+  int eomReason = 0;
   size_t nread;
   status = pasynOctetSyncIO->writeRead(pasynUser, outdata, outlen,
                                        indata, inlen,
                                        DEFAULT_CONTROLLER_TIMEOUT,
                                        &nwrite, &nread, &eomReason);
   if ((status == asynTimeout) ||
-      (!nread && (eomReason & ASYN_EOM_END)))
-
-{
+      (!nread && (eomReason & ASYN_EOM_END))) {
+    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+              "%s out=%s nread=%lu eomReason=%x (%s%s%s) status=%s (%d)\n",
+              modulName, outdata,(unsigned long)nread,
+              eomReason,
+              eomReason & ASYN_EOM_CNT ? "CNT" : "",
+              eomReason & ASYN_EOM_EOS ? "EOS" : "",
+              eomReason & ASYN_EOM_END ? "END" : "",
+              pasynManager->strStatus(status), status);
 #if 1
     asynInterface *pasynInterface = NULL;
     asynCommon     *pasynCommon = NULL;
@@ -253,10 +259,6 @@ asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
                 modulName, pasynInterface, pasynCommon);
     }
 #endif
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s out=%s nread=%lu status=%s (%d)\n",
-              modulName, outdata,(unsigned long)nread,
-              pasynManager->strStatus(status), status);
     return asynError; /* TimeOut -> Error */
   }
   return status;
@@ -375,11 +377,13 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     /* Connected -> Disconnected */
     int i;
     ctrlLocal.isConnected = 0;
+    ctrlLocal.initialPollDone = 0;
     setMCUErrMsg("MCU Disconnected");
     for (i=0; i<numAxes_; i++) {
       asynMotorAxis *pAxis=getAxis(i);
       if (!pAxis) continue;
       pAxis->setIntegerParam(motorStatusCommsError_, 1);
+      pAxis->callParamCallbacks();
     }
   } else if (!status && !ctrlLocal.isConnected) {
     /* Disconnected -> Connected */

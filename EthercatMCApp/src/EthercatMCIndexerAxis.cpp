@@ -129,19 +129,6 @@ extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisN
   return asynSuccess;
 }
 
-void EthercatMCIndexerAxis::handleDisconnect(asynStatus status)
-{
-  (void)status;
-  if (!drvlocal.dirty.oldStatusDisconnected) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s Communication error(%d)\n", modNamEMC, axisNo_);
-  }
-  memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
-  //drvlocal.MCU_nErrorId = 0;
-  setIntegerParam(pC_->motorStatusCommsError_, 1);
-  //callParamCallbacksUpdateError();
-}
-
 void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset)
 {
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
@@ -446,6 +433,16 @@ asynStatus EthercatMCIndexerAxis::setIntegerParam(int function, int value)
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetIntegerParam(%d motorUpdateStatus_)=%d\n", modNamEMC, axisNo_, value);
 
+  } else if (function == pC_->motorStatusCommsError_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
+              "%ssetIntegerParam(%d pC_->motorStatusCommsError_)=%d\n",
+              modNamEMC, axisNo_, value);
+    if (value && !drvlocal.dirty.oldStatusDisconnected) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%s Communication error(%d)\n", modNamEMC, axisNo_);
+      memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
+      //drvlocal.MCU_nErrorId = 0;
+    }
 #ifdef EthercatMCErrRstString
   } else if (function == pC_->EthercatMCErrRst_) {
     if (value) {

@@ -1429,7 +1429,6 @@ asynStatus EthercatMCAxis::poll(bool *moving)
   return asynSuccess;
 
   skip:
-  //handleDisconnect(asynError);
   return asynError;
 }
 
@@ -1462,7 +1461,6 @@ asynStatus EthercatMCAxis::setIntegerParam(int function, int value)
                 "%s Communication error(%d)\n", modNamEMC, axisNo_);
       memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
       drvlocal.MCU_nErrorId = 0;
-      callParamCallbacksUpdateError();
     }
 #ifdef motorPowerAutoOnOffString
   } else if (function == pC_->motorPowerAutoOnOff_) {
