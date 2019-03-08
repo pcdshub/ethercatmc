@@ -807,6 +807,11 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
 asynStatus EthercatMCController::poll(void)
 {
   asynStatus status = asynSuccess;
+
+  asynPrint(pasynUserController_, ASYN_TRACE_FLOW,
+                    "%spoll ctrlLocal.initialPollDone=%d\n",
+            modNamEMC, ctrlLocal.initialPollDone);
+
   if (!ctrlLocal.initialPollDone) {
     status = initialPollIndexer();
     if (!status) ctrlLocal.initialPollDone = 1;
@@ -840,11 +845,15 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     double tmp_version;
     unsigned int iTmpVer = 0;
     size_t lenInPlc = 4;
-    getPlcMemoryUint(indexerOffset, &iTmpVer, lenInPlc);
+    status = getPlcMemoryUint(indexerOffset, &iTmpVer, lenInPlc);
+    if (status) return status;
+
     status = getPlcMemoryDouble(indexerOffset, &tmp_version, lenInPlc);
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sadsport=%u iTmpVer=0x%08x indexerVersion=%f\n",
-              modNamEMC, adsport, iTmpVer, tmp_version);
+              "%sadsport=%u iTmpVer=0x%08x indexerVersion=%f status=%s (%d)\n",
+              modNamEMC, adsport, iTmpVer, tmp_version,
+              pasynManager->strStatus(status), (int)status);
+    if (status) return status;
     if ((tmp_version == 2015.02) || (tmp_version == 2015.020020)) {
       version = tmp_version;
     } else {
@@ -1009,10 +1018,8 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                  plcUnitTxtFromUnitCode(iUnit & 0xFF));
         setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
       }
-
       break;
     }
-      // IndexerReadParameters(indexerOffset, iOffset, devNum, iTypCode, axisNo);
   }
 
  endPollIndexer:
