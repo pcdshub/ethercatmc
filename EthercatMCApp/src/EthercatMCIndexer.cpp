@@ -818,6 +818,82 @@ asynStatus EthercatMCController::poll(void)
   return status;
 }
 
+void EthercatMCController::newIndexerAxis(unsigned axisNo,
+                                          unsigned indexerOffset,
+                                          unsigned devNum,
+                                          unsigned iAllFlags,
+                                          double   fAbsMin,
+                                          double   fAbsMax,
+                                          unsigned iOffset)
+{
+  asynStatus status;
+  EthercatMCIndexerAxis *pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+  if (!pAxis) {
+    pAxis = new EthercatMCIndexerAxis(this, axisNo);
+  }
+  pAxis->setStringParam(EthercatMCreason11_, "High limit");
+  pAxis->setStringParam(EthercatMCreason10_, "Low limit");
+  pAxis->setStringParam(EthercatMCreason9_,  "Dynamic problem, timeout");
+  pAxis->setStringParam(EthercatMCreason8_,  "Static problem, inhibit");
+#if 0
+  pAxis->setStringParam(EthercatMCaux7_,  "Aux 7");
+  pAxis->setStringParam(EthercatMCaux6_,  "Aux 6");
+  pAxis->setStringParam(EthercatMCaux5_,  "Aux 5");
+  pAxis->setStringParam(EthercatMCaux4_,  "Aux 4");
+  pAxis->setStringParam(EthercatMCaux3_,  "Aux 3");
+  pAxis->setStringParam(EthercatMCaux2_,  "Aux 2");
+  pAxis->setStringParam(EthercatMCaux1_,  "Aux 1");
+  pAxis->setStringParam(EthercatMCaux0_,  "Aux 0");
+#endif
+  /* AUX bits */
+  {
+    unsigned auxBitIdx = 0;
+    for (auxBitIdx = 0; auxBitIdx < 23; auxBitIdx++) {
+      if ((iAllFlags >> auxBitIdx) & 1) {
+        char auxBitName[34];
+        unsigned infoType16 = 16;
+        memset(&auxBitName, 0, sizeof(auxBitName));
+        status = readDeviceIndexer(indexerOffset, devNum, infoType16 + auxBitIdx);
+        if (!status) {
+          status = getPlcMemoryString(indexerOffset + 1*2,
+                                      auxBitName,
+                                      sizeof(auxBitName));
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                    "%sauxBitName[%d] auxBitName(%02u)=%s\n",
+                    modNamEMC, axisNo, auxBitIdx, auxBitName);
+          if (!status) {
+            pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
+          }
+        }
+      }
+    }
+  }
+  /* Unit code */
+  {
+    int validSoftlimits = fAbsMax > fAbsMin;
+    if (fAbsMin <= -3.0e+38 && fAbsMax >= 3.0e+38)
+      validSoftlimits = 0;
+
+    /* Soft limits */
+    /*  absolute values become read only limits */
+    pAxis->setIntegerParam(EthercatMCCfgDHLM_En_, validSoftlimits);
+    pAxis->setDoubleParam( EthercatMCCfgDHLM_,    fAbsMax);
+    pAxis->setIntegerParam(EthercatMCCfgDLLM_En_, validSoftlimits);
+    pAxis->setDoubleParam( EthercatMCCfgDLLM_,    fAbsMin);
+#ifdef motorHighLimitROString
+    if (validSoftlimits) {
+      pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);
+      pAxis->setDoubleParam(motorLowLimitRO_,  fAbsMin);
+    }
+#endif
+    /* More parameters */
+    IndexerReadAxisParameters(indexerOffset,
+                              iOffset,
+                              devNum,
+                              pAxis);
+  }
+}
+
 asynStatus EthercatMCController::initialPollIndexer(void)
 {
   asynStatus status;
@@ -835,7 +911,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   unsigned infoType5 = 5;
   unsigned infoType6 = 6;
   unsigned infoType7 = 7;
-  unsigned infoType16 = 16;
   int      axisNo = 0;
 
   memset(&descVersAuthors, 0, sizeof(descVersAuthors));
@@ -914,111 +989,48 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                               descVersAuthors.author2,
                               sizeof(descVersAuthors.author2));
     }
-    if (!iTypCode && !iSize && !iOffset) {
-      break; /* End of list ?? */
-    }
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sindexerDevice %20s "
-              "TypCode=0x%x Size=%u Offset=%u UnitCode=0x%x AllFlags=0x%x AbsMin=%e AbsMax=%e\n",
-              modNamEMC, descVersAuthors.desc,
-              iTypCode, iSize, iOffset,
-              iUnit, iAllFlags, fAbsMin, fAbsMax);
+              "%sindexerDevice Offset=%u %20s "
+              "TypCode=0x%x Size=%u UnitCode=0x%x AllFlags=0x%x AbsMin=%e AbsMax=%e\n",
+              modNamEMC, iOffset, descVersAuthors.desc,
+              iTypCode, iSize, iUnit, iAllFlags, fAbsMin, fAbsMax);
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sdescVersAuthors(%d)  vers=%s author1=%s author2=%s\n",
               modNamEMC, axisNo,
               descVersAuthors.vers,
               descVersAuthors.author1,
               descVersAuthors.author2);
+    if (!iTypCode && !iSize && !iOffset) {
+      break; /* End of list ?? */
+    }
     switch (iTypCode) {
-    case 0x5008:
-    case 0x500C:
-      axisNo++;
-      {
-        EthercatMCIndexerAxis *pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
-        if (!pAxis) {
-          pAxis = new EthercatMCIndexerAxis(this, axisNo);
-        }
-        pAxis->setStringParam(EthercatMCreason11_, "High limit");
-        pAxis->setStringParam(EthercatMCreason10_, "Low limit");
-        pAxis->setStringParam(EthercatMCreason9_,  "Dynamic problem, timeout");
-        pAxis->setStringParam(EthercatMCreason8_,  "Static problem, inhibit");
-#if 0
-        pAxis->setStringParam(EthercatMCaux7_,  "Aux 7");
-        pAxis->setStringParam(EthercatMCaux6_,  "Aux 6");
-        pAxis->setStringParam(EthercatMCaux5_,  "Aux 5");
-        pAxis->setStringParam(EthercatMCaux4_,  "Aux 4");
-        pAxis->setStringParam(EthercatMCaux3_,  "Aux 3");
-        pAxis->setStringParam(EthercatMCaux2_,  "Aux 2");
-        pAxis->setStringParam(EthercatMCaux1_,  "Aux 1");
-        pAxis->setStringParam(EthercatMCaux0_,  "Aux 0");
-#endif
-        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+      case 0x5008:
+      case 0x500C:
+        {
+          char unitCodeTxt[40];
+          EthercatMCIndexerAxis *pAxis;
+          axisNo++;
+          newIndexerAxis(axisNo,
+                         indexerOffset,
+                         devNum,
+                         iAllFlags,
+                         fAbsMin,
+                         fAbsMax,
+                         iOffset);
+          /* Now we have an axis */
+          pAxis= static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
                     "%sTypeCode(%d) iTypCode=%x pAxis=%p\n",
                     modNamEMC, axisNo, iTypCode, pAxis);
-        {
-          unsigned auxBitIdx = 0;
-          for (auxBitIdx = 0; auxBitIdx < 23; auxBitIdx++) {
-            if ((iAllFlags >> auxBitIdx) & 1) {
-              char auxBitName[34];
-              memset(&auxBitName, 0, sizeof(auxBitName));
-              status = readDeviceIndexer(indexerOffset, devNum, infoType16 + auxBitIdx);
-              if (!status) {
-                  status = getPlcMemoryString(indexerOffset + 1*2,
-                                              auxBitName,
-                                              sizeof(auxBitName));
-                  asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                            "%sauxBitName[%d] auxBitName(%02u)=%s\n",
-                            modNamEMC, axisNo, auxBitIdx, auxBitName);
-                  if (!status) {
-                    pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
-                  }
-              }
-            }
-          }
-        }
-      }
-      break;
-    default:
-      ;
-    }
-    /* param devices */
-    switch (iTypCode) {
-    case 0x5008:
-    case 0x500C:
-      {
-        char unitCodeTxt[40];
-        int validSoftlimits = fAbsMax > fAbsMin;
-        EthercatMCIndexerAxis *pAxis;
-        if (fAbsMin <= -3.0e+38 && fAbsMax >= 3.0e+38)
-          validSoftlimits = 0;
 
-        pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
-        /* Soft limits */
-        /*  absolute values become read only limits */
-        pAxis->setIntegerParam(EthercatMCCfgDHLM_En_, validSoftlimits);
-        pAxis->setDoubleParam( EthercatMCCfgDHLM_,    fAbsMax);
-        pAxis->setIntegerParam(EthercatMCCfgDLLM_En_, validSoftlimits);
-        pAxis->setDoubleParam( EthercatMCCfgDLLM_,    fAbsMin);
-#ifdef motorHighLimitROString
-        if (validSoftlimits) {
-          pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);
-          pAxis->setDoubleParam(motorLowLimitRO_,  fAbsMin);
+          pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
+          setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
+          snprintf(unitCodeTxt, sizeof(unitCodeTxt), "%s%s",
+          plcUnitPrefixTxt(( (int8_t)((iUnit & 0xFF00)>>8))),
+          plcUnitTxtFromUnitCode(iUnit & 0xFF));
+          setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
         }
-#endif
-        /* More parameters */
-        IndexerReadAxisParameters(indexerOffset,
-                                  iOffset,
-                                  devNum,
-                                  pAxis);
-        pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
-        setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
-        snprintf(unitCodeTxt, sizeof(unitCodeTxt), "%s%s",
-                 plcUnitPrefixTxt(( (int8_t)((iUnit & 0xFF00)>>8))),
-                 plcUnitTxtFromUnitCode(iUnit & 0xFF));
-        setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
-      }
-      break;
-    }
+     }
   }
 
  endPollIndexer:

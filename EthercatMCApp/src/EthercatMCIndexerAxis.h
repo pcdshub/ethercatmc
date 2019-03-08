@@ -34,7 +34,8 @@ private:
     }  dirty;
       unsigned iTypCode;
       unsigned iOffset;
-      unsigned old_tatusReasonAux;
+      unsigned old_statusReasonAux;
+      unsigned old_paramCtrl;
       unsigned int hasProblem :1;
   } drvlocal;
 

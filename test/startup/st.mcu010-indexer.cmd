@@ -8,6 +8,7 @@ epicsEnvSet("ASYN_PORT",     "$(SM_ASYN_PORT=MC_CPU1)")
 epicsEnvSet("PREFIX",        "$(SM_PREFIX=IOC:)")
 epicsEnvSet("PREC",          "$(SM_PREC=3)")
 epicsEnvSet("SM_NOAXES",     "3")
+epicsEnvSet("ADSPORT",       "$(ECM_ADSPORT=851)")
 
 < EthercatMCController.cmd
 

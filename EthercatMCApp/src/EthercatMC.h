@@ -343,6 +343,13 @@ public:
                                        unsigned devNum,
                                        EthercatMCIndexerAxis *pAxis);
   asynStatus poll(void);
+  void newIndexerAxis(unsigned axisNo,
+                      unsigned indexerOffset,
+                      unsigned devNum,
+                      unsigned iAllFlags,
+                      double   fAbsMin,
+                      double   fAbsMax,
+                      unsigned iOffset);
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
