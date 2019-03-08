@@ -459,9 +459,8 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
       case PARAM_IF_CMD_DONE:
       case PARAM_IF_CMD_ERR_NO_IDX:
       case PARAM_IF_CMD_READONLY:
-        return asynSuccess;
       case PARAM_IF_CMD_RETRY_LATER:
-        return asynDisabled;
+        return asynSuccess;
       default:
         ; /* Read, write or busy. continue looping */
     }
@@ -490,8 +489,8 @@ asynStatus EthercatMCController::indexerPrepareParamRead(unsigned indexOffset,
   status = indexerParamWaitNotBusy(indexOffset);
   if (status) {
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sout=%s in=%s status=%s (%d)\n",
-              modNamEMC, outString_, inString_,
+              "%sout=%s in=%s (%x) status=%s (%d)\n",
+              modNamEMC, outString_, inString_, atoi(inString_),
               pasynManager->strStatus(status), (int)status);
     return status;
   }
