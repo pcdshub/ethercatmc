@@ -32,11 +32,10 @@ private:
         unsigned int oldStatusDisconnected : 1;
         unsigned int initialPollNeeded :1;
     }  dirty;
-      unsigned int adsPort;
       unsigned iTypCode;
       unsigned iOffset;
       unsigned old_tatusReasonAux;
-      unsigned int hasError :1;
+      unsigned int hasProblem :1;
   } drvlocal;
 
   friend class EthercatMCController;

@@ -340,7 +340,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     }
 
     setDoubleParam(pC_->motorPosition_, actPosition);
-    drvlocal.hasError = 0;
+    drvlocal.hasProblem = 0;
     idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     if (statusReasonAux != drvlocal.old_tatusReasonAux) {
@@ -359,6 +359,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       break;
     case idxStatusCodePOWEROFF:
       statusValid = 1;
+      drvlocal.hasProblem = 1;
       powerIsOn = 0;
       break;
     case idxStatusCodeBUSY:
@@ -367,10 +368,10 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       break;
     case idxStatusCodeERROR:
       statusValid = 1;
-      drvlocal.hasError = 1;
+      drvlocal.hasProblem = 1;
       break;
     default:
-      drvlocal.hasError = 1;
+      drvlocal.hasProblem = 1;
     }
     if (statusValid) {
       int hls = statusReasonAux & 0x0800 ? 1 : 0;
@@ -383,7 +384,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     }
     *moving = nowMoving;
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
-    setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasError);
+    setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasProblem);
     setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
     setIntegerParam(pC_->motorStatusCommsError_, 0);
     drvlocal.old_tatusReasonAux = statusReasonAux;
