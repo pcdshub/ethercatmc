@@ -306,7 +306,7 @@ asynStatus checkACK(const char *outdata, size_t outlen,
 asynStatus EthercatMCController::writeReadControllerPrint(int traceMask)
 {
   asynStatus status = writeReadOnErrorDisconnect();
-  if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+  if (status && ctrlLocal.isConnected) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, outString_, inString_,
