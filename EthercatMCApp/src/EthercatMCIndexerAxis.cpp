@@ -370,12 +370,26 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
                 idxStatusCodeTypeToStr(idxStatusCode));
       drvlocal.old_statusReasonAux = statusReasonAux;
     }
-    if (paramCtrl != drvlocal.old_paramCtrl) {
+    if ((paramCtrl != drvlocal.old_paramCtrl) ||
+        (paramValue != drvlocal.old_paramValue)) {
       asynPrint(pC_->pasynUserController_, traceMask,
                 "%spoll(%d) paramCtrl=%x paramValue=%f\n",
                 modNamEMC, axisNo_,
                 paramCtrl, paramValue);
+      if ((paramCtrl & PARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
+        switch (paramCtrl & PARAM_IF_IDX_MASK) {
+        case PARAM_IDX_SPEED_FLOAT32:
+          setDoubleParam(pC_->EthercatMCVel_RB_, paramValue);
+          break;
+        case PARAM_IDX_ACCEL_FLOAT32:
+          setDoubleParam(pC_->EthercatMCAcc_RB_, paramValue);
+          break;
+        default:
+        break;
+        }
+      }
       drvlocal.old_paramCtrl = paramCtrl;
+      drvlocal.old_paramValue = paramValue;
     }
     switch (idxStatusCode) {
       /* After RESET, START, STOP the bits are not valid */

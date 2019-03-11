@@ -1,3 +1,17 @@
+/* Parameter interface */
+/* The highest 3 bits are used for the command itself */
+#define PARAM_IF_CMD_MASK                          0xE000
+#define PARAM_IF_IDX_MASK                          0x1FFF
+
+#define PARAM_IF_CMD_INVALID                       0x0000
+#define PARAM_IF_CMD_DOREAD                        0x2000
+#define PARAM_IF_CMD_DOWRITE                       0x4000
+#define PARAM_IF_CMD_BUSY                          0x6000
+#define PARAM_IF_CMD_DONE                          0x8000
+#define PARAM_IF_CMD_ERR_NO_IDX                    0xA000
+#define PARAM_IF_CMD_READONLY                      0xC000
+#define PARAM_IF_CMD_RETRY_LATER                   0xE000
+
 extern "C" {
   int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisNo,
                                   int axisFlags, const char *axisOptionsStr);
@@ -32,6 +46,7 @@ private:
         unsigned int oldStatusDisconnected : 1;
         unsigned int initialPollNeeded :1;
     }  dirty;
+      double old_paramValue;
       unsigned iTypCode;
       unsigned iOffset;
       unsigned old_statusReasonAux;
