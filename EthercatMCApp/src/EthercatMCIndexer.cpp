@@ -685,12 +685,14 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
     break;
   case PARAM_IDX_SPEED_FLOAT32:
     pAxis->setDoubleParam(EthercatMCCfgVELO_, fValue);
+    pAxis->setDoubleParam(EthercatMCVel_RB_, fValue);
 #ifdef motorDefVelocityROString
     pAxis->setDoubleParam(motorDefVelocityRO_, fValue);
 #endif
     break;
   case PARAM_IDX_ACCEL_FLOAT32:
     pAxis->setDoubleParam(EthercatMCCfgACCS_, fValue);
+    pAxis->setDoubleParam(EthercatMCAcc_RB_, fValue);
 #ifdef motorDefJogAccROString
     pAxis->setDoubleParam(motorDefJogAccRO_, fValue);
 #endif

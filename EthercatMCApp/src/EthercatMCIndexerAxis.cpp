@@ -205,25 +205,35 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
             "EthercatMCIndexerAxis", axisNo_,
             position, relative, minVelocity, maxVelocity, acceleration);
   if (maxVelocity > 0.0) {
-    status = pC_->indexerParamWrite(paramIfOffset,
-                                    PARAM_IDX_SPEED_FLOAT32, maxVelocity);
-    if (status) {
-      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%smove (%d) status=%s (%d)\n",
-                "EthercatMCIndexerAxis", axisNo_,
-                pasynManager->strStatus(status), (int)status);
-      return status;
+    double oldValue;
+    pC_->getDoubleParam(axisNo_, pC_->EthercatMCVel_RB_, &oldValue);
+    if (maxVelocity != oldValue) {
+      status = pC_->indexerParamWrite(paramIfOffset,
+                                      PARAM_IDX_SPEED_FLOAT32, maxVelocity);
+      if (status) {
+        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%smove (%d) status=%s (%d)\n",
+                  "EthercatMCIndexerAxis", axisNo_,
+                  pasynManager->strStatus(status), (int)status);
+        return status;
+      }
+      setDoubleParam(pC_->EthercatMCVel_RB_, maxVelocity);
     }
   }
   if (acceleration > 0.0) {
-    status = pC_->indexerParamWrite(paramIfOffset,
-                                    PARAM_IDX_ACCEL_FLOAT32, acceleration);
-    if (status) {
-      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%smove (%d) status=%s (%d)\n",
-                "EthercatMCIndexerAxis", axisNo_,
-                pasynManager->strStatus(status), (int)status);
-      return status;
+    double oldValue;
+    pC_->getDoubleParam(axisNo_, pC_->EthercatMCAcc_RB_, &oldValue);
+    if (acceleration != oldValue) {
+      status = pC_->indexerParamWrite(paramIfOffset,
+                                      PARAM_IDX_ACCEL_FLOAT32, acceleration);
+      if (status) {
+        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%smove (%d) status=%s (%d)\n",
+                  "EthercatMCIndexerAxis", axisNo_,
+                  pasynManager->strStatus(status), (int)status);
+        return status;
+      }
+      setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
     }
   }
   snprintf(pC_->outString_, sizeof(pC_->outString_),
