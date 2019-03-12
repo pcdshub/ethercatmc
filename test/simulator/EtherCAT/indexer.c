@@ -178,13 +178,12 @@ static union {
       indexerInfoType4_type  infoType4;
       indexerInfoType15_type infoType15;
       } indexer;
-    indexerDevice5008interface_type motor1;
+    /* Remember that motor[0] is defined, but never used */
+    indexerDevice5008interface_type motors[MAX_AXES];
     } memoryStruct;
 } idxData;
 
 static int initDone = 0;
-static unsigned offsetMotor1StatusReasonAux;
-static unsigned offsetMotor1ActualValue;
 static unsigned offsetMotor1ParamInterface;
 
 /* values commanded to the motor */
@@ -201,20 +200,12 @@ static void init(void)
     (unsigned)((void*)&idxData.memoryStruct.indexer_ack - (void*)&idxData);
   idxData.memoryStruct.offset = offsetIndexer;
 
-  offsetMotor1StatusReasonAux =
-    (unsigned)((void*)&idxData.memoryStruct.motor1.statusReasonAux - (void*)&idxData);
-  offsetMotor1ActualValue =
-    (unsigned)((void*)&idxData.memoryStruct.motor1.actualValue - (void*)&idxData);
   offsetMotor1ParamInterface =
-    (unsigned)((void*)&idxData.memoryStruct.motor1.paramCtrl - (void*)&idxData);
+    (unsigned)((void*)&idxData.memoryStruct.motors[1].paramCtrl - (void*)&idxData);
 
-  LOGINFO3("%s/%s:%d offsetIndexer=%u offsetMotor1StatusReasonAux=%u"
-           " offsetMotor1ActualValue=%u offsetMotor1ParamInterface=%u\n",
+  LOGINFO3("%s/%s:%d offsetIndexer=%u offsetMotor1ParamInterface=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
-           offsetIndexer,
-           offsetMotor1StatusReasonAux,
-           offsetMotor1ActualValue,
-           offsetMotor1ParamInterface);
+           offsetIndexer, offsetMotor1ParamInterface);
   initDone = 1;
 }
 
@@ -267,7 +258,7 @@ static void init_axis(int axis_no)
   }
 }
 
-static unsigned
+static void
 indexerMotorStatusRead(unsigned motor_axis_no,
                        indexerDevice5008interface_type *pIndexerDevice5008interface)
 {
@@ -324,7 +315,6 @@ indexerMotorStatusRead(unsigned motor_axis_no,
 
   ret = statusReasonAux | (idxStatusCode << 12);;
   pIndexerDevice5008interface->statusReasonAux = ret;
-  return ret;
 }
 
 
@@ -435,7 +425,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         }
         idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
         /* Offset to the first motor */
-        offset = (unsigned)((void*)&idxData.memoryStruct.motor1 - (void*)&idxData);
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum] - (void*)&idxData);
         if (devNum > 1) {
           /* TODO: Support other interface types */
           offset += sizeof(indexerDevice5008interface_type);
@@ -443,7 +433,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
       }
-      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%xack=0x%x\n",
+      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%x ack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
                &idxData, &idxData.memoryStruct.indexer,
                (unsigned)((void*)&idxData.memoryStruct.indexer - (void*)&idxData),
@@ -505,14 +495,9 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
   if (offset & 0x1) /* Must be even */
     return __LINE__;
   if (len_in_PLC == 2) {
-    if (offset == offsetMotor1StatusReasonAux) {
-      unsigned motor = 1;
-      ret = indexerMotorStatusRead(motor, &idxData.memoryStruct.motor1);
-      *uValue = ret;
-      return 0;
-    }
     ret = idxData.memoryWords[offset / 2];
     *uValue = ret;
+    /*
     LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u mot1=%u ret=%u (0x%x)\n",
              __FILE__, __FUNCTION__, __LINE__,
              adsport,
@@ -520,7 +505,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
              len_in_PLC,
              offsetMotor1StatusReasonAux,
              ret, ret);
-
+    */
     return 0;
   } else if (len_in_PLC == 4) {
     ret = idxData.memoryWords[offset / 2] +
@@ -545,11 +530,6 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
            uValue, uValue);
   if (offset == offsetIndexer) {
     return indexerHandleIndexerCmd(offset, len_in_PLC, uValue);
-  } else if (offset == offsetMotor1StatusReasonAux) {
-    indexerDevice5008interface_type *pIndexerDevice5008interface;
-    pIndexerDevice5008interface = &idxData.memoryStruct.motor1;
-    pIndexerDevice5008interface->statusReasonAux = uValue;
-    return 0;
   } else if (offset == offsetMotor1ParamInterface) {
     unsigned motor_axis_no = 1;
     unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
@@ -594,8 +574,14 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
       idxData.memoryWords[offset / 2] = ret;
       return 0;
     }
-
+  } else if (offset < (sizeof(idxData) / sizeof(uint16_t))) {
+    idxData.memoryWords[offset / 2] = uValue;
+    return 0;
   }
+  LOGERR("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)sizeof=%lu\n",
+         __FILE__, __FUNCTION__, __LINE__,
+         adsport, offset, len_in_PLC, uValue, uValue,
+         (unsigned long)(sizeof(idxData) / sizeof(uint16_t)));
 
   return __LINE__;
 }
@@ -610,17 +596,9 @@ int indexerHandleADS_ADR_getFloat(unsigned adsport,
   if (offset + len_in_PLC >= sizeof(idxData))
     return 1;
   if (len_in_PLC == 4) {
-    if (offset == offsetMotor1ActualValue) {
-      int motor_axis_no = 1;
-      fRet = getMotorPos(motor_axis_no);
-      memcpy(&idxData.memoryBytes[offset],
-             &fRet,
-             sizeof(fRet));
-    } else {
-      memcpy(&fRet,
-             &idxData.memoryBytes[offset],
-             sizeof(fRet));
-    }
+    memcpy(&fRet,
+           &idxData.memoryBytes[offset],
+           sizeof(fRet));
     *fValue = (double)fRet;
     return 0;
   }
@@ -662,3 +640,33 @@ int indexerHandleADS_ADR_getString(unsigned adsport,
   *sValue = (char *)&idxData.memoryBytes[offset];
   return 0;
 };
+
+void indexerHandlePLCcycle(void)
+{
+  unsigned devNum = 1;
+  init();
+  while (devNum < (sizeof(indexerDeviceAbsStraction)/
+                   sizeof(indexerDeviceAbsStraction[0]))) {
+    switch (indexerDeviceAbsStraction[devNum].typeCode) {
+    case TYPECODE_PARAMDEVICE_5008:
+      {
+        float fRet;
+        unsigned offset;
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].actualValue -
+                            (void*)&idxData);
+
+        fRet = getMotorPos((int)devNum);
+        LOGINFO6("%s/%s:%d devNum=%u offset=%u fRet=%f\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 devNum, offset, (double)fRet);
+        memcpy(&idxData.memoryBytes[offset], &fRet, sizeof(fRet));
+        /* status */
+        indexerMotorStatusRead(devNum, &idxData.memoryStruct.motors[1]);
+      }
+      break;
+    default:
+    break;
+    }
+    devNum++;
+  }
+}

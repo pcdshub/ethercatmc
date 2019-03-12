@@ -1035,6 +1035,8 @@ static void motorHandleOneArg(const char *myarg_1)
 void cmd_EAT(int argc, const char *argv[])
 {
   const char *myargline = (argc > 0) ? argv[0] : "";
+  int is_indexer_cmd = 0;
+
   if (PRINT_STDOUT_BIT6())
   {
     const char *myarg[5];
@@ -1052,6 +1054,11 @@ void cmd_EAT(int argc, const char *argv[])
   }
 
   while (argc > 1) {
+    if (!is_indexer_cmd && strstr(argv[1], "1/.ADR.16#4020,")) {
+      is_indexer_cmd = 1;
+      indexerHandlePLCcycle();
+    }
+
     motorHandleOneArg(argv[1]);
     cmd_buf_printf("%s", seperator_seperator);
     argc--;
