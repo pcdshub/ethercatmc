@@ -306,6 +306,70 @@ void EthercatMCController::handleStatusChange(asynStatus status)
   }
 }
 
+asynStatus EthercatMCController::getFeatures(int *pFeatures)
+{
+  /* The features we know about */
+  const char * const sim_str = "sim";
+  const char * const stECMC_str = "ecmc";
+  const char * const stV1_str = "stv1";
+  const char * const stV2_str = "stv2";
+  const char * const ads_str = "ads";
+  static const unsigned adsports[] = {851, 852, 853};
+  unsigned adsport_idx;
+  asynStatus status = asynSuccess;
+  int features = 0;
+  *pFeatures = features;
+  for (adsport_idx = 0;
+       adsport_idx < sizeof(adsports)/sizeof(adsports[0]);
+       adsport_idx++) {
+    unsigned adsport = adsports[adsport_idx];
+    snprintf(outString_, sizeof(outString_),
+             "ADSPORT=%u/.THIS.sFeatures?",
+             adsport);
+    inString_[0] = 0;
+    status = writeReadOnErrorDisconnect();
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%sout=%s in=%s status=%s (%d)\n",
+              modNamEMC, outString_, inString_,
+              pasynManager->strStatus(status), (int)status);
+
+    if (status) return status;
+
+    /* loop through the features */
+    char *pFeaturesStr = strdup(inString_);
+    char *pThisFeature = pFeaturesStr;
+    char *pNextFeature = pFeaturesStr;
+
+    while (pNextFeature && pNextFeature[0]) {
+      pNextFeature = strchr(pNextFeature, ';');
+      if (pNextFeature) {
+        *pNextFeature = '\0'; /* Terminate */
+        pNextFeature++;       /* Jump to (possible) next */
+      }
+      if (!strcmp(pThisFeature, sim_str)) {
+        features |= FEATURES_SIM;
+      } else if (!strcmp(pThisFeature, stECMC_str)) {
+        features |= FEATURES_ECMC;
+      } else if (!strcmp(pThisFeature, stV1_str)) {
+        features |= FEATURES_V1;
+      } else if (!strcmp(pThisFeature, stV2_str)) {
+        features |= FEATURES_V2;
+      } else if (!strcmp(pThisFeature, ads_str)) {
+        features |= FEATURES_ADS;
+      }
+      pThisFeature = pNextFeature;
+    }
+    free(pFeaturesStr);
+    if (features){
+      /* Found something useful on this adsport */
+      *pFeatures = features;
+      return asynSuccess;
+    }
+  }
+  return asynError;
+}
+
+
 /** Reports on status of the driver
   * \param[in] fp The file pointer on which report information will be written
   * \param[in] level The level of report detail desired

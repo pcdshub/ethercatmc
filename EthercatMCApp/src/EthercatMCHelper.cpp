@@ -232,65 +232,15 @@ int EthercatMCAxis::getMotionAxisID(void)
 
 asynStatus EthercatMCAxis::getFeatures(void)
 {
-  /* The features we know about */
-  const char * const sim_str = "sim";
-  const char * const stECMC_str = "ecmc";
-  const char * const stV1_str = "stv1";
-  const char * const stV2_str = "stv2";
-  const char * const ads_str = "ads";
-  static const unsigned adsports[] = {851, 852, 853};
-  unsigned adsport_idx;
-  asynStatus status = asynSuccess;
-  for (adsport_idx = 0;
-       adsport_idx < sizeof(adsports)/sizeof(adsports[0]);
-       adsport_idx++) {
-    unsigned adsport = adsports[adsport_idx];
-    snprintf(pC_->outString_, sizeof(pC_->outString_),
-             "ADSPORT=%u/.THIS.sFeatures?",
-             adsport);
-    pC_->inString_[0] = 0;
-    status = pC_->writeReadOnErrorDisconnect();
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%sout=%s in=%s status=%s (%d)\n",
-              modNamEMC, pC_->outString_, pC_->inString_,
-              pasynManager->strStatus(status), (int)status);
-
-    if (status) return status;
-
-    /* loop through the features */
-    char *pFeatures = strdup(pC_->inString_);
-    char *pThisFeature = pFeatures;
-    char *pNextFeature = pFeatures;
-
-    while (pNextFeature && pNextFeature[0]) {
-      pNextFeature = strchr(pNextFeature, ';');
-      if (pNextFeature) {
-        *pNextFeature = '\0'; /* Terminate */
-        pNextFeature++;       /* Jump to (possible) next */
-      }
-      if (!strcmp(pThisFeature, sim_str)) {
-        drvlocal.supported.bSIM = 1;
-      } else if (!strcmp(pThisFeature, stECMC_str)) {
-        drvlocal.supported.bECMC = 1;
-      } else if (!strcmp(pThisFeature, stV1_str)) {
-        drvlocal.supported.stAxisStatus_V1 = 1;
-      } else if (!strcmp(pThisFeature, stV2_str)) {
-        drvlocal.supported.stAxisStatus_V2 = 1;
-      } else if (!strcmp(pThisFeature, ads_str)) {
-        drvlocal.supported.bADS = 1;
-      }
-      pThisFeature = pNextFeature;
-    }
-    free(pFeatures);
-    if (drvlocal.supported.bSIM ||
-        drvlocal.supported.bECMC ||
-        drvlocal.supported.bADS ||
-        drvlocal.supported.stAxisStatus_V1) {
-      /* Found something useful on this adsport */
-      return asynSuccess;
-    }
-  }
-  return asynError;
+  int features;
+  asynStatus status = pC_->getFeatures(&features);
+  if (status) return status;
+  if (features & FEATURES_SIM) drvlocal.supported.bSIM = 1;
+  if (features & FEATURES_ECMC) drvlocal.supported.bECMC = 1;
+  if (features & FEATURES_V1) drvlocal.supported.stAxisStatus_V1 = 1;
+  if (features & FEATURES_V2) drvlocal.supported.stAxisStatus_V2 = 1;
+  if (features & FEATURES_ADS) drvlocal.supported.bADS = 1;
+  return status;
 }
 
 

@@ -18,6 +18,12 @@ FILENAME...   EthercatMC.h
 #define AMPLIFIER_ON_FLAG_WHEN_HOMING  (1<<1)
 #define AMPLIFIER_ON_FLAG_USING_CNEN   (1<<2)
 
+#define FEATURES_V1                    (1)
+#define FEATURES_V2                    (1<<1)
+#define FEATURES_ECMC                  (1<<2)
+#define FEATURES_ADS                   (1<<3)
+#define FEATURES_SIM                   (1<<4)
+
 #ifndef motorRecResolutionString
 #define CREATE_MOTOR_REC_RESOLUTION
 #define motorRecDirectionString         "MOTOR_REC_DIRECTION"
@@ -301,6 +307,7 @@ public:
   EthercatMCAxis* getAxis(int axisNo);
   protected:
   void handleStatusChange(asynStatus status);
+  asynStatus getFeatures(int *pFeatures);
   struct {
     unsigned int local_no_ASYN_;
     unsigned int hasConfigError;
