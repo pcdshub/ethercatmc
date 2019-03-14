@@ -279,7 +279,30 @@ asynStatus EthercatMCIndexerAxis::home(double minVelocity, double maxVelocity, d
  */
 asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity, double maxVelocity, double acceleration)
 {
-  return asynSuccess;
+  asynStatus status;
+  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
+  (void)minVelocity;
+  (void)acceleration;
+  if (acceleration > 0.0) {
+    double oldValue;
+    pC_->getDoubleParam(axisNo_, pC_->EthercatMCAcc_RB_, &oldValue);
+    if (acceleration != oldValue) {
+      status = pC_->indexerParamWrite(paramIfOffset,
+                                      PARAM_IDX_ACCEL_FLOAT32, acceleration);
+      if (status) {
+        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%smoveVelocity (%d) status=%s (%d)\n",
+                  "EthercatMCIndexerAxis", axisNo_,
+                  pasynManager->strStatus(status), (int)status);
+        return status;
+      }
+      setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
+    }
+  }
+  status = pC_->indexerParamWrite(paramIfOffset,
+                                  PARAM_IDX_FUN_MOVE_VELOCITY,
+                                  maxVelocity);
+  return status;
 }
 
 

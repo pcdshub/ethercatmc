@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <math.h>
 #include "hw_motor.h"
 #include "indexer.h"
 #include "logerr_info.h"
@@ -77,6 +78,7 @@ typedef enum {
 #define PARAM_IDX_STEPS_PER_UNIT_FLOAT32       68
 #define PARAM_IDX_HOME_POSITION_FLOAT32        69
 #define PARAM_IDX_FUN_REFERENCE               133
+#define PARAM_IDX_FUN_MOVE_VELOCITY           142
 
 
 
@@ -433,16 +435,21 @@ indexerMotorParamInterface(unsigned motor_axis_no, unsigned offset)
     case PARAM_IDX_FUN_REFERENCE:
       {
         int direction = 0;
-        int nCmdData = 1;
-        double position = 0;
         double max_velocity = 2;
         double acceleration = 3;
-        moveHomeProc(motor_axis_no,
+        moveHome(motor_axis_no,
+                 direction,
+                 max_velocity,
+                 acceleration);
+        ret = PARAM_IF_CMD_DONE | paramIndex;
+      }
+    case PARAM_IDX_FUN_MOVE_VELOCITY:
+      {
+        int direction = fFloat > 0.0;
+        moveVelocity(motor_axis_no,
                      direction,
-                     nCmdData,
-                     position,
-                     max_velocity,
-                     acceleration);
+                     fabs(fFloat),
+                     cmd_Motor_cmd[motor_axis_no].fAcceleration);
         ret = PARAM_IF_CMD_DONE | paramIndex;
       }
       break;
