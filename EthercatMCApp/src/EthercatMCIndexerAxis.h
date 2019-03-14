@@ -18,9 +18,11 @@
 extern "C" {
   int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisNo,
                                   int axisFlags, const char *axisOptionsStr);
-  static const uint16_t pollNowParams[2] = {
+  static const uint16_t pollNowParams[4] = {
     PARAM_IDX_SPEED_FLOAT32,
-    PARAM_IDX_ACCEL_FLOAT32
+    PARAM_IDX_ACCEL_FLOAT32,
+    PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32,
+    PARAM_IDX_HYTERESIS_FLOAT32
   };
 
 };

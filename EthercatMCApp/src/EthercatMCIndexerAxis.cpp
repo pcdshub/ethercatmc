@@ -413,16 +413,9 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
                 modNamEMC, axisNo_,
                 paramCtrl, paramValue);
       if ((paramCtrl & PARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
-        switch (paramCtrl & PARAM_IF_IDX_MASK) {
-        case PARAM_IDX_SPEED_FLOAT32:
-          setDoubleParam(pC_->EthercatMCVel_RB_, paramValue);
-          break;
-        case PARAM_IDX_ACCEL_FLOAT32:
-          setDoubleParam(pC_->EthercatMCAcc_RB_, paramValue);
-          break;
-        default:
-        break;
-        }
+        pC_->parameterFloatReadBack(axisNo_,
+                                    paramCtrl & PARAM_IF_IDX_MASK,
+                                    paramValue);
       }
       drvlocal.old_paramCtrl = paramCtrl;
       drvlocal.old_paramValue = paramValue;
