@@ -236,6 +236,11 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
       setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
     }
   }
+  if (relative){
+    double actPosition;
+    pC_->getDoubleParam(axisNo_, pC_->motorPosition_, &actPosition);
+    position = position - actPosition;
+  }
   snprintf(pC_->outString_, sizeof(pC_->outString_),
            "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f;ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
            pC_->adsport, indexGroup, drvlocal.iOffset + 4, position,
