@@ -2,6 +2,9 @@
 /* The highest 3 bits are used for the command itself */
 #define PARAM_IF_CMD_MASK                          0xE000
 #define PARAM_IF_IDX_MASK                          0x1FFF
+/* highes bit is ACK: PLC has done something */
+#define PARAM_IF_ACK_MASK                          0x8000
+
 
 #define PARAM_IF_CMD_INVALID                       0x0000
 #define PARAM_IF_CMD_DOREAD                        0x2000
@@ -15,6 +18,11 @@
 extern "C" {
   int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisNo,
                                   int axisFlags, const char *axisOptionsStr);
+  static const uint16_t pollNowParams[2] = {
+    PARAM_IDX_SPEED_FLOAT32,
+    PARAM_IDX_ACCEL_FLOAT32
+  };
+
 };
 
 class epicsShareClass EthercatMCIndexerAxis : public asynMotorAxis
@@ -39,19 +47,20 @@ public:
 private:
   EthercatMCController *pC_;
 
+  struct {
+    double     scaleFactor;
+    const char *externalEncoderStr;
     struct {
-      double     scaleFactor;
-      const char *externalEncoderStr;
-      struct {
-        unsigned int oldStatusDisconnected : 1;
-        unsigned int initialPollNeeded :1;
+      unsigned int oldStatusDisconnected : 1;
+      unsigned int initialPollNeeded :1;
     }  dirty;
-      double old_paramValue;
-      unsigned iTypCode;
-      unsigned iOffset;
-      unsigned old_statusReasonAux;
-      unsigned old_paramCtrl;
-      unsigned int hasProblem :1;
+    double old_paramValue;
+    unsigned pollNowIdx;
+    unsigned iTypCode;
+    unsigned iOffset;
+    unsigned old_statusReasonAux;
+    unsigned old_paramCtrl;
+    unsigned int hasProblem :1;
   } drvlocal;
 
   friend class EthercatMCController;

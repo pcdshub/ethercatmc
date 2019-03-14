@@ -372,7 +372,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     }
     if ((paramCtrl != drvlocal.old_paramCtrl) ||
         (paramValue != drvlocal.old_paramValue)) {
-      asynPrint(pC_->pasynUserController_, traceMask,
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
                 "%spoll(%d) paramCtrl=%x paramValue=%f\n",
                 modNamEMC, axisNo_,
                 paramCtrl, paramValue);
@@ -427,6 +427,22 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasProblem);
     setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
     setIntegerParam(pC_->motorStatusCommsError_, 0);
+    /* Read back the parameters one by one */
+    if (!nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {
+      unsigned newParamCtrl;
+      drvlocal.pollNowIdx++;
+      if (drvlocal.pollNowIdx >= sizeof(pollNowParams)/sizeof(pollNowParams[0])) {
+        drvlocal.pollNowIdx = 0;
+      }
+      newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
+      snprintf(pC_->outString_, sizeof(pC_->outString_),
+               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18=%d",
+               pC_->adsport,
+               indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
+               newParamCtrl
+               );
+      pC_->writeReadACK(ASYN_TRACE_FLOW);
+    }
     callParamCallbacks();
   }
 
@@ -442,7 +458,7 @@ asynStatus EthercatMCIndexerAxis::resetAxis(void)
   unsigned traceMask = ASYN_TRACE_INFO;
   unsigned cmdReason = idxStatusCodeRESET << 12;
   status = pC_->setPlcMemoryInteger(drvlocal.iOffset + reg * lenInPlc,
-                                           cmdReason, lenInPlc);
+                                    cmdReason, lenInPlc);
   asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,

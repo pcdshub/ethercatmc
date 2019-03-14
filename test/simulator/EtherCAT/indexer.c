@@ -161,7 +161,6 @@ typedef struct
 {
   double fVelocity;
   double fAcceleration;
-  double fDeceleration;
 } cmd_Motor_cmd_type;
 
 
@@ -328,7 +327,7 @@ indexerMotorParamRead(unsigned motor_axis_no,
                       double *fRet)
 
 {
-  uint16_t ret = paramIndex | PARAM_IF_CMD_DONE;
+  uint16_t ret = PARAM_IF_CMD_DONE | paramIndex;
   if (motor_axis_no >= MAX_AXES) {
     return PARAM_IF_CMD_ERR_NO_IDX;
   }
@@ -336,14 +335,17 @@ indexerMotorParamRead(unsigned motor_axis_no,
   init_axis((int)motor_axis_no);
 
   switch(paramIndex) {
-    case PARAM_IDX_SPEED_FLOAT32:
-      *fRet = cmd_Motor_cmd[motor_axis_no].fVelocity;
-      return ret;
-    default:
-      break;
+  case PARAM_IDX_SPEED_FLOAT32:
+    *fRet = cmd_Motor_cmd[motor_axis_no].fVelocity;
+    return ret;
+  case PARAM_IDX_ACCEL_FLOAT32:
+    *fRet = cmd_Motor_cmd[motor_axis_no].fAcceleration;
+    return ret;
+  default:
+    break;
   }
 
-  return PARAM_IF_CMD_ERR_NO_IDX;
+  return PARAM_IF_CMD_ERR_NO_IDX | paramIndex;
 }
 
 /* Writes a parameter.
@@ -355,7 +357,7 @@ indexerMotorParamWrite(unsigned motor_axis_no,
                        double fValue)
 
 {
-  uint16_t ret = paramIndex | PARAM_IF_CMD_DONE;
+  uint16_t ret = PARAM_IF_CMD_DONE | paramIndex;
   if (motor_axis_no >= MAX_AXES) {
     return PARAM_IF_CMD_ERR_NO_IDX;
   }
@@ -363,27 +365,29 @@ indexerMotorParamWrite(unsigned motor_axis_no,
   init_axis((int)motor_axis_no);
 
   switch(paramIndex) {
-    case PARAM_IDX_SPEED_FLOAT32:
-      cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
-      return ret;
-    default:
-      break;
+  case PARAM_IDX_SPEED_FLOAT32:
+    cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
+    return ret;
+  case PARAM_IDX_ACCEL_FLOAT32:
+    cmd_Motor_cmd[motor_axis_no].fAcceleration = fValue;
+    return ret;
+    break;
+  default:
+    break;
   }
 
-  return PARAM_IF_CMD_ERR_NO_IDX;
+  return PARAM_IF_CMD_ERR_NO_IDX | paramIndex;
 }
 
-
-static unsigned
-indexerMotorParamInterface(unsigned offset)
+static void
+indexerMotorParamInterface(unsigned motor_axis_no, unsigned offset)
 {
   unsigned uValue = idxData.memoryWords[offset / 2];
-  unsigned motor_axis_no = 1;
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
   unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
+  uint16_t ret = (uint16_t)uValue;
   if (paramCommand == PARAM_IF_CMD_DOREAD) {
     double fRet;
-    uint16_t ret;
     /* do the read */
     ret = indexerMotorParamRead(motor_axis_no,
                                 paramIndex,
@@ -398,19 +402,20 @@ indexerMotorParamInterface(unsigned offset)
       float fFloat = (float)fRet;
       switch(paramIndex) {
       case PARAM_IDX_SPEED_FLOAT32:
+      case PARAM_IDX_ACCEL_FLOAT32:
         memcpy(&idxData.memoryWords[(offset/2) + 1],
                &fFloat, 4);
         break;
       }
     }
-    return 0;
   } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
     float fFloat;
-    uint16_t ret = PARAM_IF_CMD_ERR_NO_IDX;
+    ret = PARAM_IF_CMD_ERR_NO_IDX;
 
     memcpy(&fFloat, &idxData.memoryWords[(offset/2) + 1], 4);
     switch(paramIndex) {
     case PARAM_IDX_SPEED_FLOAT32:
+    case PARAM_IDX_ACCEL_FLOAT32:
       ret = indexerMotorParamWrite(motor_axis_no,
                                    paramIndex,
                                    (double)fFloat);
@@ -418,9 +423,11 @@ indexerMotorParamInterface(unsigned offset)
     }
     /* put DONE (or ERROR) into the process image */
     idxData.memoryWords[offset / 2] = ret;
-    return 0;
   }
-  return 0;
+  LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u uValue=%x ret=%x\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           motor_axis_no, paramIndex, uValue, ret);
+
 }
 
 static int indexerHandleIndexerCmd(unsigned offset,
@@ -581,9 +588,6 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
     return indexerHandleIndexerCmd(offset, len_in_PLC, uValue);
   } else if (offset < (sizeof(idxData) / sizeof(uint16_t))) {
     idxData.memoryWords[offset / 2] = uValue;
-    if (offset == offsetMotor1ParamInterface) {
-      return indexerMotorParamInterface(offset);
-    }
     return 0;
   }
   LOGERR("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)sizeof=%lu\n",
@@ -670,6 +674,11 @@ void indexerHandlePLCcycle(void)
         memcpy(&idxData.memoryBytes[offset], &fRet, sizeof(fRet));
         /* status */
         indexerMotorStatusRead(devNum, &idxData.memoryStruct.motors[1]);
+
+        /* param interface */
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].paramCtrl -
+                            (void*)&idxData);
+        indexerMotorParamInterface(devNum, offset);
       }
       break;
     default:
