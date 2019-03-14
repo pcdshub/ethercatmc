@@ -577,8 +577,8 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   status = setPlcMemoryInteger(paramIfOffset, cmd, lenInPlcCmd);
   if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, outString_, inString_,
+            "%sout=%s in=%s (%x) status=%s (%d)\n",
+            modNamEMC, outString_, inString_, atoi(inString_),
             pasynManager->strStatus(status), (int)status);
   if (status) return status;
   while (counter < 5) {
@@ -586,9 +586,9 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     status = getPlcMemoryUint(paramIfOffset, &cmdSubParamIndex, 2);
     if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
     asynPrint(pasynUserController_, traceMask,
-              "%sout=%s in=%s cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
-              modNamEMC, outString_, inString_, cmdSubParamIndex,
-              counter,
+              "%sout=%s in=%s (%x) cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+              modNamEMC, outString_, inString_, atoi(inString_),
+              cmdSubParamIndex, counter,
               pasynManager->strStatus(status), (int)status);
     if (status) return status;
     /* This is good, return */
