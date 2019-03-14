@@ -448,8 +448,10 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
       case PARAM_IF_CMD_READONLY:
       case PARAM_IF_CMD_RETRY_LATER:
         return asynSuccess;
+      case PARAM_IF_CMD_BUSY:
+        return asynDisabled;
       default:
-        ; /* Read, write or busy. continue looping */
+        ; /* Read, write continue looping */
     }
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
