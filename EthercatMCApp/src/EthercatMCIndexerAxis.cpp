@@ -253,7 +253,15 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
  */
 asynStatus EthercatMCIndexerAxis::home(double minVelocity, double maxVelocity, double acceleration, int forwards)
 {
-  asynStatus status = asynSuccess;
+  asynStatus status;
+  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
+  (void)minVelocity;
+  (void)maxVelocity;
+  (void)acceleration;
+  (void)forwards;
+  status = pC_->indexerParamWrite(paramIfOffset,
+                                  PARAM_IDX_FUN_REFERENCE,
+                                  0.0);
   return status;
 }
 

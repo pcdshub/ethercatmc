@@ -299,6 +299,17 @@ indexerMotorStatusRead(unsigned motor_axis_no,
     statusReasonAux |= 0x0800;
   if (getNegLimitSwitch(motor_axis_no))
     statusReasonAux |= 0x0400;
+  {
+    unsigned auxBitIdx = 0;
+    for (auxBitIdx = 0; auxBitIdx < 7; auxBitIdx++) {
+      if (!strcmp("homing",
+                  (const char*)&indexerDeviceAbsStraction[motor_axis_no].auxName[auxBitIdx])) {
+        if (isMotorHoming(motor_axis_no)) {
+          statusReasonAux |= 1 << auxBitIdx;
+        }
+      }
+    }
+  }
 
   /* the status bits */
   if (get_bError(motor_axis_no))
@@ -363,6 +374,9 @@ indexerMotorParamWrite(unsigned motor_axis_no,
   }
 
   init_axis((int)motor_axis_no);
+  LOGINFO3("%s/%s:%d motor_axis_no=%u paramIndex=%u ,fValue=%f\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           motor_axis_no, paramIndex, fValue);
 
   switch(paramIndex) {
   case PARAM_IDX_SPEED_FLOAT32:
@@ -392,10 +406,6 @@ indexerMotorParamInterface(unsigned motor_axis_no, unsigned offset)
     ret = indexerMotorParamRead(motor_axis_no,
                                 paramIndex,
                                 &fRet);
-    LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u ret=%x fRet=%f\n",
-             __FILE__, __FUNCTION__, __LINE__,
-             motor_axis_no, paramIndex, ret, fRet);
-
     /* put DONE (or ERROR) into the process image */
     idxData.memoryWords[offset / 2] = ret;
     if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
@@ -420,11 +430,27 @@ indexerMotorParamInterface(unsigned motor_axis_no, unsigned offset)
                                    paramIndex,
                                    (double)fFloat);
       break;
+    case PARAM_IDX_FUN_REFERENCE:
+      {
+        int direction = 0;
+        int nCmdData = 1;
+        double position = 0;
+        double max_velocity = 2;
+        double acceleration = 3;
+        moveHomeProc(motor_axis_no,
+                     direction,
+                     nCmdData,
+                     position,
+                     max_velocity,
+                     acceleration);
+        ret = PARAM_IF_CMD_DONE | paramIndex;
+      }
+      break;
     }
     /* put DONE (or ERROR) into the process image */
     idxData.memoryWords[offset / 2] = ret;
   }
-  LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u uValue=%x ret=%x\n",
+  LOGINFO6("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u uValue=%x ret=%x\n",
            __FILE__, __FUNCTION__, __LINE__,
            motor_axis_no, paramIndex, uValue, ret);
 
@@ -578,7 +604,7 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
                                  unsigned uValue)
 {
   init();
-  LOGINFO3("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)\n",
+  LOGINFO6("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)\n",
            __FILE__, __FUNCTION__, __LINE__,
            adsport,
            offset,
@@ -673,7 +699,7 @@ void indexerHandlePLCcycle(void)
                  devNum, offset, (double)fRet);
         memcpy(&idxData.memoryBytes[offset], &fRet, sizeof(fRet));
         /* status */
-        indexerMotorStatusRead(devNum, &idxData.memoryStruct.motors[1]);
+        indexerMotorStatusRead(devNum, &idxData.memoryStruct.motors[devNum]);
 
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].paramCtrl -

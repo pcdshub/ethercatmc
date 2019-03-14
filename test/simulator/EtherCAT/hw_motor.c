@@ -275,6 +275,15 @@ double getMotorVelocity(int axis_no)
   return velocity;
 }
 
+int isMotorHoming(int axis_no)
+{
+  AXIS_CHECK_RETURN_ZERO(axis_no);
+  if (motor_axis[axis_no].moving.velo.HomeVelocity) {
+    return 1;
+  }
+  return 0;
+}
+
 int isMotorMoving(int axis_no)
 {
   AXIS_CHECK_RETURN_ZERO(axis_no);

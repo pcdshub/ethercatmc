@@ -553,7 +553,7 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   size_t lenInPlcPara = 4;
   unsigned counter = 0;
 
-  if (paramIndex > 0x7F) return asynDisabled;
+  if (paramIndex > 0xFF) return asynDisabled;
   status = indexerParamWaitNotBusy(paramIfOffset);
   if (status) return status;
 
