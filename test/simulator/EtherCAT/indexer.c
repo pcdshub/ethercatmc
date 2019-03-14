@@ -374,6 +374,55 @@ indexerMotorParamWrite(unsigned motor_axis_no,
 }
 
 
+static unsigned
+indexerMotorParamInterface(unsigned offset)
+{
+  unsigned uValue = idxData.memoryWords[offset / 2];
+  unsigned motor_axis_no = 1;
+  unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
+  unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
+  if (paramCommand == PARAM_IF_CMD_DOREAD) {
+    double fRet;
+    uint16_t ret;
+    /* do the read */
+    ret = indexerMotorParamRead(motor_axis_no,
+                                paramIndex,
+                                &fRet);
+    LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u ret=%x fRet=%f\n",
+             __FILE__, __FUNCTION__, __LINE__,
+             motor_axis_no, paramIndex, ret, fRet);
+
+    /* put DONE (or ERROR) into the process image */
+    idxData.memoryWords[offset / 2] = ret;
+    if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
+      float fFloat = (float)fRet;
+      switch(paramIndex) {
+      case PARAM_IDX_SPEED_FLOAT32:
+        memcpy(&idxData.memoryWords[(offset/2) + 1],
+               &fFloat, 4);
+        break;
+      }
+    }
+    return 0;
+  } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
+    float fFloat;
+    uint16_t ret = PARAM_IF_CMD_ERR_NO_IDX;
+
+    memcpy(&fFloat, &idxData.memoryWords[(offset/2) + 1], 4);
+    switch(paramIndex) {
+    case PARAM_IDX_SPEED_FLOAT32:
+      ret = indexerMotorParamWrite(motor_axis_no,
+                                   paramIndex,
+                                   (double)fFloat);
+      break;
+    }
+    /* put DONE (or ERROR) into the process image */
+    idxData.memoryWords[offset / 2] = ret;
+    return 0;
+  }
+  return 0;
+}
+
 static int indexerHandleIndexerCmd(unsigned offset,
                                    unsigned len_in_PLC,
                                    unsigned uValue)
@@ -530,52 +579,11 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
            uValue, uValue);
   if (offset == offsetIndexer) {
     return indexerHandleIndexerCmd(offset, len_in_PLC, uValue);
-  } else if (offset == offsetMotor1ParamInterface) {
-    unsigned motor_axis_no = 1;
-    unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
-    unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
-    if (paramCommand == PARAM_IF_CMD_DOREAD) {
-      double fRet;
-      uint16_t ret;
-      /* do the read */
-      ret = indexerMotorParamRead(motor_axis_no,
-                                  paramIndex,
-                                  &fRet);
-      LOGINFO3("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u ret=%x fRet=%f\n",
-               __FILE__, __FUNCTION__, __LINE__,
-               motor_axis_no, paramIndex, ret, fRet);
-
-      /* put DONE (or ERROR) into the process image */
-      idxData.memoryWords[offset / 2] = ret;
-      if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
-        float fFloat = (float)fRet;
-        switch(paramIndex) {
-          case PARAM_IDX_SPEED_FLOAT32:
-            memcpy(&idxData.memoryWords[(offset/2) + 1],
-                   &fFloat, 4);
-            break;
-        }
-      }
-      return 0;
-    } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
-      float fFloat;
-      uint16_t ret = PARAM_IF_CMD_ERR_NO_IDX;
-
-      memcpy(&fFloat, &idxData.memoryWords[(offset/2) + 1], 4);
-      switch(paramIndex) {
-      case PARAM_IDX_SPEED_FLOAT32:
-        ret = indexerMotorParamWrite(motor_axis_no,
-                                     paramIndex,
-                                     (double)fFloat);
-
-        break;
-      }
-      /* put DONE (or ERROR) into the process image */
-      idxData.memoryWords[offset / 2] = ret;
-      return 0;
-    }
   } else if (offset < (sizeof(idxData) / sizeof(uint16_t))) {
     idxData.memoryWords[offset / 2] = uValue;
+    if (offset == offsetMotor1ParamInterface) {
+      return indexerMotorParamInterface(offset);
+    }
     return 0;
   }
   LOGERR("%s/%s:%d adsport=%u offset=%u len_in_PLC=%u uValue=%u (%x)sizeof=%lu\n",
