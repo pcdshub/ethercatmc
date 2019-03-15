@@ -27,7 +27,6 @@ FILENAME...   EthercatMC.h
 
 #define EthercatMCErrString                  "MCUErr"
 #define EthercatMCErrIdString                "ErrId"
-#define EthercatMCStupString                 "Stup"
 #define EthercatMCStatusCodeString           "StatusCode"
 #define EthercatMCStatusBitsString           "StatusBits"
 #define EthercatMCaux0_String                "AuxBit0"
@@ -49,13 +48,11 @@ FILENAME...   EthercatMC.h
 #define EthercatMCVelToHomString             "VelToHom"
 #define EthercatMCVelFrmHomString            "VelFrmHom"
 #define EthercatMCAccHomString               "AccHom"
-#define EthercatMCDecHomString               "DecHom"
 #define EthercatMCEnc_ActString              "EncAct"
 #define EthercatMCErrRstString               "ErrRst"
 #define EthercatMCVelActString               "VelAct"
 #define EthercatMCVel_RBString               "Vel-RB"
 #define EthercatMCAcc_RBString               "Acc-RB"
-#define EthercatMCDec_RBString               "Dec-RB"
 #define EthercatMCCfgVELO_String             "CfgVELO"
 #define EthercatMCCfgVMAX_String             "CfgVMAX"
 #define EthercatMCCfgJVEL_String             "CfgJVEL"
@@ -66,7 +63,6 @@ FILENAME...   EthercatMC.h
 #define EthercatMCCfgDLLM_EnString           "CfgDLLM-En"
 #define EthercatMCCfgSREV_RBString           "CfgSREV-RB"
 #define EthercatMCCfgUREV_RBString           "CfgUREV-RB"
-#define EthercatMCCfgRefVelo_RBString        "REFVELO-RB"
 #define EthercatMCCfgRDBD_RBString           "CfgRDBD-RB"
 #define EthercatMCCfgRDBD_Tim_RBString       "CfgRDBD-Tim-RB"
 #define EthercatMCCfgRDBD_En_RBString        "CfgRDBD-En-RB"
@@ -165,6 +161,14 @@ private:
     eeAxisWarningSpeedLimit
   } eeAxisWarningType;
 
+  typedef enum
+  {
+    pollNowReadScaling,
+    pollNowReadMonitoring,
+    pollNowReadBackSoftLimits,
+    pollNowReadBackVelocities
+  } eeAxisPollNowType;
+
   EthercatMCController *pC_;          /**< Pointer to the asynMotorController to which this axis belongs.
                                    *   Abbreviated because it is used very frequently */
   struct {
@@ -191,6 +195,7 @@ private:
     eeAxisWarningType eeAxisWarning;
     eeAxisErrorType old_eeAxisError;
     eeAxisErrorType eeAxisError;
+    eeAxisPollNowType eeAxisPollNow;
     /* Which values have changed in the EPICS IOC, but are not updated in the
        motion controller */
     struct {
@@ -409,7 +414,6 @@ public:
   int EthercatMCVelToHom_;
   int EthercatMCVelFrmHom_;
   int EthercatMCAccHom_;
-  int EthercatMCDecHom_;
   int EthercatMCEncAct_;
 
 #ifdef CREATE_MOTOR_REC_RESOLUTION
@@ -425,14 +429,12 @@ public:
   int EthercatMCVelAct_;
   int EthercatMCVel_RB_;
   int EthercatMCAcc_RB_;
-  int EthercatMCDec_RB_;
   int EthercatMCCfgVELO_;
   int EthercatMCCfgVMAX_;
   int EthercatMCCfgJVEL_;
   int EthercatMCCfgACCS_;
   int EthercatMCCfgSREV_RB_;
   int EthercatMCCfgUREV_RB_;
-  int EthercatMCCfgRefVelo_RB_;
   int EthercatMCCfgRDBD_RB_;
   int EthercatMCCfgRDBD_Tim_RB_;
   int EthercatMCCfgRDBD_En_RB_;
@@ -445,7 +447,7 @@ public:
   int EthercatMCCfgDLLM_En_;
   int EthercatMCCfgDESC_RB_;
   int EthercatMCCfgEGU_RB_;
-  int EthercatMCStup_;
+
   int EthercatMCErrId_;
   /* Last parameter */
 

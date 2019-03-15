@@ -82,14 +82,6 @@ record(ai, "$(PREFIX)$(MOTOR_NAME)-Acc-RB")
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(PREFIX)$(MOTOR_NAME)-Dec-RB")
-{
-    field(DTYP, "asynFloat64")
-    field(PREC, "$(PREC)")
-    field(INP,  "@asyn($(MOTOR_PORT),$(AXIS_NO))Dec-RB")
-    field(SCAN, "I/O Intr")
-}
-
 record(ai, "$(PREFIX)$(MOTOR_NAME)-EncAct")
 {
     field(DTYP, "asynFloat64")
@@ -111,14 +103,6 @@ record(longout,"$(PREFIX)$(MOTOR_NAME)-ErrRst") {
     field(DTYP, "asynInt32")
     field(PINI, "YES")
     field(OUT,"@asyn($(MOTOR_PORT),$(AXIS_NO))ErrRst")
-}
-
-record(longout,"$(PREFIX)$(MOTOR_NAME)-Stup") {
-    field(DESC, "Error Reset")
-    field(VAL,  0)
-    field(DTYP, "asynInt32")
-    field(PINI, "YES")
-    field(OUT,"@asyn($(MOTOR_PORT),$(AXIS_NO))Stup")
 }
 
 # Motor offset for this axis
@@ -155,14 +139,6 @@ record(ai,"$(PREFIX)$(MOTOR_NAME)-CfgUREV-RB") {
     field(DTYP, "asynFloat64")
     field(PREC, "$(PREC)")
     field(INP,"@asyn($(MOTOR_PORT),$(AXIS_NO))CfgUREV-RB")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai,"$(PREFIX)$(MOTOR_NAME)-RefVelo-RB") {
-    field(DESC, "Reference Velocity")
-    field(DTYP, "asynFloat64")
-    field(PREC, "$(PREC)")
-    field(INP,"@asyn($(MOTOR_PORT),$(AXIS_NO))RefVelo-RB")
     field(SCAN, "I/O Intr")
 }
 

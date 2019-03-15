@@ -61,7 +61,6 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   /* Per axis */
   createParam(EthercatMCErrString,           asynParamInt32,       &EthercatMCErr_);
   createParam(EthercatMCErrIdString,         asynParamInt32,       &EthercatMCErrId_);
-  createParam(EthercatMCStupString,          asynParamInt32,       &EthercatMCStup_);
 
   createParam(EthercatMCEnc_ActString,       asynParamFloat64,     &EthercatMCEncAct_);
   createParam(EthercatMCHomProcString,       asynParamInt32,       &EthercatMCHomProc_);
@@ -73,12 +72,10 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   createParam(EthercatMCVelToHomString,      asynParamFloat64,     &EthercatMCVelToHom_);
   createParam(EthercatMCVelFrmHomString,     asynParamFloat64,     &EthercatMCVelFrmHom_);
   createParam(EthercatMCAccHomString,        asynParamFloat64,     &EthercatMCAccHom_);
-  createParam(EthercatMCDecHomString,        asynParamFloat64,     &EthercatMCDecHom_);
   createParam(EthercatMCErrRstString,        asynParamInt32,       &EthercatMCErrRst_);
   createParam(EthercatMCVelActString,        asynParamFloat64,     &EthercatMCVelAct_);
   createParam(EthercatMCVel_RBString,        asynParamFloat64,     &EthercatMCVel_RB_);
   createParam(EthercatMCAcc_RBString,        asynParamFloat64,     &EthercatMCAcc_RB_);
-  createParam(EthercatMCDec_RBString,        asynParamFloat64,     &EthercatMCDec_RB_);
   createParam(EthercatMCaux0_String,         asynParamOctet,       &EthercatMCaux0_);
   createParam(EthercatMCaux1_String,         asynParamOctet,       &EthercatMCaux1_);
   createParam(EthercatMCaux2_String,         asynParamOctet,       &EthercatMCaux2_);
@@ -102,7 +99,6 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
 
   createParam(EthercatMCCfgSREV_RBString,    asynParamFloat64,     &EthercatMCCfgSREV_RB_);
   createParam(EthercatMCCfgUREV_RBString,    asynParamFloat64,     &EthercatMCCfgUREV_RB_);
-  createParam(EthercatMCCfgRefVelo_RBString, asynParamFloat64,     &EthercatMCCfgRefVelo_RB_);
   createParam(EthercatMCCfgRDBD_RBString,    asynParamFloat64,     &EthercatMCCfgRDBD_RB_);
   createParam(EthercatMCCfgRDBD_Tim_RBString,asynParamFloat64,     &EthercatMCCfgRDBD_Tim_RB_);
   createParam(EthercatMCCfgRDBD_En_RBString, asynParamInt32,       &EthercatMCCfgRDBD_En_RB_);
