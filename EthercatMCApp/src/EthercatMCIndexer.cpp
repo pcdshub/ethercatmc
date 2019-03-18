@@ -373,8 +373,6 @@ asynStatus EthercatMCController::getPlcMemoryBytes(unsigned indexOffset,
       indexOffset++;
     }
 
-
-
     while (lenInPlc) {
       snprintf(outString_, sizeof(outString_),
                "ADSPORT=%u/.ADR.16#%X,16#%X,1,17?",
@@ -549,7 +547,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
                                                   unsigned lenInPlcPara,
                                                   double   *value)
 {
-  unsigned traceMask = ASYN_TRACE_INFO;
+  unsigned traceMask = ASYN_TRACE_FLOW;
   asynStatus status;
   unsigned cmd      = PARAM_IF_CMD_DOREAD + paramIndex;
   unsigned cmdAcked = PARAM_IF_CMD_DONE   + paramIndex;
@@ -578,10 +576,19 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
     unsigned cmdSubParamIndex = 0;
     int nvals;
     if (lenInPlcPara == 4) {
-      snprintf(outString_, sizeof(outString_),
-               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-               adsport, indexGroup, paramIfOffset,
-               adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+      if (paramIndex < 30) {
+        /* parameters below 30 are unsigned integers in the PLC
+         Read them as integers from PLC, and parse into a double */
+        snprintf(outString_, sizeof(outString_),
+                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,19?",
+                 adsport, indexGroup, paramIfOffset,
+                 adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+      } else {
+        snprintf(outString_, sizeof(outString_),
+                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
+                 adsport, indexGroup, paramIfOffset,
+                 adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+      }
     } else if (lenInPlcPara == 8) {
       snprintf(outString_, sizeof(outString_),
                "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
@@ -733,7 +740,16 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
                                                   double fValue)
 {
   asynMotorAxis *pAxis=getAxis((int)axisNo);
+  const static double fullsrev = 200;    /* (default) Full steps/revolution */
+
   switch(paramIndex) {
+  case PARAM_IDX_OPMODE_AUTO_UINT32:
+   /* CNEN for EPICS */
+   pAxis->setIntegerParam(motorStatusGainSupport_, 1);
+   break;
+  case PARAM_IDX_MICROSTEPS_FLOAT32:
+   pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * fValue);
+   break;
   case PARAM_IDX_ABS_MIN_FLOAT32:
     setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
     pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
@@ -790,6 +806,14 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
     break;
   case PARAM_IDX_MOVE_CURRENT_FLOAT32:
     break;
+  case PARAM_IDX_MICROSTEPS_UINT32:
+    break;
+  case PARAM_IDX_STEPS_PER_UNIT_FLOAT32:
+    {
+      double urev = fabs(fullsrev / fValue);
+      pAxis->setDoubleParam(EthercatMCCfgUREV_RB_, urev);
+    }
+    break;
   case PARAM_IDX_HOME_POSITION_FLOAT32:
     pAxis->setDoubleParam(EthercatMCHomPos_, fValue);
     break;
@@ -834,88 +858,25 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
     unsigned regSize = 2;
     unsigned indexOffset = iOffset + 5*regSize;
     unsigned bitIdx;
-    double microsteps = 1.0;  /* default */
-    double fullsrev = 200;    /* (default) Full steps/revolution */
 
     for (bitIdx = 0; bitIdx <= 15; bitIdx++) {
       unsigned paramIndex = dataIdx*16 + bitIdx;
       unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
       if (bitIsSet && (paramIndex < 128)) {
-
-        if (paramIndex >= 30)
-        {
-          double fValue = 0;
-          unsigned lenInPlcPara = 4;
-          status = indexerParamRead(indexOffset,
-                                    paramIndex,
-                                    lenInPlcPara,
-                                    &fValue);
-          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                    "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
-                    modNamEMC, axisNo, paramIndex, fValue,
-                    pasynManager->strStatus(status), (int)status);
-
-        }
-
-        status = indexerPrepareParamRead(indexOffset, paramIndex);
+        double fValue = 0;
+        unsigned lenInPlcPara = 4;
+        status = indexerParamRead(indexOffset,
+                                  paramIndex,
+                                  lenInPlcPara,
+                                  &fValue);
+        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                  "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
+                  modNamEMC, axisNo, paramIndex, fValue,
+                  pasynManager->strStatus(status), (int)status);
         if (!status) {
-          if (paramIndex < 30) {
-            unsigned iValue = -1;
-            status = getPlcMemoryUint(indexOffset+regSize,
-                                      &iValue, 2*regSize);
-            asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                      "%sparameters(%d)  paramIdx=%u iValue=%u status=%s (%d)\n",
-                      modNamEMC, axisNo, paramIndex, iValue,
-                      pasynManager->strStatus(status), (int)status);
-            if (!status) {
-              switch(paramIndex) {
-              case PARAM_IDX_MICROSTEPS_UINT32:
-                break;
-              case PARAM_IDX_OPMODE_AUTO_UINT32:
-                /* CNEN for EPICS */
-                pAxis->setIntegerParam(motorStatusGainSupport_, 1);
-#ifdef POWERAUTOONOFFMODE2
-                pAxis->setIntegerParam(motorPowerAutoOnOff_, POWERAUTOONOFFMODE2);
-                pAxis->setDoubleParam(motorPowerOnDelay_,   6.0);
-                pAxis->setDoubleParam(motorPowerOffDelay_, -1.0);
-#endif
-                break;
-              }
-            }
-          } else {
-            double fValue = -0.0;
-            status = getPlcMemoryDouble(indexOffset+regSize,
-                                        &fValue, 2*regSize);
-            asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                      "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
-                      modNamEMC, axisNo, paramIndex, fValue,
-                      pasynManager->strStatus(status), (int)status);
-            if (!status) {
-              /* The resolution related parameters need special treatment */
-              switch(paramIndex) {
-              case PARAM_IDX_MICROSTEPS_FLOAT32:
-                microsteps = fValue;
-                pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * microsteps);
-                break;
-              case PARAM_IDX_STEPS_PER_UNIT_FLOAT32:
-                {
-                  double urev = fabs(fullsrev / fValue);
-                  pAxis->setDoubleParam(EthercatMCCfgUREV_RB_, urev);
-                }
-                break;
-              default:
-                /* All the others go here */
-                parameterFloatReadBack(axisNo, paramIndex, fValue);
-              }
-            }
-          }
-        } else {
-          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                    "%sparameters(%d) paramIdx=%u bitIdx=%u status=%s (%d)\n",
-                    modNamEMC, axisNo, paramIndex, bitIdx,
-                    pasynManager->strStatus(status), (int)status);
+          parameterFloatReadBack(axisNo, paramIndex, fValue);
         }
-            }
+      }
     }
   }
   return asynSuccess;
