@@ -362,8 +362,6 @@ public:
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
-  asynStatus getPlcMemoryBytes(unsigned indexOffset,
-                               unsigned char  *value, size_t len);
   asynStatus getPlcMemoryUint(unsigned indexOffset,
                               unsigned *value, size_t lenInPlc);
   asynStatus getPlcMemorySint(unsigned indexOffset,
@@ -378,7 +376,6 @@ public:
                                 double value, size_t lenInPlc);
 
   asynStatus indexerParamWaitNotBusy(unsigned indexOffset);
-  asynStatus indexerPrepareParamRead(unsigned indexOffset, unsigned paramIndex);
   asynStatus indexerParamRead(unsigned paramIfOffset,
                               unsigned paramIndex,
                               unsigned lenInPlcPara,
