@@ -379,6 +379,10 @@ public:
 
   asynStatus indexerParamWaitNotBusy(unsigned indexOffset);
   asynStatus indexerPrepareParamRead(unsigned indexOffset, unsigned paramIndex);
+  asynStatus indexerParamRead(unsigned paramIfOffset,
+                              unsigned paramIndex,
+                              unsigned lenInPlcPara,
+                              double *value);
   asynStatus indexerParamWrite(unsigned paramIfOffset, unsigned paramIndex,
                                double value);
 

@@ -543,6 +543,106 @@ asynStatus EthercatMCController::indexerPrepareParamRead(unsigned indexOffset,
   return status;
 }
 
+
+asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
+                                                  unsigned paramIndex,
+                                                  unsigned lenInPlcPara,
+                                                  double   *value)
+{
+  unsigned traceMask = ASYN_TRACE_INFO;
+  asynStatus status;
+  unsigned cmd      = PARAM_IF_CMD_DOREAD + paramIndex;
+  unsigned cmdAcked = PARAM_IF_CMD_DONE   + paramIndex;
+  unsigned lenInPlcCmd = 2;
+  unsigned counter = 0;
+
+  if (paramIndex > 0xFF) return asynDisabled;
+  status = indexerParamWaitNotBusy(paramIfOffset);
+  if (status) return status;
+
+  /*
+     The parameter interface has this layout:
+     0 CmdParamReasonIdx
+     2 ParamValue
+  */
+
+  status = setPlcMemoryInteger(paramIfOffset, cmd, lenInPlcCmd);
+  if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+  asynPrint(pasynUserController_, traceMask,
+            "%sout=%s in=%s (%x) status=%s (%d)\n",
+            modNamEMC, outString_, inString_, atoi(inString_),
+            pasynManager->strStatus(status), (int)status);
+  if (status) return status;
+  while (counter < 5) {
+    double fValue;
+    unsigned cmdSubParamIndex = 0;
+    int nvals;
+    if (lenInPlcPara == 4) {
+      snprintf(outString_, sizeof(outString_),
+               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
+               adsport, indexGroup, paramIfOffset,
+               adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+    } else if (lenInPlcPara == 8) {
+      snprintf(outString_, sizeof(outString_),
+               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
+               adsport, indexGroup, paramIfOffset,
+               adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+    } else {
+      asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%snlenInPlcPara=%u\n",
+                modNamEMC, lenInPlcPara);
+      return asynError;
+    }
+    status = writeReadOnErrorDisconnect();
+    if (status) return status;
+    nvals = sscanf(inString_, "%u;%lf", &cmdSubParamIndex, &fValue);
+    if (nvals != 2) {
+      traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+      asynPrint(pasynUserController_, traceMask,
+                "%sout=%s in=%s\n",
+                modNamEMC, outString_, inString_);
+      return asynError;
+    }
+
+    if (cmdSubParamIndex == cmdAcked) {
+      /* This is good, return */
+      *value = fValue;
+      return asynSuccess;
+    }
+
+    switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
+      case PARAM_IF_CMD_INVALID:
+        status = asynDisabled;
+      case PARAM_IF_CMD_DOREAD:
+        status = asynDisabled;
+      case PARAM_IF_CMD_DOWRITE:
+      case PARAM_IF_CMD_BUSY:
+        break;
+      case PARAM_IF_CMD_DONE:
+        /* This is an error. (collision ?) */
+        status = asynDisabled;
+      case PARAM_IF_CMD_ERR_NO_IDX:
+        status = asynDisabled;
+      case PARAM_IF_CMD_READONLY:
+        status = asynDisabled;
+      case PARAM_IF_CMD_RETRY_LATER:
+        status = asynDisabled;
+    }
+    if (status) {
+      traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+      asynPrint(pasynUserController_, traceMask,
+                "%sout=%s in=%s cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+                modNamEMC, outString_, inString_, cmdSubParamIndex,
+                counter,
+                pasynManager->strStatus(status), (int)status);
+      return status;
+    }
+    epicsThreadSleep(.1 * (counter<<1));
+    counter++;
+  }
+  return asynDisabled;
+}
+
 asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
                                                    unsigned paramIndex,
                                                    double value)
@@ -741,6 +841,22 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
       unsigned paramIndex = dataIdx*16 + bitIdx;
       unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
       if (bitIsSet && (paramIndex < 128)) {
+
+        if (paramIndex >= 30)
+        {
+          double fValue = 0;
+          unsigned lenInPlcPara = 4;
+          status = indexerParamRead(indexOffset,
+                                    paramIndex,
+                                    lenInPlcPara,
+                                    &fValue);
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                    "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
+                    modNamEMC, axisNo, paramIndex, fValue,
+                    pasynManager->strStatus(status), (int)status);
+
+        }
+
         status = indexerPrepareParamRead(indexOffset, paramIndex);
         if (!status) {
           if (paramIndex < 30) {
