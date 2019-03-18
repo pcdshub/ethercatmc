@@ -599,12 +599,10 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
     break;
   case PARAM_IDX_FOLLOWING_ERR_WIN_FLOAT32:
     pAxis->setDoubleParam(EthercatMCCfgPOSLAG_RB_, fValue);
-    pAxis->setDoubleParam(EthercatMCCfgPOSLAG_Tim_RB_, 0);
     setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
     break;
   case PARAM_IDX_HYTERESIS_FLOAT32:
     pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
-    pAxis->setDoubleParam(EthercatMCCfgRDBD_Tim_RB_, 0);
     setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
 #ifdef motorRDBDROString
     pAxis->setDoubleParam(motorRDBDRO_, fValue);
@@ -698,9 +696,10 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
                   "%sparameters(%d) paramIdx=%u fValue=%f status=%s (%d)\n",
                   modNamEMC, axisNo, paramIndex, fValue,
                   pasynManager->strStatus(status), (int)status);
-        if (!status) {
-          parameterFloatReadBack(axisNo, paramIndex, fValue);
+        if (status) {
+          return status;
         }
+        parameterFloatReadBack(axisNo, paramIndex, fValue);
       }
     }
   }
