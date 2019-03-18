@@ -359,6 +359,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
   if (drvlocal.iTypCode && drvlocal.iOffset) {
     int nvals;
     unsigned traceMask = ASYN_TRACE_INFO;
+    double targetPosition = 0.0;
     double actPosition = 0.0;
     double paramValue = 0.0;
     unsigned statusReasonAux, paramCtrl;
@@ -366,13 +367,17 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     int powerIsOn = 1; /* Unless powerOff */
     int statusValid = 0;
     idxStatusCodeType idxStatusCode;
+    int pollReadBackInBackGround = 0;
     snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
              pC_->adsport,
-             indexGroup, drvlocal.iOffset,        /* Actual value on pos 0 */
+             indexGroup, drvlocal.iOffset,         /* Actual value on pos 0 */
+             pC_->adsport,
+             indexGroup, drvlocal.iOffset + 4,     /* Target value on pos 4 */
              pC_->adsport,
              indexGroup, drvlocal.iOffset + 8,     /* CmdStatusAux value on pos 8 */
              pC_->adsport,
@@ -384,9 +389,10 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     if (status) {
       return status;
     }
-    nvals = sscanf(pC_->inString_, "%lf;%u;%u;%lf",
-                   &actPosition, &statusReasonAux, &paramCtrl, &paramValue);
-    if (nvals != 4) {
+    nvals = sscanf(pC_->inString_, "%lf;%lf;%u;%u;%lf",
+                   &actPosition, &targetPosition, &statusReasonAux,
+                   &paramCtrl, &paramValue);
+    if (nvals != 5) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%snvals=%d command=\"%s\" response=\"%s\"\n",
                 modNamEMC, nvals, pC_->outString_, pC_->inString_);
@@ -399,16 +405,17 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     if (statusReasonAux != drvlocal.old_statusReasonAux) {
       asynPrint(pC_->pasynUserController_, traceMask,
-                "%spoll(%d) pos=%f statusReasonAux=0x%x %d (%s)\n",
+                "%spoll(%d) actPos=%f targetPos=%f statusReasonAux=0x%x %d (%s)\n",
                 modNamEMC, axisNo_,
-                actPosition,
+                actPosition, targetPosition,
                 statusReasonAux, idxStatusCode,
                 idxStatusCodeTypeToStr(idxStatusCode));
       drvlocal.old_statusReasonAux = statusReasonAux;
     }
     if ((paramCtrl != drvlocal.old_paramCtrl) ||
         (paramValue != drvlocal.old_paramValue)) {
-      asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
+      asynPrint(pC_->pasynUserController_,
+                pollReadBackInBackGround ? ASYN_TRACE_FLOW : ASYN_TRACE_INFO,
                 "%spoll(%d) paramCtrl=%x paramValue=%f\n",
                 modNamEMC, axisNo_,
                 paramCtrl, paramValue);
@@ -457,7 +464,8 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
     setIntegerParam(pC_->motorStatusCommsError_, 0);
     /* Read back the parameters one by one */
-    if (!nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {
+    if (pollReadBackInBackGround &&
+        !nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {
       unsigned newParamCtrl;
       drvlocal.pollNowIdx++;
       if (drvlocal.pollNowIdx >= sizeof(pollNowParams)/sizeof(pollNowParams[0])) {
@@ -474,7 +482,6 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     }
     callParamCallbacks();
   }
-
   return status;
 }
 
