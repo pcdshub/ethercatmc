@@ -577,7 +577,7 @@ static void motorHandleOneArg(const char *myarg_1)
   }
   /* ADSPORT=852/.THIS.sFeatures? */
   if (0 == strcmp(myarg_1, ADSPORT852_sFeaturesQ_str)) {
-    cmd_buf_printf("%s", "sim");
+    cmd_buf_printf("%s", "sim;stv1");
     return;
   }
   /* .THIS.stSettings.nADSPort=%u */

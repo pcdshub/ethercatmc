@@ -452,7 +452,7 @@ asynStatus EthercatMCAxis::readBackAllConfig(int axisID)
 {
   asynStatus status = asynSuccess;
   /* for ECMC homing is configured from EPICS, do NOT do the readback */
-  if (!drvlocal.supported.bECMC) {
+  if (!(pC_->features & FEATURE_BITS_ECMC)) {
     if (!drvlocal.scaleFactor) status = asynError;
     if (status == asynSuccess) status = readBackHoming();
   }
@@ -490,14 +490,6 @@ asynStatus EthercatMCAxis::initialPollInternal(void)
         updateMsgTxtFromDriver("ConfigError AxisID");
         return asynError;
       }
-  }
-  status = getFeatures();
-  if (status) {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s(%d) getFeatures() failed\n",
-               modNamEMC, axisNo_);
-    updateMsgTxtFromDriver("getFeatures() failed");
-    return status;
   }
   status = readConfigFile();
   if (status) {
@@ -716,7 +708,7 @@ asynStatus EthercatMCAxis::home(double minVelocity, double maxVelocity, double a
     return asynError;
   /* The controller will do the home search, and change its internal
      raw value to what we specified in fPosition. */
-  if (drvlocal.supported.bECMC) {
+  if (pC_->features & FEATURE_BITS_ECMC) {
     double velToHom;
     double velFrmHom;
     double accHom;
@@ -1095,12 +1087,8 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     if (comStatus) return comStatus;
   }
 
-  if (drvlocal.supported.stAxisStatus_V1) {
-    drvlocal.dirty.stAxisStatus_Vxx = 0;
-  }
-
-  if (drvlocal.supported.stAxisStatus_V2 || drvlocal.dirty.stAxisStatus_Vxx) {
-    /* V2 is supported, use it. Or. unkown: try it as well */
+  if (pC_->features & FEATURE_BITS_V2) {
+    /* V2 is supported, use it. */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatusV2?", drvlocal.adsport_str, axisNo_);
     comStatus = pC_->writeReadOnErrorDisconnect();
@@ -1137,13 +1125,10 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
                      &notUsed.stall);
     }
     if (nvals == 27) {
-      if (drvlocal.dirty.stAxisStatus_Vxx) {
-        drvlocal.supported.stAxisStatus_V2 = 1;
-      }
       pst_axis_status->mvnNRdyNex = pst_axis_status->bBusy || !pst_axis_status->atTarget;
     }
   }
-  if (!drvlocal.supported.stAxisStatus_V2) {
+  if (pC_->features & FEATURE_BITS_V1) {
     /* Read the complete Axis status */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatus?", drvlocal.adsport_str, axisNo_);
@@ -1180,13 +1165,11 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
                      &pst_axis_status->bBusy           /* 23 */);
     }
     if (nvals != 24) {
-      drvlocal.supported.stAxisStatus_V1 = 0;
       goto pollAllWrongnvals;
     }
-    drvlocal.supported.stAxisStatus_V1 = 1;
 
     /* V1 new style: mvnNRdyNex follows bBusy */
-    if (drvlocal.supported.bSIM || drvlocal.supported.bECMC)
+    if (pC_->features & (FEATURE_BITS_ECMC | FEATURE_BITS_SIM))
       drvlocal.supported.bV1BusyNewStyle = 1;
 
     pst_axis_status->mvnNRdyNex = pst_axis_status->bBusy && pst_axis_status->bEnabled;
@@ -1197,19 +1180,19 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
   } /* End of V1 */
   /* From here on, either V1 or V2 is supported */
   if (drvlocal.dirty.statusVer) {
-    if (drvlocal.supported.stAxisStatus_V2)
+    if (pC_->features & FEATURE_BITS_V2)
       drvlocal.supported.statusVer = 2;
-    else if (drvlocal.supported.stAxisStatus_V1 && !drvlocal.supported.bV1BusyNewStyle)
+    else if ((pC_->features & FEATURE_BITS_V1) && !drvlocal.supported.bV1BusyNewStyle)
       drvlocal.supported.statusVer = 0;
-    else if (drvlocal.supported.stAxisStatus_V1 && drvlocal.supported.bV1BusyNewStyle)
+    else if ((pC_->features & FEATURE_BITS_V1) && drvlocal.supported.bV1BusyNewStyle)
       drvlocal.supported.statusVer = 1;
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%spollAll(%d) nvals=%d V1=%d V2=%d sim=%d ecmc=%d bV1BusyNew=%d Ver=%d cmd/data=%d/%d fPos=%f fActPos=%f\n",
               modNamEMC, axisNo_, nvals,
-              drvlocal.supported.stAxisStatus_V1,
-              drvlocal.supported.stAxisStatus_V2,
-              drvlocal.supported.bSIM,
-              drvlocal.supported.bECMC,
+              pC_->features & FEATURE_BITS_V1,
+              pC_->features & FEATURE_BITS_V2,
+              pC_->features & FEATURE_BITS_SIM,
+              pC_->features & FEATURE_BITS_ECMC,
               drvlocal.supported.bV1BusyNewStyle,
               drvlocal.supported.statusVer,
               pst_axis_status->nCommand,
@@ -1222,7 +1205,6 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
 #ifdef motorFlagsStopOnProblemString
     setIntegerParam(pC_->motorFlagsStopOnProblem_, 0);
 #endif
-    drvlocal.dirty.stAxisStatus_Vxx = 0;
     drvlocal.dirty.statusVer = 0;
   }
   if (axisNo_ != motor_axis_no) return asynError;
@@ -1306,7 +1288,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
   {
     *moving = st_axis_status.mvnNRdyNex ? true : false;
     if (!st_axis_status.mvnNRdyNex &&
-        !drvlocal.supported.bECMC) {
+        !(pC_->features & FEATURE_BITS_ECMC)) {
       /* not moving: poll the parameters for this axis */
       int axisID = getMotionAxisID();
       switch (drvlocal.eeAxisPollNow) {
@@ -1354,7 +1336,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
                                        &st_axis_status.encoderRaw);
     if (!comStatus) setDoubleParam(pC_->EthercatMCEncAct_,
                                    st_axis_status.encoderRaw);
-  } else if (drvlocal.supported.stAxisStatus_V2) {
+  } else if (pC_->features & FEATURE_BITS_V2) {
     setDoubleParam(pC_->EthercatMCEncAct_, st_axis_status.encoderRaw);
   }
 
@@ -1445,7 +1427,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
     if (errIdString[0]) {
       snprintf(drvlocal.sErrorMessage, sizeof(drvlocal.sErrorMessage)-1, "E: %s %x",
                errIdString, nErrorId);
-    } else if (drvlocal.supported.bECMC && nErrorId) {
+    } else if ((pC_->features & FEATURE_BITS_ECMC) && nErrorId) {
       /* emcmc has error messages */
       snprintf(drvlocal.sErrorMessage, sizeof(drvlocal.sErrorMessage)-1, "E: %s",
                sErrorMessage);

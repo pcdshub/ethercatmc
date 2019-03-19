@@ -729,22 +729,6 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
   return asynSuccess;
 }
 
-
-asynStatus EthercatMCController::poll(void)
-{
-  asynStatus status = asynSuccess;
-
-  asynPrint(pasynUserController_, ASYN_TRACE_FLOW,
-                    "%spoll ctrlLocal.initialPollDone=%d\n",
-            modNamEMC, ctrlLocal.initialPollDone);
-
-  if (!ctrlLocal.initialPollDone) {
-    status = initialPollIndexer();
-    if (!status) ctrlLocal.initialPollDone = 1;
-  }
-  return status;
-}
-
 asynStatus
 EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
                                      unsigned devNum,
@@ -813,69 +797,6 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
   return status;
 }
 
-asynStatus EthercatMCController::getFeatures(void)
-{
-  /* The features we know about */
-  const char * const sim_str = "sim";
-  const char * const stECMC_str = "ecmc";
-  const char * const stV1_str = "stv1";
-  const char * const stV2_str = "stv2";
-  const char * const ads_str = "ads";
-  static const unsigned adsports[] = {851, 852, 853};
-  unsigned adsport_idx;
-  for (adsport_idx = 0;
-       adsport_idx < sizeof(adsports)/sizeof(adsports[0]);
-       adsport_idx++) {
-    unsigned adsport = adsports[adsport_idx];
-
-    asynStatus status = asynSuccess;
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.THIS.sFeatures?",
-             adsport);
-    inString_[0] = 0;
-    status = writeReadOnErrorDisconnect();
-    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-              "%sout=%s in=%s status=%s (%d)\n",
-              modNamEMC, outString_, inString_,
-              pasynManager->strStatus(status), (int)status);
-    if (status) return status;
-
-    /* loop through the features */
-    char *pFeatures = strdup(inString_);
-    char *pThisFeature = pFeatures;
-    char *pNextFeature = pFeatures;
-
-    while (pNextFeature && pNextFeature[0]) {
-      pNextFeature = strchr(pNextFeature, ';');
-      if (pNextFeature) {
-        *pNextFeature = '\0'; /* Terminate */
-        pNextFeature++;       /* Jump to (possible) next */
-      }
-      if (!strcmp(pThisFeature, sim_str)) {
-        ctrlLocal.supported.bSIM = 1;
-      } else if (!strcmp(pThisFeature, stECMC_str)) {
-        ctrlLocal.supported.bECMC = 1;
-      } else if (!strcmp(pThisFeature, stV1_str)) {
-        ctrlLocal.supported.stAxisStatus_V1 = 1;
-      } else if (!strcmp(pThisFeature, stV2_str)) {
-        ctrlLocal.supported.stAxisStatus_V2 = 1;
-      } else if (!strcmp(pThisFeature, ads_str)) {
-        ctrlLocal.supported.bADS = 1;
-      }
-      pThisFeature = pNextFeature;
-    }
-    free(pFeatures);
-    if (ctrlLocal.supported.bSIM ||
-        ctrlLocal.supported.bECMC ||
-        ctrlLocal.supported.bADS ||
-        ctrlLocal.supported.stAxisStatus_V1) {
-      /* Found something useful on this adsport */
-      return asynSuccess;
-    }
-  }
-  return asynDisabled;
-}
-
 asynStatus EthercatMCController::initialPollIndexer(void)
 {
   asynStatus status;
@@ -900,11 +821,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     double tmp_version;
     unsigned int iTmpVer = 0;
     size_t lenInPlc = 4;
-
-
-    status = getFeatures();
-    /* status ==  asynDisabled is OK */
-    if (status == asynError) return status;
 
     status = getPlcMemoryUint(ctrlLocal.indexerOffset, &iTmpVer, lenInPlc);
     if (status) return status;

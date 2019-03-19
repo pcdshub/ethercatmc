@@ -374,6 +374,7 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     int i;
     ctrlLocal.isConnected = 0;
     ctrlLocal.initialPollDone = 0;
+    this->features = 0;
     setMCUErrMsg("MCU Disconnected");
     for (i=0; i<numAxes_; i++) {
       asynMotorAxis *pAxis=getAxis(i);
@@ -387,6 +388,91 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     setMCUErrMsg("MCU Cconnected");
   }
 }
+
+asynStatus EthercatMCController::poll(void)
+{
+  asynStatus status = asynSuccess;
+
+  asynPrint(pasynUserController_, ASYN_TRACE_FLOW,
+                    "%spoll ctrlLocal.initialPollDone=%d\n",
+            modNamEMC, ctrlLocal.initialPollDone);
+
+  if (!this->features) {
+    this->features = getFeatures();
+  }
+  if (!ctrlLocal.initialPollDone) {
+    status = initialPollIndexer();
+    if (!status) ctrlLocal.initialPollDone = 1;
+  }
+
+  return status;
+}
+
+int EthercatMCController::getFeatures(void)
+{
+  /* The features we know about */
+  const char * const sim_str = "sim";
+  const char * const stECMC_str = "ecmc";
+  const char * const stV1_str = "stv1";
+  const char * const stV2_str = "stv2";
+  const char * const ads_str = "ads";
+  static const unsigned adsports[] = {851, 852, 853};
+  unsigned adsport_idx;
+  int ret = 0;
+  for (adsport_idx = 0;
+       adsport_idx < sizeof(adsports)/sizeof(adsports[0]);
+       adsport_idx++) {
+    unsigned adsport = adsports[adsport_idx];
+
+    asynStatus status = asynSuccess;
+    snprintf(outString_, sizeof(outString_),
+             "ADSPORT=%u/.THIS.sFeatures?",
+             adsport);
+    inString_[0] = 0;
+    status = writeReadOnErrorDisconnect();
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%sout=%s in=%s status=%s (%d)\n",
+              modNamEMC, outString_, inString_,
+              pasynManager->strStatus(status), (int)status);
+    if (!status) {
+      /* loop through the features */
+      char *pFeatures = strdup(inString_);
+      char *pThisFeature = pFeatures;
+      char *pNextFeature = pFeatures;
+
+      while (pNextFeature && pNextFeature[0]) {
+        pNextFeature = strchr(pNextFeature, ';');
+        if (pNextFeature) {
+          *pNextFeature = '\0'; /* Terminate */
+          pNextFeature++;       /* Jump to (possible) next */
+        }
+        if (!strcmp(pThisFeature, sim_str)) {
+          ret |= FEATURE_BITS_SIM;
+        } else if (!strcmp(pThisFeature, stECMC_str)) {
+          ret |= FEATURE_BITS_ECMC;
+        } else if (!strcmp(pThisFeature, stV1_str)) {
+          ret |= FEATURE_BITS_V1;
+        } else if (!strcmp(pThisFeature, stV2_str)) {
+          ret |= FEATURE_BITS_V2;
+        } else if (!strcmp(pThisFeature, ads_str)) {
+          ret |= FEATURE_BITS_ADS;
+        }
+        pThisFeature = pNextFeature;
+      }
+      free(pFeatures);
+      if (ret) {
+        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                  "%sout=%s in=%s ret=%d\n",
+                  modNamEMC, outString_, inString_,
+                  ret);
+        /* Found something useful on this adsport */
+        return ret;
+      }
+    }
+  }
+  return 0;
+}
+
 
 /** Reports on status of the driver
   * \param[in] fp The file pointer on which report information will be written

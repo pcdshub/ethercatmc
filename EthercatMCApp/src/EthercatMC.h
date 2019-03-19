@@ -200,7 +200,6 @@ private:
        motion controller */
     struct {
       int          nMotionAxisID;     /* Needed for ADR commands */
-      unsigned int stAxisStatus_Vxx :1;
       unsigned int statusVer        :1;
       unsigned int oldStatusDisconnected : 1;
       unsigned int sErrorMessage    :1; /* From MCU */
@@ -208,15 +207,10 @@ private:
     }  dirty;
 
     struct {
-      unsigned int stAxisStatus_V1  :1;
-      unsigned int stAxisStatus_V2  :1;
-      unsigned int bV1BusyNewStyle  :1;
-      unsigned int bSIM             :1;
-      unsigned int bECMC            :1;
-      unsigned int bADS             :1;
       int          statusVer;           /* 0==V1, busy old style 1==V1, new style*/
-                                        /* 2==V2 */
+      unsigned int bV1BusyNewStyle  :1;
     }  supported;
+
     /* Error texts when we talk to the controller, there is not an "OK"
        Or, failure in setValueOnAxisVerify() */
     char cmdErrorMessage[80]; /* From driver */
@@ -245,7 +239,6 @@ private:
   asynStatus setValueOnAxis(const char* var, double value);
   asynStatus setValuesOnAxis(const char* var1, double value1, const char* var2, double value2);
   int getMotionAxisID(void);
-  asynStatus getFeatures(void);
   asynStatus setSAFValueOnAxis(unsigned indexGroup,
                                unsigned indexOffset,
                                int value);
@@ -331,6 +324,16 @@ public:
 #define PARAM_IDX_FUN_REFERENCE               133
 #define PARAM_IDX_FUN_MOVE_VELOCITY           142
 
+
+#define FEATURE_BITS_V1               (1)
+#define FEATURE_BITS_V2               (1<<1)
+#define FEATURE_BITS_V3               (1<<2)
+#define FEATURE_BITS_V4               (1<<3)
+
+#define FEATURE_BITS_ADS              (1<<4)
+#define FEATURE_BITS_ECMC             (1<<5)
+#define FEATURE_BITS_SIM              (1<<6)
+
   EthercatMCController(const char *portName, const char *EthercatMCPortName, int numAxes, double movingPollPeriod, double idlePollPeriod);
 
   void report(FILE *fp, int level);
@@ -339,6 +342,8 @@ public:
   asynStatus writeReadOnErrorDisconnect(void);
   EthercatMCAxis* getAxis(asynUser *pasynUser);
   EthercatMCAxis* getAxis(int axisNo);
+  int features;
+
   protected:
   void handleStatusChange(asynStatus status);
   /* Indexer */
@@ -355,7 +360,7 @@ public:
                             double   fAbsMin,
                             double   fAbsMax,
                             unsigned iOffset);
-  asynStatus getFeatures(void);
+  int getFeatures(void);
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
@@ -393,7 +398,6 @@ public:
       unsigned int bECMC            :1;
       unsigned int bADS             :1;
     } supported;
-
   } ctrlLocal;
 
   unsigned adsport;
