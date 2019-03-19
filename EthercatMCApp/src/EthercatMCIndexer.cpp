@@ -305,8 +305,7 @@ asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
 }
 
 
-asynStatus EthercatMCController::readDeviceIndexer(unsigned indexOffset,
-                                                   unsigned devNum,
+asynStatus EthercatMCController::readDeviceIndexer(unsigned devNum,
                                                    unsigned infoType)
 {
   asynStatus status;
@@ -321,10 +320,10 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned indexOffset,
      devNum and infoType must match our request as well,
      otherwise there is a collision.
   */
-  status = setPlcMemoryInteger(indexOffset, value, 2);
+  status = setPlcMemoryInteger(ctrlLocal.indexerOffset, value, 2);
   if (status) return status;
   while (counter < 5) {
-    status = getPlcMemoryUint(indexOffset, &value, 2);
+    status = getPlcMemoryUint(ctrlLocal.indexerOffset, &value, 2);
     if (status) return status;
     if (value == valueAcked) return asynSuccess;
     counter++;
@@ -335,15 +334,15 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned indexOffset,
 
 asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
 {
+  unsigned traceMask = ASYN_TRACE_FLOW;
   asynStatus status;
   unsigned   cmdSubParamIndex = 0;
   unsigned   counter = 0;
 
   while (counter < 5) {
-    unsigned traceMask = 0;
     status = getPlcMemoryUint(indexOffset, &cmdSubParamIndex, 2);
-    if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-    asynPrint(pasynUserController_, traceMask,
+    asynPrint(pasynUserController_,
+              status ? traceMask | ASYN_TRACE_INFO : traceMask,
               "%sout=%s in=%s cmdSubParamIndex=0x%04x status=%s (%d)\n",
               modNamEMC, outString_, inString_, cmdSubParamIndex,
               pasynManager->strStatus(status), (int)status);
@@ -363,6 +362,11 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
   }
+  asynPrint(pasynUserController_,
+            status ? traceMask | ASYN_TRACE_INFO : traceMask,
+            "%sout=%s in=%s cmdSubParamIndex=0x%04x counter=%d\n",
+            modNamEMC, outString_, inString_, cmdSubParamIndex,
+            counter);
   return asynDisabled;
 }
 
@@ -379,7 +383,12 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
   unsigned lenInPlcCmd = 2;
   unsigned counter = 0;
 
-  if (paramIndex > 0xFF) return asynDisabled;
+  if (paramIndex > 0xFF) {
+    asynPrint(pasynUserController_, traceMask,
+              "%s paramIndex=%d\n",
+              modNamEMC, paramIndex);
+    return asynDisabled;
+  }
   status = indexerParamWaitNotBusy(paramIfOffset);
   if (status) return status;
 
@@ -649,8 +658,7 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
 }
 
 asynStatus
-EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
-                                                unsigned iOffset,
+EthercatMCController::IndexerReadAxisParameters(unsigned iOffset,
                                                 unsigned devNum,
                                                 EthercatMCIndexerAxis *pAxis)
 {
@@ -659,7 +667,7 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
   asynStatus status;
   unsigned dataIdx;
 
-  status = readDeviceIndexer(indexerOffset, devNum, infoType15);
+  status = readDeviceIndexer(devNum, infoType15);
   if (status) {
     return status;
   }
@@ -668,7 +676,7 @@ EthercatMCController::IndexerReadAxisParameters(unsigned indexerOffset,
     int traceMask = 0;
     parameters = -1;
 
-    status = getPlcMemoryUint(indexerOffset + (1 + dataIdx) * 2, &parameters, 2);
+    status = getPlcMemoryUint(ctrlLocal.indexerOffset + (1 + dataIdx) * 2, &parameters, 2);
     if (status) {
       return status;
     }
@@ -723,7 +731,6 @@ asynStatus EthercatMCController::poll(void)
 }
 
 void EthercatMCController::newIndexerAxis(unsigned axisNo,
-                                          unsigned indexerOffset,
                                           unsigned devNum,
                                           unsigned iAllFlags,
                                           double   fAbsMin,
@@ -757,9 +764,9 @@ void EthercatMCController::newIndexerAxis(unsigned axisNo,
         char auxBitName[34];
         unsigned infoType16 = 16;
         memset(&auxBitName, 0, sizeof(auxBitName));
-        status = readDeviceIndexer(indexerOffset, devNum, infoType16 + auxBitIdx);
+        status = readDeviceIndexer(devNum, infoType16 + auxBitIdx);
         if (!status) {
-          status = getPlcMemoryString(indexerOffset + 1*2,
+          status = getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
                                       auxBitName,
                                       sizeof(auxBitName));
           asynPrint(pasynUserController_, ASYN_TRACE_INFO,
@@ -791,8 +798,7 @@ void EthercatMCController::newIndexerAxis(unsigned axisNo,
     }
 #endif
     /* More parameters */
-    IndexerReadAxisParameters(indexerOffset,
-                              iOffset,
+    IndexerReadAxisParameters(iOffset,
                               devNum,
                               pAxis);
   }
@@ -802,7 +808,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
 {
   asynStatus status;
   double version = 0.0;
-  unsigned indexerOffset = 0;
   struct {
     char desc[34];
     char vers[34];
@@ -823,10 +828,10 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     double tmp_version;
     unsigned int iTmpVer = 0;
     size_t lenInPlc = 4;
-    status = getPlcMemoryUint(indexerOffset, &iTmpVer, lenInPlc);
+    status = getPlcMemoryUint(ctrlLocal.indexerOffset, &iTmpVer, lenInPlc);
     if (status) return status;
 
-    status = getPlcMemoryDouble(indexerOffset, &tmp_version, lenInPlc);
+    status = getPlcMemoryDouble(ctrlLocal.indexerOffset, &tmp_version, lenInPlc);
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sadsport=%u iTmpVer=0x%08x indexerVersion=%f status=%s (%d)\n",
               modNamEMC, adsport, iTmpVer, tmp_version,
@@ -841,11 +846,11 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   if (!version) status = asynDisabled;
   if (status) goto endPollIndexer;
 
-  indexerOffset = 4;
-  status = getPlcMemoryUint(indexerOffset, &indexerOffset, 2);
+  ctrlLocal.indexerOffset = 4;
+  status = getPlcMemoryUint(ctrlLocal.indexerOffset, &ctrlLocal.indexerOffset, 2);
   asynPrint(pasynUserController_, ASYN_TRACE_INFO,
             "%sindexerOffset=%u\n",
-            modNamEMC, indexerOffset);
+            modNamEMC, ctrlLocal.indexerOffset);
 
   for (devNum = 0; devNum < 100; devNum++) {
     unsigned iTypCode = -1;
@@ -855,43 +860,43 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     unsigned iAllFlags = -1;
     double fAbsMin = 0;
     double fAbsMax = 0;
-    status = readDeviceIndexer(indexerOffset, devNum, infoType0);
+    status = readDeviceIndexer(devNum, infoType0);
     if (!status) {
       unsigned iFlagsLow = -1;
       unsigned iFlagsHigh = -1;
-      getPlcMemoryUint(indexerOffset +  1*2, &iTypCode, 2);
-      getPlcMemoryUint(indexerOffset +  2*2, &iSize, 2);
-      getPlcMemoryUint(indexerOffset +  3*2, &iOffset, 2);
-      getPlcMemoryUint(indexerOffset +  4*2, &iUnit, 2);
-      getPlcMemoryUint(indexerOffset +  5*2, &iFlagsLow, 2);
-      getPlcMemoryUint(indexerOffset +  6*2, &iFlagsHigh, 2);
-      getPlcMemoryDouble(indexerOffset  +  7*2, &fAbsMin, 4);
-      getPlcMemoryDouble(indexerOffset  +  9*2, &fAbsMax, 4);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  1*2, &iTypCode, 2);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  2*2, &iSize, 2);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  3*2, &iOffset, 2);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  4*2, &iUnit, 2);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  5*2, &iFlagsLow, 2);
+      getPlcMemoryUint(ctrlLocal.indexerOffset +  6*2, &iFlagsHigh, 2);
+      getPlcMemoryDouble(ctrlLocal.indexerOffset  +  7*2, &fAbsMin, 4);
+      getPlcMemoryDouble(ctrlLocal.indexerOffset  +  9*2, &fAbsMax, 4);
       iAllFlags = iFlagsLow + (iFlagsHigh << 16);
     }
-    status = readDeviceIndexer(indexerOffset, devNum, infoType4);
+    status = readDeviceIndexer(devNum, infoType4);
     if (!status) {
-      getPlcMemoryString(indexerOffset + 1*2,
+      getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
                               descVersAuthors.desc,
                               sizeof(descVersAuthors.desc));
     }
-    status = readDeviceIndexer(indexerOffset, devNum, infoType5);
+    status = readDeviceIndexer(devNum, infoType5);
     if (!status) {
-      getPlcMemoryString(indexerOffset + 1*2,
-                              descVersAuthors.vers,
-                              sizeof(descVersAuthors.vers));
+      getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
+                         descVersAuthors.vers,
+                         sizeof(descVersAuthors.vers));
     }
-    status = readDeviceIndexer(indexerOffset, devNum, infoType6);
+    status = readDeviceIndexer(devNum, infoType6);
     if (!status) {
-      getPlcMemoryString(indexerOffset + 1*2,
+      getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
                               descVersAuthors.author1,
                               sizeof(descVersAuthors.author1));
     }
-    status = readDeviceIndexer(indexerOffset, devNum, infoType7);
+    status = readDeviceIndexer(devNum, infoType7);
     if (!status) {
-      getPlcMemoryString(indexerOffset + 1*2,
-                              descVersAuthors.author2,
-                              sizeof(descVersAuthors.author2));
+      getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
+                         descVersAuthors.author2,
+                         sizeof(descVersAuthors.author2));
     }
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sindexerDevice Offset=%u %20s "
@@ -915,7 +920,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
           EthercatMCIndexerAxis *pAxis;
           axisNo++;
           newIndexerAxis(axisNo,
-                         indexerOffset,
                          devNum,
                          iAllFlags,
                          fAbsMin,

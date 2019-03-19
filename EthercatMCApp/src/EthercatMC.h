@@ -342,18 +342,15 @@ public:
   protected:
   void handleStatusChange(asynStatus status);
   /* Indexer */
-  asynStatus readDeviceIndexer(unsigned indexOffset,
-                               unsigned devNum, unsigned infoType);
+  asynStatus readDeviceIndexer(unsigned devNum, unsigned infoType);
   void parameterFloatReadBack(unsigned axisNo,
                               unsigned paramIndex,
                               double fValue);
-  asynStatus IndexerReadAxisParameters(unsigned indexerOffset,
-                                       unsigned iOffset,
+  asynStatus IndexerReadAxisParameters(unsigned iOffset,
                                        unsigned devNum,
                                        EthercatMCIndexerAxis *pAxis);
   asynStatus poll(void);
   void newIndexerAxis(unsigned axisNo,
-                      unsigned indexerOffset,
                       unsigned devNum,
                       unsigned iAllFlags,
                       double   fAbsMin,
@@ -388,6 +385,7 @@ public:
     unsigned int hasConfigError;
     unsigned int isConnected;
     unsigned int initialPollDone;
+    unsigned int indexerOffset;
   } ctrlLocal;
 
   unsigned adsport;
