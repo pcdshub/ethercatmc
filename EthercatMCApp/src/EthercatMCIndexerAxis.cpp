@@ -142,20 +142,6 @@ void EthercatMCIndexerAxis::setIndexerDevNumOffsetTypeCode(unsigned devNum,
 }
 
 
-asynStatus EthercatMCIndexerAxis::initialPoll(void)
-{
-  asynStatus status = asynSuccess;
-  if (!drvlocal.dirty.initialPollNeeded)
-    return asynSuccess;
-
-  status = pC_->indexerReadAxisParameters(this, drvlocal.devNum, drvlocal.iOffset);
-  if (!status) {
-  }
-  return status;
-}
-
-
-
 /** Reports on status of the axis
  * \param[in] fp The file pointer on which report information will be written
  * \param[in] level The level of report detail desired
@@ -364,6 +350,14 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     int statusValid = 0;
     idxStatusCodeType idxStatusCode;
     int pollReadBackInBackGround = 0;
+    if (drvlocal.dirty.initialPollNeeded) {
+      status = pC_->indexerReadAxisParameters(this, drvlocal.devNum, drvlocal.iOffset);
+      if (!status) {
+        drvlocal.dirty.initialPollNeeded = 0;
+        setIntegerParam(pC_->motorStatusCommsError_, 0);
+      }
+    }
+
     snprintf(pC_->outString_, sizeof(pC_->outString_),
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
@@ -458,7 +452,6 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasProblem);
     setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
-    setIntegerParam(pC_->motorStatusCommsError_, 0);
     /* Read back the parameters one by one */
     if (pollReadBackInBackGround &&
         !nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {

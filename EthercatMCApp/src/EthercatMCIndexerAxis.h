@@ -41,7 +41,6 @@ public:
   asynStatus stopAxisInternal(const char *function_name, double acceleration);
   asynStatus stop(double acceleration);
   void setIndexerDevNumOffsetTypeCode(unsigned devNum, unsigned iOffset, unsigned iTypCode);
-  asynStatus initialPoll(void);
   asynStatus poll(bool *moving);
   asynStatus resetAxis(void);
   asynStatus setClosedLoop(bool closedLoop);
