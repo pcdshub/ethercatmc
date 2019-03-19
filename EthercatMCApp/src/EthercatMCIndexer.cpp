@@ -186,8 +186,8 @@ asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
 }
 
 asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
-                                                         char *value,
-                                                         size_t len)
+                                                    char *value,
+                                                    size_t len)
 {
   int traceMask = 0;
   asynStatus status;
@@ -730,18 +730,17 @@ asynStatus EthercatMCController::poll(void)
   return status;
 }
 
-void EthercatMCController::newIndexerAxis(unsigned axisNo,
-                                          unsigned devNum,
-                                          unsigned iAllFlags,
-                                          double   fAbsMin,
-                                          double   fAbsMax,
-                                          unsigned iOffset)
+asynStatus
+EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
+                                     unsigned devNum,
+                                     unsigned iAllFlags,
+                                     double   fAbsMin,
+                                     double   fAbsMax,
+                                     unsigned iOffset)
 {
-  asynStatus status;
-  EthercatMCIndexerAxis *pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
-  if (!pAxis) {
-    pAxis = new EthercatMCIndexerAxis(this, axisNo);
-  }
+  asynStatus status = asynSuccess;
+  unsigned axisNo = pAxis->axisNo_;
+
   pAxis->setStringParam(EthercatMCreason11_, "High limit");
   pAxis->setStringParam(EthercatMCreason10_, "Low limit");
   pAxis->setStringParam(EthercatMCreason9_,  "Dynamic problem, timeout");
@@ -765,17 +764,15 @@ void EthercatMCController::newIndexerAxis(unsigned axisNo,
         unsigned infoType16 = 16;
         memset(&auxBitName, 0, sizeof(auxBitName));
         status = readDeviceIndexer(devNum, infoType16 + auxBitIdx);
-        if (!status) {
-          status = getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
+        if (status) return status;
+        status = getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
                                       auxBitName,
                                       sizeof(auxBitName));
-          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                    "%sauxBitName[%d] auxBitName(%02u)=%s\n",
-                    modNamEMC, axisNo, auxBitIdx, auxBitName);
-          if (!status) {
-            pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
-          }
-        }
+        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                  "%sauxBitName[%d] auxBitName(%02u)=%s\n",
+                  modNamEMC, axisNo, auxBitIdx, auxBitName);
+        if (status) return status;
+        pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
       }
     }
   }
@@ -802,6 +799,7 @@ void EthercatMCController::newIndexerAxis(unsigned axisNo,
                               devNum,
                               pAxis);
   }
+  return status;
 }
 
 asynStatus EthercatMCController::initialPollIndexer(void)
@@ -919,17 +917,22 @@ asynStatus EthercatMCController::initialPollIndexer(void)
           char unitCodeTxt[40];
           EthercatMCIndexerAxis *pAxis;
           axisNo++;
-          newIndexerAxis(axisNo,
-                         devNum,
-                         iAllFlags,
-                         fAbsMin,
-                         fAbsMax,
-                         iOffset);
+          pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+          if (!pAxis) {
+            pAxis = new EthercatMCIndexerAxis(this, axisNo);
+          }
           /* Now we have an axis */
-          pAxis= static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+
+          status = newIndexerAxis(pAxis,
+                                  devNum,
+                                  iAllFlags,
+                                  fAbsMin,
+                                  fAbsMax,
+                                  iOffset);
           asynPrint(pasynUserController_, ASYN_TRACE_INFO,
                     "%sTypeCode(%d) iTypCode=%x pAxis=%p\n",
                     modNamEMC, axisNo, iTypCode, pAxis);
+          if (status) goto endPollIndexer;
 
           pAxis->setIndexerTypeCodeOffset(iTypCode, iOffset);
           setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
