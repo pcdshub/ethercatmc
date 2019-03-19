@@ -346,9 +346,8 @@ public:
   void parameterFloatReadBack(unsigned axisNo,
                               unsigned paramIndex,
                               double fValue);
-  asynStatus IndexerReadAxisParameters(unsigned iOffset,
-                                       unsigned devNum,
-                                       EthercatMCIndexerAxis *pAxis);
+  asynStatus indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
+                                       unsigned devNum, unsigned iOffset);
   asynStatus poll(void);
   asynStatus newIndexerAxis(EthercatMCIndexerAxis *pAxis,
                             unsigned devNum,

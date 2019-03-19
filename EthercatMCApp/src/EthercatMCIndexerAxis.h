@@ -40,7 +40,7 @@ public:
   asynStatus home(double min_velocity, double max_velocity, double acceleration, int forwards);
   asynStatus stopAxisInternal(const char *function_name, double acceleration);
   asynStatus stop(double acceleration);
-  void setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset);
+  void setIndexerDevNumOffsetTypeCode(unsigned devNum, unsigned iOffset, unsigned iTypCode);
   asynStatus initialPoll(void);
   asynStatus poll(bool *moving);
   asynStatus resetAxis(void);
@@ -59,6 +59,7 @@ private:
     double old_paramValue;
     unsigned pollNowIdx;
     unsigned iTypCode;
+    unsigned devNum;
     unsigned iOffset;
     unsigned old_statusReasonAux;
     unsigned old_paramCtrl;

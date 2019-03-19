@@ -129,11 +129,14 @@ extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName, int axisN
   return asynSuccess;
 }
 
-void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned iOffset)
+void EthercatMCIndexerAxis::setIndexerDevNumOffsetTypeCode(unsigned devNum,
+                                                           unsigned iOffset,
+                                                           unsigned iTypCode)
 {
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-            "%s (%d) iTypCode=0x%x, iOffset=%u\n",
-            modNamEMC, axisNo_, iTypCode, iOffset);
+            "%s (%d) devNum=%u iTypCode=0x%x, iOffset=%u\n",
+            modNamEMC, axisNo_, devNum, iTypCode, iOffset);
+  drvlocal.devNum = devNum;
   drvlocal.iTypCode = iTypCode;
   drvlocal.iOffset = iOffset;
 }
@@ -142,20 +145,13 @@ void EthercatMCIndexerAxis::setIndexerTypeCodeOffset(unsigned iTypCode, unsigned
 asynStatus EthercatMCIndexerAxis::initialPoll(void)
 {
   asynStatus status = asynSuccess;
-  return asynSuccess;
   if (!drvlocal.dirty.initialPollNeeded)
     return asynSuccess;
 
-#if 1
+  status = pC_->indexerReadAxisParameters(this, drvlocal.devNum, drvlocal.iOffset);
+  if (!status) {
+  }
   return status;
-#else
-  status = initialPollInternal();
-  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-            "%sinitialPoll(%d) status=%d\n",
-            modNamEMC, axisNo_, status);
-  if (status == asynSuccess) drvlocal.dirty.initialPollNeeded = 0;
-  return status;
-#endif
 }
 
 
