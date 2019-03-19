@@ -355,6 +355,7 @@ public:
                             double   fAbsMin,
                             double   fAbsMax,
                             unsigned iOffset);
+  asynStatus getFeatures(void);
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
@@ -385,6 +386,14 @@ public:
     unsigned int isConnected;
     unsigned int initialPollDone;
     unsigned int indexerOffset;
+    struct {
+      unsigned int stAxisStatus_V1  :1;
+      unsigned int stAxisStatus_V2  :1;
+      unsigned int bSIM             :1;
+      unsigned int bECMC            :1;
+      unsigned int bADS             :1;
+    } supported;
+
   } ctrlLocal;
 
   unsigned adsport;
