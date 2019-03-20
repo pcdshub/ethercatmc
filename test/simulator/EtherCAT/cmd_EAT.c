@@ -116,6 +116,7 @@ static void init_axis(int axis_no)
 static const char * const ADSPORT_equals_str = "ADSPORT=";
 static const char * const Main_dot_str = "Main.";
 static const char * const MAIN_dot_str = "MAIN.";
+static const char * const Gvl_dot_str  = "Gvl.";
 static const char * const getAxisDebugInfoData_str = "getAxisDebugInfoData";
 
 static const char *seperator_seperator = ";";
@@ -462,6 +463,123 @@ static int motorHandleADS_ADR(const char *arg)
   return __LINE__;
 }
 
+static int motorHandleOneGetArg(const char *myarg_1, int motor_axis_no)
+{
+  if (0 == strcmp(myarg_1, "bBusy?")) {
+    cmd_buf_printf("%d", isMotorMoving(motor_axis_no));
+    return 0;
+  }
+  /* bError?  */
+  if (!strcmp(myarg_1, "bError?")) {
+    cmd_buf_printf("%d", get_bError(motor_axis_no));
+    return 0;
+  }
+  /* bEnable? */
+  if (!strcmp(myarg_1, "bEnable?")) {
+    cmd_buf_printf("%d",cmd_Motor_cmd[motor_axis_no].bEnable);
+    return 0;
+  }
+  /* bEnabled?  */
+  if (!strcmp(myarg_1, "bEnabled?")) {
+    cmd_buf_printf("%d",getAmplifierOn(motor_axis_no));
+    return 0;
+  }
+  /* bExecute? */
+  if (!strcmp(myarg_1, "bExecute?")) {
+    cmd_buf_printf("%d", cmd_Motor_cmd[motor_axis_no].bExecute);
+    return 0;
+  }
+  /* bHomeSensor? */
+  if (0 == strcmp(myarg_1, "bHomeSensor?")) {
+    cmd_buf_printf("%d", getAxisHome(motor_axis_no));
+    return 0;
+  }
+  /* bLimitBwd? */
+  if (0 == strcmp(myarg_1, "bLimitBwd?")) {
+    cmd_buf_printf("%d", getNegLimitSwitch(motor_axis_no) ? 0 : 1);
+    return 0;
+  }
+  /* bLimitFwd? */
+  if (0 == strcmp(myarg_1, "bLimitFwd?")) {
+    cmd_buf_printf("%d", getPosLimitSwitch(motor_axis_no) ? 0 : 1);
+    return 0;
+  }
+  /* bHomed? */
+  if (0 == strcmp(myarg_1, "bHomed?")) {
+    cmd_buf_printf("%d", getAxisHomed(motor_axis_no) ? 1 : 0);
+    return 0;
+  }
+  /* bReset? */
+  if (!strcmp(myarg_1, "bReset?")) {
+    cmd_buf_printf("%d",cmd_Motor_cmd[motor_axis_no].bReset);
+    return 0;
+  }
+  /* fAcceleration? */
+  if (0 == strcmp(myarg_1, "fAcceleration?")) {
+    cmd_buf_printf("%g", cmd_Motor_cmd[motor_axis_no].fAcceleration);
+    return 0;
+  }
+  /* fActPosition? */
+  if (0 == strcmp(myarg_1, "fActPosition?")) {
+    cmd_buf_printf("%g", getMotorPos(motor_axis_no));
+    return 0;
+  }
+  /* fActVelocity? */
+  if (0 == strcmp(myarg_1, "fActVelocity?")) {
+    cmd_buf_printf("%g", getMotorVelocity(motor_axis_no));
+    return 0;
+  }
+  /* fPosition? */
+  if (0 == strcmp(myarg_1, "fPosition?")) {
+    /* The "set" value */
+    cmd_buf_printf("%g", cmd_Motor_cmd[motor_axis_no].fPosition);
+    return 0;
+  }
+  /* nCommand? */
+  if (0 == strcmp(myarg_1, "nCommand?")) {
+    cmd_buf_printf("%d", cmd_Motor_cmd[motor_axis_no].nCommand);
+    return 0;
+  }
+  /* nMotionAxisID? */
+  if (0 == strcmp(myarg_1, "nMotionAxisID?")) {
+    /* The NC axis id is the same as motion axis id */
+    printf("%s/%s:%d %s(%d)\n",  __FILE__, __FUNCTION__, __LINE__,
+           myarg_1, motor_axis_no);
+    cmd_buf_printf("%d", motor_axis_no);
+    return 0;
+  }
+  return __LINE__;
+}
+
+static int motorHandleGvlArg(const char *myarg_1)
+{
+  const char *pTmp;
+  int motor_axis_no = 0;
+  int nvals;
+
+  nvals = sscanf(myarg_1, "axes[%d]", &motor_axis_no);
+  if (nvals != 1) {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d line=%s myarg_1=%s nvals=%d",
+                        __FILE__, __FUNCTION__, __LINE__,
+                        myarg_1, myarg_1, nvals);
+  }
+  AXIS_CHECK_RETURN_ERROR(motor_axis_no);
+  /* Jump over "]." */
+  myarg_1 = strchr(myarg_1, '.');
+  if (!myarg_1) {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d line=%s missing '.'",
+                        __FILE__, __FUNCTION__, __LINE__,
+                        myarg_1);
+  }
+  myarg_1++; /* Jump over '.' */
+  pTmp = strchr(myarg_1, '?');
+  if (pTmp) {
+    return motorHandleOneGetArg(myarg_1, motor_axis_no);
+  }
+  return __LINE__;
+}
 
 static void motorHandleOneArg(const char *myarg_1)
 {
@@ -542,6 +660,13 @@ static void motorHandleOneArg(const char *myarg_1)
                     myarg, nvals);
     }
   }
+  /* Gvl. */
+  if (!strncmp(myarg_1, Gvl_dot_str, strlen(Gvl_dot_str))) {
+    myarg_1 += strlen(Gvl_dot_str);
+    if (!motorHandleGvlArg(myarg_1)) {
+      return;
+    }
+  }
 
   /* Main.*/
   if (!strncmp(myarg_1, Main_dot_str, strlen(Main_dot_str))) {
@@ -608,90 +733,11 @@ static void motorHandleOneArg(const char *myarg_1)
 #endif
     (void)usleep(sim_usleep[motor_axis_no]);
   }
+  if (!motorHandleOneGetArg(myarg_1,motor_axis_no)) {
+    /* Command was handled in motorHandleOnePollArg without problems */
+    return;
+  }
 
-  if (0 == strcmp(myarg_1, "bBusy?")) {
-    cmd_buf_printf("%d", isMotorMoving(motor_axis_no));
-    return;
-  }
-  /* bError?  */
-  if (!strcmp(myarg_1, "bError?")) {
-    cmd_buf_printf("%d", get_bError(motor_axis_no));
-    return;
-  }
-  /* bEnable? */
-  if (!strcmp(myarg_1, "bEnable?")) {
-    cmd_buf_printf("%d",cmd_Motor_cmd[motor_axis_no].bEnable);
-    return;
-  }
-  /* bEnabled?  */
-  if (!strcmp(myarg_1, "bEnabled?")) {
-    cmd_buf_printf("%d",getAmplifierOn(motor_axis_no));
-    return;
-  }
-  /* bExecute? */
-  if (!strcmp(myarg_1, "bExecute?")) {
-    cmd_buf_printf("%d", cmd_Motor_cmd[motor_axis_no].bExecute);
-    return;
-  }
-  /* bHomeSensor? */
-  if (0 == strcmp(myarg_1, "bHomeSensor?")) {
-    cmd_buf_printf("%d", getAxisHome(motor_axis_no));
-    return;
-  }
-  /* bLimitBwd? */
-  if (0 == strcmp(myarg_1, "bLimitBwd?")) {
-    cmd_buf_printf("%d", getNegLimitSwitch(motor_axis_no) ? 0 : 1);
-    return;
-  }
-  /* bLimitFwd? */
-  if (0 == strcmp(myarg_1, "bLimitFwd?")) {
-    cmd_buf_printf("%d", getPosLimitSwitch(motor_axis_no) ? 0 : 1);
-    return;
-  }
-  /* bHomed? */
-  if (0 == strcmp(myarg_1, "bHomed?")) {
-    cmd_buf_printf("%d", getAxisHomed(motor_axis_no) ? 1 : 0);
-    return;
-  }
-  /* bReset? */
-  if (!strcmp(myarg_1, "bReset?")) {
-    cmd_buf_printf("%d",cmd_Motor_cmd[motor_axis_no].bReset);
-    return;
-  }
-  /* fAcceleration? */
-  if (0 == strcmp(myarg_1, "fAcceleration?")) {
-    cmd_buf_printf("%g", cmd_Motor_cmd[motor_axis_no].fAcceleration);
-    return;
-  }
-  /* fActPosition? */
-  if (0 == strcmp(myarg_1, "fActPosition?")) {
-    cmd_buf_printf("%g", getMotorPos(motor_axis_no));
-    return;
-  }
-  /* fActVelocity? */
-  if (0 == strcmp(myarg_1, "fActVelocity?")) {
-    cmd_buf_printf("%g", getMotorVelocity(motor_axis_no));
-    return;
-  }
-  /* fPosition? */
-  if (0 == strcmp(myarg_1, "fPosition?")) {
-    /* The "set" value */
-    cmd_buf_printf("%g", cmd_Motor_cmd[motor_axis_no].fPosition);
-    return;
-  }
-  /* nCommand? */
-  if (0 == strcmp(myarg_1, "nCommand?")) {
-    cmd_buf_printf("%d", cmd_Motor_cmd[motor_axis_no].nCommand);
-    return;
-  }
-  /* nMotionAxisID? */
-  if (0 == strcmp(myarg_1, "nMotionAxisID?")) {
-    /* The NC axis id is the same as motion axis id */
-    printf("%s/%s:%d %s(%d)\n",  __FILE__, __FUNCTION__, __LINE__,
-           myarg_1, motor_axis_no);
-    cmd_buf_printf("%d", motor_axis_no);
-    return;
-  }
   /* stAxisStatus? */
   if (0 == strcmp(myarg_1, "stAxisStatus?")) {
     int bJogFwd = 0;
