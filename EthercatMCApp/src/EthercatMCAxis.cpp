@@ -108,6 +108,7 @@ EthercatMCAxis::EthercatMCAxis(EthercatMCController *pC, int axisNo,
     const char * const homPos_str  = "HomPos=";
     const char * const adsPort_str  = "adsPort=";
     const char * const scaleFactor_str = "scaleFactor=";
+    const char * const sFeatures_str = "sFeatures=";
 
     char *pOptions = strdup(axisOptionsStr);
     char *pThisOption = pOptions;
@@ -151,6 +152,11 @@ EthercatMCAxis::EthercatMCAxis(EthercatMCController *pC, int axisNo,
       } else if (!strncmp(pThisOption, scaleFactor_str, strlen(scaleFactor_str))) {
         pThisOption += strlen(scaleFactor_str);
         drvlocal.scaleFactor = atof(pThisOption);
+      } else if (!strncmp(pThisOption, sFeatures_str, strlen(sFeatures_str))) {
+        pThisOption += strlen(sFeatures_str);
+        if (!strcmp(pThisOption, "Gvl")) {
+          pC_->features |= FEATURE_BITS_GVL;
+        }
       }
       pThisOption = pNextOption;
     }
@@ -435,6 +441,16 @@ asynStatus EthercatMCAxis::readBackVelocities(int axisID)
 asynStatus EthercatMCAxis::initialPoll(void)
 {
   asynStatus status;
+
+  if (pC_->features & FEATURE_BITS_GVL) {
+    if (drvlocal.dirty.initialPollNeeded) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+                "%sdrvlocal.dirty.initialPollNeeded=%d\n",
+                modNamEMC, drvlocal.dirty.initialPollNeeded);
+    }
+    drvlocal.dirty.initialPollNeeded = 0;
+    return asynSuccess;
+  }
 
   if (!drvlocal.dirty.initialPollNeeded)
     return asynSuccess;
@@ -1087,7 +1103,42 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     if (comStatus) return comStatus;
   }
 
-  if (pC_->features & FEATURE_BITS_V2) {
+  if (pC_->features & FEATURE_BITS_GVL) {
+    snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "%sGvl.axes[%d].fActPosition?;"
+             "%sGvl.axes[%d].bError?;"
+             "%sGvl.axes[%d].bBusy?;"
+             "%sGvl.axes[%d].bLimitFwd?;"
+             "%sGvl.axes[%d].bLimitBwd?;"
+             "%sGvl.axes[%d].bHomed?;"
+             "%sGvl.axes[%d].bEnabled?",
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_,
+             drvlocal.adsport_str, axisNo_);
+    comStatus = pC_->writeReadOnErrorDisconnect();
+    if (comStatus) return comStatus;
+    nvals = sscanf(pC_->inString_,
+                   "%lf;%d;%d;%d;%d;%d;%d",
+                   &pst_axis_status->fActPosition,
+                   &pst_axis_status->bError,
+                   &pst_axis_status->bBusy,
+                   &pst_axis_status->bLimitFwd,
+                   &pst_axis_status->bLimitBwd,
+                   &pst_axis_status->bHomed,
+                   &pst_axis_status->bEnabled);
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%sout=%s in=%s nvals=%d\n",
+              modNamEMC, pC_->outString_, pC_->inString_,
+              nvals);
+    if (nvals != 7) {
+      goto pollAllWrongnvals;
+    }
+    motor_axis_no = axisNo_;
+  } else if (pC_->features & FEATURE_BITS_V2) {
     /* V2 is supported, use it. */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatusV2?", drvlocal.adsport_str, axisNo_);
@@ -1127,8 +1178,7 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     if (nvals == 27) {
       pst_axis_status->mvnNRdyNex = pst_axis_status->bBusy || !pst_axis_status->atTarget;
     }
-  }
-  if (pC_->features & FEATURE_BITS_V1) {
+  } else if (pC_->features & FEATURE_BITS_V1) {
     /* Read the complete Axis status */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatus?", drvlocal.adsport_str, axisNo_);
@@ -1187,12 +1237,13 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     else if ((pC_->features & FEATURE_BITS_V1) && drvlocal.supported.bV1BusyNewStyle)
       drvlocal.supported.statusVer = 1;
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%spollAll(%d) nvals=%d V1=%d V2=%d sim=%d ecmc=%d bV1BusyNew=%d Ver=%d cmd/data=%d/%d fPos=%f fActPos=%f\n",
+              "%spollAll(%d) nvals=%d V1=%x V2=%x sim=%x ecmc=%x GVL=%x bV1BusyNew=%d Ver=%d cmd/data=%d/%d fPos=%f fActPos=%f\n",
               modNamEMC, axisNo_, nvals,
               pC_->features & FEATURE_BITS_V1,
               pC_->features & FEATURE_BITS_V2,
               pC_->features & FEATURE_BITS_SIM,
               pC_->features & FEATURE_BITS_ECMC,
+              pC_->features & FEATURE_BITS_GVL,
               drvlocal.supported.bV1BusyNewStyle,
               drvlocal.supported.statusVer,
               pst_axis_status->nCommand,

@@ -333,6 +333,7 @@ public:
 #define FEATURE_BITS_ADS              (1<<4)
 #define FEATURE_BITS_ECMC             (1<<5)
 #define FEATURE_BITS_SIM              (1<<6)
+#define FEATURE_BITS_GVL              (1<<7)
 
   EthercatMCController(const char *portName, const char *EthercatMCPortName, int numAxes, double movingPollPeriod, double idlePollPeriod);
 
