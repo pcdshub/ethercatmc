@@ -402,9 +402,11 @@ asynStatus EthercatMCController::poll(void)
   if (!features_) {
     features_ = getFeatures();
   }
-  if (!ctrlLocal.initialPollDone) {
-    status = initialPollIndexer();
-    if (!status) ctrlLocal.initialPollDone = 1;
+  if (!(features_ & FEATURE_BITS_GVL)) {
+    if (!ctrlLocal.initialPollDone) {
+      status = initialPollIndexer();
+      if (!status) ctrlLocal.initialPollDone = 1;
+    }
   }
 
   return status;

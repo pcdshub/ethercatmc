@@ -688,19 +688,41 @@ asynStatus EthercatMCAxis::move(double position, int relative, double minVelocit
   }
 
 #if MAX_CONTROLLER_STRING_SIZE > 350
-  return mov2(position * drvlocal.scaleFactor,
-              relative ? NCOMMANDMOVEREL : NCOMMANDMOVEABS,
-              maxVelocity * drvlocal.scaleFactor,
-              acceleration * drvlocal.scaleFactor);
-#else
-  int nCommand = relative ? NCOMMANDMOVEREL : NCOMMANDMOVEABS;
-  if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
-  if (status == asynSuccess) status = setValueOnAxis("nCommand", nCommand);
-  if (status == asynSuccess) status = setValueOnAxis("nCmdData", 0);
-  if (status == asynSuccess) status = setValueOnAxis("fPosition", position * drvlocal.scaleFactor);
-  if (status == asynSuccess) status = sendVelocityAndAccelExecute(maxVelocity * drvlocal.scaleFactor,
-                                                                  acceleration * drvlocal.scaleFactor);
+  if (!(pC_->features_ & FEATURE_BITS_GVL)) {
+    return mov2(position * drvlocal.scaleFactor,
+                relative ? NCOMMANDMOVEREL : NCOMMANDMOVEABS,
+                maxVelocity * drvlocal.scaleFactor,
+                acceleration * drvlocal.scaleFactor);
+  }
 #endif
+  if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
+  if (pC_->features_ & FEATURE_BITS_GVL) {
+    if (relative){
+      double actPosition;
+      pC_->getDoubleParam(axisNo_, pC_->motorPosition_, &actPosition);
+      position = position - actPosition;
+    }
+    snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "%sGvl.axes[%d].fPosition=%f;"
+             "%sGvl.axes[%d].fVelocity=%f;"
+             "%sGvl.axes[%d].fAcceleration=%f;"
+             "%sGvl.axes[%d].bStart=1",
+             drvlocal.adsport_str, axisNo_, position * drvlocal.scaleFactor,
+             drvlocal.adsport_str, axisNo_, maxVelocity * drvlocal.scaleFactor,
+             drvlocal.adsport_str, axisNo_, acceleration * drvlocal.scaleFactor,
+             drvlocal.adsport_str, axisNo_);
+#ifndef motorWaitPollsBeforeReadyString
+    drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
+#endif
+    return pC_->writeReadACK(ASYN_TRACE_INFO);
+  } else {
+    int nCommand = relative ? NCOMMANDMOVEREL : NCOMMANDMOVEABS;
+    if (status == asynSuccess) status = setValueOnAxis("nCommand", nCommand);
+    if (status == asynSuccess) status = setValueOnAxis("nCmdData", 0);
+    if (status == asynSuccess) status = setValueOnAxis("fPosition", position * drvlocal.scaleFactor);
+    if (status == asynSuccess) status = sendVelocityAndAccelExecute(maxVelocity * drvlocal.scaleFactor,
+                                                                    acceleration * drvlocal.scaleFactor);
+  }
   return status;
 }
 
@@ -959,10 +981,12 @@ enableAmplifierPollAndReturn:
  */
 asynStatus EthercatMCAxis::stopAxisInternal(const char *function_name, double acceleration)
 {
-  asynStatus status;
+  asynStatus status = asynError;
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%sstopAxisInternal(%d) (%s)\n", modNamEMC, axisNo_, function_name);
-  status = setValueOnAxisVerify("bExecute", "bExecute", 0, 1);
+  if (!(pC_->features_ & FEATURE_BITS_GVL)) {
+    status = setValueOnAxisVerify("bExecute", "bExecute", 0, 1);
+  }
   return status;
 }
 
