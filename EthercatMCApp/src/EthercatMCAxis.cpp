@@ -18,6 +18,10 @@
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
+#ifndef ASYN_TRACE_DEBUG
+#define ASYN_TRACE_DEBUG     0x0080
+#endif
+
 /* temporally definition */
 #ifndef ERROR_MAIN_ENC_SET_SCALE_FAIL_DRV_ENABLED
 #define ERROR_MAIN_ENC_SET_SCALE_FAIL_DRV_ENABLED 0x2001C
@@ -1119,6 +1123,9 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
              drvlocal.adsport_str, axisNo_,
              drvlocal.adsport_str, axisNo_,
              drvlocal.adsport_str, axisNo_);
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sout=%s\n",
+              modNamEMC, pC_->outString_);
     comStatus = pC_->writeReadOnErrorDisconnect();
     if (comStatus) return comStatus;
     nvals = sscanf(pC_->inString_,
@@ -1130,10 +1137,9 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
                    &pst_axis_status->bLimitBwd,
                    &pst_axis_status->bHomed,
                    &pst_axis_status->bEnabled);
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%sout=%s in=%s nvals=%d\n",
-              modNamEMC, pC_->outString_, pC_->inString_,
-              nvals);
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sin=%s nvals=%d\n",
+              modNamEMC, pC_->inString_, nvals);
     if (nvals != 7) {
       goto pollAllWrongnvals;
     }
@@ -1182,6 +1188,9 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     /* Read the complete Axis status */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatus?", drvlocal.adsport_str, axisNo_);
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sout=%s\n",
+              modNamEMC, pC_->outString_);
     comStatus = pC_->writeReadOnErrorDisconnect();
     if (comStatus) return comStatus;
     if (!strncasecmp(pC_->inString_,  Main_dot_str, Main_dot_len)) {
@@ -1214,6 +1223,9 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
                      &pst_axis_status->bHomed,         /* 22 */
                      &pst_axis_status->bBusy           /* 23 */);
     }
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sin=%s nvals=%d\n",
+              modNamEMC, pC_->inString_, nvals);
     if (nvals != 24) {
       goto pollAllWrongnvals;
     }
