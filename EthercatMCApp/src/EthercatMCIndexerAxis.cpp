@@ -375,6 +375,9 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
              pC_->adsport,
              indexGroup, drvlocal.iOffset + 0xC);  /* ParamValue on 0xC*/
 
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sout=%s\n",
+              modNamEMC, pC_->outString_);
     status = pC_->writeReadOnErrorDisconnect();
     if (status) {
       return status;
@@ -382,6 +385,9 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     nvals = sscanf(pC_->inString_, "%lf;%lf;%u;%u;%lf",
                    &actPosition, &targetPosition, &statusReasonAux,
                    &paramCtrl, &paramValue);
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+              "%sin=%s nvals=%d\n",
+              modNamEMC, pC_->inString_, nvals);
     if (nvals != 5) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%snvals=%d command=\"%s\" response=\"%s\"\n",
