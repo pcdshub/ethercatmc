@@ -647,6 +647,182 @@ static int motorHandleOneGetArg(const char *myarg_1, int motor_axis_no)
   return __LINE__;
 }
 
+
+static int motorHandleOneSetArg(const char *myarg_1, int motor_axis_no)
+{
+  int nvals;
+  int iValue;
+  double fValue;
+  /* nCommand=3 */
+  nvals = sscanf(myarg_1, "nCommand=%d", &iValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].nCommand = iValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* nCmdData=1 */
+  nvals = sscanf(myarg_1, "nCmdData=%d", &iValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].nCmdData = iValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* fPosition=100 */
+  nvals = sscanf(myarg_1, "fPosition=%lf", &fValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].fPosition = fValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* fHomePosition */
+  nvals = sscanf(myarg_1, "fHomePosition=%lf", &fValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].fHomePosition = fValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* fVelocity=20 */
+  nvals = sscanf(myarg_1, "fVelocity=%lf", &fValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* fAcceleration=1000 */
+  nvals = sscanf(myarg_1, "fAcceleration=%lf", &fValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].fAcceleration = fValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* fDeceleration=1000 */
+  nvals = sscanf(myarg_1, "fDeceleration=%lf", &fValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].fDeceleration = fValue;
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* bEnable= */
+  nvals = sscanf(myarg_1, "bEnable=%d", &iValue);
+  if (nvals == 1) {
+    int amplifierLockedToBeOff = getAmplifierLockedToBeOff(motor_axis_no);
+    cmd_Motor_cmd[motor_axis_no].bEnable = iValue;
+    if (amplifierLockedToBeOff) {
+      setAmplifierPercent(motor_axis_no, 0);
+      if (amplifierLockedToBeOff == AMPLIFIER_LOCKED_TO_BE_OFF_LOUD) {
+        cmd_buf_printf("Amplifier locked");
+        return 0;
+      }
+      iValue = 0;
+    }
+    setAmplifierPercent(motor_axis_no, iValue ? 97 : 0);
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  /* bExecute= */
+  nvals = sscanf(myarg_1, "bExecute=%d", &iValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].bExecute = iValue;
+    if (!iValue) {
+      /* bExecute=0 is always allowed, regardless the command */
+      motorStop(motor_axis_no);
+      cmd_buf_printf("OK");
+      return 0;
+    } else if (iValue == 1) {
+      if (cmd_Motor_cmd[motor_axis_no].fVelocity >
+          cmd_Motor_cmd[motor_axis_no].maximumVelocity) {
+        fprintf(stdlog, "%s/%s:%d axis_no=%d velocity=%g maximumVelocity=%g\n",
+                __FILE__, __FUNCTION__, __LINE__,
+                motor_axis_no,
+                cmd_Motor_cmd[motor_axis_no].fVelocity,
+                cmd_Motor_cmd[motor_axis_no].maximumVelocity);
+        set_nErrorId(motor_axis_no, 0x4221);
+        cmd_buf_printf("OK");
+        return 0;
+      }
+      if (isMotorMoving(motor_axis_no)) {
+        int nErrorId = 0x1431C;
+        cmd_buf_printf("Error: %d", nErrorId);
+        set_nErrorId(motor_axis_no, nErrorId);
+        return 0;
+      }
+      switch (cmd_Motor_cmd[motor_axis_no].nCommand) {
+        case 1:
+        {
+          int direction = 1;
+          if (cmd_Motor_cmd[motor_axis_no].fVelocity < 0) {
+            direction = 0;
+            cmd_Motor_cmd[motor_axis_no].fVelocity = -cmd_Motor_cmd[motor_axis_no].fVelocity;
+          }
+          (void)moveVelocity(motor_axis_no,
+                             direction,
+                             cmd_Motor_cmd[motor_axis_no].fVelocity,
+                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
+          cmd_buf_printf("OK");
+        }
+        break;
+        case 2:
+          (void)movePosition(motor_axis_no,
+                             cmd_Motor_cmd[motor_axis_no].fPosition,
+                             1, /* int relative, */
+                             cmd_Motor_cmd[motor_axis_no].fVelocity,
+                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
+          cmd_buf_printf("OK");
+          break;
+        case 3:
+          (void)movePosition(motor_axis_no,
+                             cmd_Motor_cmd[motor_axis_no].fPosition,
+                             0, /* int relative, */
+                             cmd_Motor_cmd[motor_axis_no].fVelocity,
+                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
+          cmd_buf_printf("OK");
+          break;
+        case 10:
+        {
+          if (cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor &&
+              cmd_Motor_cmd[motor_axis_no].homeVeloFromHomeSensor) {
+            (void)moveHomeProc(motor_axis_no,
+                               0, /* direction, */
+                               cmd_Motor_cmd[motor_axis_no].nCmdData,
+                               cmd_Motor_cmd[motor_axis_no].fHomePosition,
+                               cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor,
+                               cmd_Motor_cmd[motor_axis_no].fAcceleration);
+            cmd_buf_printf("OK");
+          } else {
+            cmd_buf_printf("Error : %d %g %g",
+                           70000,
+                           cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor,
+                           cmd_Motor_cmd[motor_axis_no].homeVeloFromHomeSensor);
+          }
+        }
+        break;
+        default:
+          RETURN_ERROR_OR_DIE(__LINE__,
+                              "%s/%s:%d line=%s command_no=%u",
+                              __FILE__, __FUNCTION__, __LINE__,
+                              myarg_1, cmd_Motor_cmd[motor_axis_no].nCommand);
+      }
+      return 0;
+    }
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d line=%s invalid_iValue=%u '.'",
+                        __FILE__, __FUNCTION__, __LINE__,
+                        myarg_1,  iValue);
+  }
+  /* bReset= */
+  nvals = sscanf(myarg_1, "bReset=%d", &iValue);
+  if (nvals == 1) {
+    cmd_Motor_cmd[motor_axis_no].bReset = iValue;
+    if (iValue) {
+      motorStop(motor_axis_no);
+      set_nErrorId(motor_axis_no, 0);
+    }
+    cmd_buf_printf("OK");
+    return 0;
+  }
+  return __LINE__;
+}
+
 static int motorHandleGvlArg(const char *myarg_1)
 {
   const char *pTmp;
@@ -903,172 +1079,8 @@ static void motorHandleOneArg(const char *myarg_1)
   }
 
   /* End of "get" commands, from here, set commands */
-
-  /* nCommand=3 */
-  nvals = sscanf(myarg_1, "nCommand=%d", &iValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].nCommand = iValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* nCmdData=1 */
-  nvals = sscanf(myarg_1, "nCmdData=%d", &iValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].nCmdData = iValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* fPosition=100 */
-  nvals = sscanf(myarg_1, "fPosition=%lf", &fValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].fPosition = fValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* fHomePosition */
-  nvals = sscanf(myarg_1, "fHomePosition=%lf", &fValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].fHomePosition = fValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-
-
-  /* fVelocity=20 */
-  nvals = sscanf(myarg_1, "fVelocity=%lf", &fValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* fAcceleration=1000 */
-  nvals = sscanf(myarg_1, "fAcceleration=%lf", &fValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].fAcceleration = fValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* fDeceleration=1000 */
-  nvals = sscanf(myarg_1, "fDeceleration=%lf", &fValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].fDeceleration = fValue;
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* bEnable= */
-  nvals = sscanf(myarg_1, "bEnable=%d", &iValue);
-  if (nvals == 1) {
-    int amplifierLockedToBeOff = getAmplifierLockedToBeOff(motor_axis_no);
-    cmd_Motor_cmd[motor_axis_no].bEnable = iValue;
-    if (amplifierLockedToBeOff) {
-      setAmplifierPercent(motor_axis_no, 0);
-      if (amplifierLockedToBeOff == AMPLIFIER_LOCKED_TO_BE_OFF_LOUD) {
-        cmd_buf_printf("Amplifier locked");
-        return;
-      }
-      iValue = 0;
-    }
-    setAmplifierPercent(motor_axis_no, iValue ? 97 : 0);
-    cmd_buf_printf("OK");
-    return;
-  }
-  /* bExecute= */
-  nvals = sscanf(myarg_1, "bExecute=%d", &iValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].bExecute = iValue;
-    if (!iValue) {
-      /* bExecute=0 is always allowed, regardless the command */
-      motorStop(motor_axis_no);
-      cmd_buf_printf("OK");
-      return;
-    } else if (iValue == 1) {
-      if (cmd_Motor_cmd[motor_axis_no].fVelocity >
-          cmd_Motor_cmd[motor_axis_no].maximumVelocity) {
-        fprintf(stdlog, "%s/%s:%d axis_no=%d velocity=%g maximumVelocity=%g\n",
-                __FILE__, __FUNCTION__, __LINE__,
-                motor_axis_no,
-                cmd_Motor_cmd[motor_axis_no].fVelocity,
-                cmd_Motor_cmd[motor_axis_no].maximumVelocity);
-        set_nErrorId(motor_axis_no, 0x4221);
-        cmd_buf_printf("OK");
-        return;
-      }
-      if (isMotorMoving(motor_axis_no)) {
-        int nErrorId = 0x1431C;
-        cmd_buf_printf("Error: %d", nErrorId);
-        set_nErrorId(motor_axis_no, nErrorId);
-        return;
-      }
-      switch (cmd_Motor_cmd[motor_axis_no].nCommand) {
-        case 1:
-        {
-          int direction = 1;
-          if (cmd_Motor_cmd[motor_axis_no].fVelocity < 0) {
-            direction = 0;
-            cmd_Motor_cmd[motor_axis_no].fVelocity = -cmd_Motor_cmd[motor_axis_no].fVelocity;
-          }
-          (void)moveVelocity(motor_axis_no,
-                             direction,
-                             cmd_Motor_cmd[motor_axis_no].fVelocity,
-                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
-          cmd_buf_printf("OK");
-        }
-        break;
-        case 2:
-          (void)movePosition(motor_axis_no,
-                             cmd_Motor_cmd[motor_axis_no].fPosition,
-                             1, /* int relative, */
-                             cmd_Motor_cmd[motor_axis_no].fVelocity,
-                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
-          cmd_buf_printf("OK");
-          break;
-        case 3:
-          (void)movePosition(motor_axis_no,
-                             cmd_Motor_cmd[motor_axis_no].fPosition,
-                             0, /* int relative, */
-                             cmd_Motor_cmd[motor_axis_no].fVelocity,
-                             cmd_Motor_cmd[motor_axis_no].fAcceleration);
-          cmd_buf_printf("OK");
-          break;
-        case 10:
-        {
-          if (cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor &&
-              cmd_Motor_cmd[motor_axis_no].homeVeloFromHomeSensor) {
-            (void)moveHomeProc(motor_axis_no,
-                               0, /* direction, */
-                               cmd_Motor_cmd[motor_axis_no].nCmdData,
-                               cmd_Motor_cmd[motor_axis_no].fHomePosition,
-                               cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor,
-                               cmd_Motor_cmd[motor_axis_no].fAcceleration);
-            cmd_buf_printf("OK");
-          } else {
-            cmd_buf_printf("Error : %d %g %g",
-                           70000,
-                           cmd_Motor_cmd[motor_axis_no].homeVeloTowardsHomeSensor,
-                           cmd_Motor_cmd[motor_axis_no].homeVeloFromHomeSensor);
-          }
-        }
-        break;
-        default:
-          RETURN_OR_DIE("%s/%s:%d line=%s command_no=%u",
-                        __FILE__, __FUNCTION__, __LINE__,
-                        myarg, cmd_Motor_cmd[motor_axis_no].nCommand);
-      }
-      return;
-    }
-    RETURN_OR_DIE("%s/%s:%d line=%s invalid_iValue=%u '.'",
-                  __FILE__, __FUNCTION__, __LINE__,
-                  myarg,  iValue);
-  }
-  /* bReset= */
-  nvals = sscanf(myarg_1, "bReset=%d", &iValue);
-  if (nvals == 1) {
-    cmd_Motor_cmd[motor_axis_no].bReset = iValue;
-    if (iValue) {
-      motorStop(motor_axis_no);
-      set_nErrorId(motor_axis_no, 0);
-    }
-    cmd_buf_printf("OK");
+  if (!motorHandleOneSetArg(myarg_1,motor_axis_no)) {
+    /* Command was handled in motorHandleOneSetArg without problems */
     return;
   }
   /* if we come here, we do not understand the command */
