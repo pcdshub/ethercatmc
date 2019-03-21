@@ -1,3 +1,8 @@
+#ifndef ETHERCATMCINDEXERAXIS_H
+#define ETHERCATMCINDEXERAXIS_H
+
+#include <stdint.h>
+
 /* Parameter interface */
 /* The highest 3 bits are used for the command itself */
 #define PARAM_IF_CMD_MASK                          0xE000
@@ -68,3 +73,4 @@ private:
   friend class EthercatMCController;
 };
 
+#endif

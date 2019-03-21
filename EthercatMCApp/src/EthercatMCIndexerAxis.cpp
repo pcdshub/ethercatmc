@@ -19,6 +19,11 @@
 #define ASYN_TRACE_INFO      0x0040
 #endif
 
+#ifndef ASYN_TRACE_DEBUG
+#define ASYN_TRACE_DEBUG     0x0080
+#endif
+
+
 static unsigned indexGroup = 0x4020;
 
 typedef enum {
@@ -509,7 +514,7 @@ asynStatus EthercatMCIndexerAxis::setClosedLoop(bool closedLoop)
             (int)closedLoop);
   status = pC_->indexerParamWrite(paramIfOffset,
                                   PARAM_IDX_OPMODE_AUTO_UINT32, value);
-  return asynSuccess;
+  return status;
 }
 
 
