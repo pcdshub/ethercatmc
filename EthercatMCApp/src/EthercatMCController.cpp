@@ -50,7 +50,7 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
 
   /* Controller */
   memset(&ctrlLocal, 0, sizeof(ctrlLocal));
-
+  features_ = 0;
 #ifndef motorMessageTextString
   createParam("MOTOR_MESSAGE_TEXT",          asynParamOctet,       &EthercatMCMCUErrMsg_);
 #else
@@ -374,7 +374,9 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     int i;
     ctrlLocal.isConnected = 0;
     ctrlLocal.initialPollDone = 0;
-    this->features = 0;
+    /* Gvl comes via EthercatMCCreateAxis,
+       keep that bit  */
+    features_ &= ~FEATURE_BITS_GVL;
     setMCUErrMsg("MCU Disconnected");
     for (i=0; i<numAxes_; i++) {
       asynMotorAxis *pAxis=getAxis(i);
@@ -397,8 +399,8 @@ asynStatus EthercatMCController::poll(void)
                     "%spoll ctrlLocal.initialPollDone=%d\n",
             modNamEMC, ctrlLocal.initialPollDone);
 
-  if (!this->features) {
-    this->features = getFeatures();
+  if (!features_) {
+    features_ = getFeatures();
   }
   if (!ctrlLocal.initialPollDone) {
     status = initialPollIndexer();

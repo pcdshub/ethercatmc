@@ -474,7 +474,7 @@ asynStatus EthercatMCAxis::readConfigLine(const char *line, const char **errorTx
              drvlocal.adsport_str, cfg_txt_p);
     status = pC_->writeReadACK(ASYN_TRACE_INFO);
   } else if (!strncmp(setSim_str, line, strlen(setSim_str))) {
-    if (pC_->features & FEATURE_BITS_SIM) {
+    if (pC_->features_ & FEATURE_BITS_SIM) {
       const char *cfg_txt_p = &line[strlen(setRaw_str)];
       while (*cfg_txt_p == ' ') cfg_txt_p++;
 
@@ -575,7 +575,7 @@ asynStatus EthercatMCAxis::readConfigFile(void)
 
     if (!strncmp(simOnly_str, rdbuf, strlen(simOnly_str))) {
       /* "simOnly " Only for the simulator */
-      if (pC_->features & FEATURE_BITS_SIM) {
+      if (pC_->features_ & FEATURE_BITS_SIM) {
         status = readConfigLine(&rdbuf[strlen(simOnly_str)], &errorTxt);
       }
     } else {

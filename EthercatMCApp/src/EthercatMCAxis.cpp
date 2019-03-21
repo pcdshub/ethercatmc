@@ -155,7 +155,7 @@ EthercatMCAxis::EthercatMCAxis(EthercatMCController *pC, int axisNo,
       } else if (!strncmp(pThisOption, sFeatures_str, strlen(sFeatures_str))) {
         pThisOption += strlen(sFeatures_str);
         if (!strcmp(pThisOption, "Gvl")) {
-          pC_->features |= FEATURE_BITS_GVL;
+          pC_->features_ |= FEATURE_BITS_GVL;
         }
       }
       pThisOption = pNextOption;
@@ -442,7 +442,7 @@ asynStatus EthercatMCAxis::initialPoll(void)
 {
   asynStatus status;
 
-  if (pC_->features & FEATURE_BITS_GVL) {
+  if (pC_->features_ & FEATURE_BITS_GVL) {
     if (drvlocal.dirty.initialPollNeeded) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
                 "%sdrvlocal.dirty.initialPollNeeded=%d\n",
@@ -468,7 +468,7 @@ asynStatus EthercatMCAxis::readBackAllConfig(int axisID)
 {
   asynStatus status = asynSuccess;
   /* for ECMC homing is configured from EPICS, do NOT do the readback */
-  if (!(pC_->features & FEATURE_BITS_ECMC)) {
+  if (!(pC_->features_ & FEATURE_BITS_ECMC)) {
     if (!drvlocal.scaleFactor) status = asynError;
     if (status == asynSuccess) status = readBackHoming();
   }
@@ -724,7 +724,7 @@ asynStatus EthercatMCAxis::home(double minVelocity, double maxVelocity, double a
     return asynError;
   /* The controller will do the home search, and change its internal
      raw value to what we specified in fPosition. */
-  if (pC_->features & FEATURE_BITS_ECMC) {
+  if (pC_->features_ & FEATURE_BITS_ECMC) {
     double velToHom;
     double velFrmHom;
     double accHom;
@@ -1103,7 +1103,7 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     if (comStatus) return comStatus;
   }
 
-  if (pC_->features & FEATURE_BITS_GVL) {
+  if (pC_->features_ & FEATURE_BITS_GVL) {
     snprintf(pC_->outString_, sizeof(pC_->outString_),
              "%sGvl.axes[%d].fActPosition?;"
              "%sGvl.axes[%d].bError?;"
@@ -1138,7 +1138,7 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
       goto pollAllWrongnvals;
     }
     motor_axis_no = axisNo_;
-  } else if (pC_->features & FEATURE_BITS_V2) {
+  } else if (pC_->features_ & FEATURE_BITS_V2) {
     /* V2 is supported, use it. */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatusV2?", drvlocal.adsport_str, axisNo_);
@@ -1178,7 +1178,7 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     if (nvals == 27) {
       pst_axis_status->mvnNRdyNex = pst_axis_status->bBusy || !pst_axis_status->atTarget;
     }
-  } else if (pC_->features & FEATURE_BITS_V1) {
+  } else if (pC_->features_ & FEATURE_BITS_V1) {
     /* Read the complete Axis status */
     snprintf(pC_->outString_, sizeof(pC_->outString_),
             "%sMain.M%d.stAxisStatus?", drvlocal.adsport_str, axisNo_);
@@ -1219,7 +1219,7 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
     }
 
     /* V1 new style: mvnNRdyNex follows bBusy */
-    if (pC_->features & (FEATURE_BITS_ECMC | FEATURE_BITS_SIM))
+    if (pC_->features_ & (FEATURE_BITS_ECMC | FEATURE_BITS_SIM))
       drvlocal.supported.bV1BusyNewStyle = 1;
 
     pst_axis_status->mvnNRdyNex = pst_axis_status->bBusy && pst_axis_status->bEnabled;
@@ -1230,20 +1230,20 @@ asynStatus EthercatMCAxis::pollAll(bool *moving, st_axis_status_type *pst_axis_s
   } /* End of V1 */
   /* From here on, either V1 or V2 is supported */
   if (drvlocal.dirty.statusVer) {
-    if (pC_->features & FEATURE_BITS_V2)
+    if (pC_->features_ & FEATURE_BITS_V2)
       drvlocal.supported.statusVer = 2;
-    else if ((pC_->features & FEATURE_BITS_V1) && !drvlocal.supported.bV1BusyNewStyle)
+    else if ((pC_->features_ & FEATURE_BITS_V1) && !drvlocal.supported.bV1BusyNewStyle)
       drvlocal.supported.statusVer = 0;
-    else if ((pC_->features & FEATURE_BITS_V1) && drvlocal.supported.bV1BusyNewStyle)
+    else if ((pC_->features_ & FEATURE_BITS_V1) && drvlocal.supported.bV1BusyNewStyle)
       drvlocal.supported.statusVer = 1;
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%spollAll(%d) nvals=%d V1=%x V2=%x sim=%x ecmc=%x GVL=%x bV1BusyNew=%d Ver=%d cmd/data=%d/%d fPos=%f fActPos=%f\n",
               modNamEMC, axisNo_, nvals,
-              pC_->features & FEATURE_BITS_V1,
-              pC_->features & FEATURE_BITS_V2,
-              pC_->features & FEATURE_BITS_SIM,
-              pC_->features & FEATURE_BITS_ECMC,
-              pC_->features & FEATURE_BITS_GVL,
+              pC_->features_ & FEATURE_BITS_V1,
+              pC_->features_ & FEATURE_BITS_V2,
+              pC_->features_ & FEATURE_BITS_SIM,
+              pC_->features_ & FEATURE_BITS_ECMC,
+              pC_->features_ & FEATURE_BITS_GVL,
               drvlocal.supported.bV1BusyNewStyle,
               drvlocal.supported.statusVer,
               pst_axis_status->nCommand,
@@ -1339,7 +1339,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
   {
     *moving = st_axis_status.mvnNRdyNex ? true : false;
     if (!st_axis_status.mvnNRdyNex &&
-        !(pC_->features & FEATURE_BITS_ECMC)) {
+        !(pC_->features_ & FEATURE_BITS_ECMC)) {
       /* not moving: poll the parameters for this axis */
       int axisID = getMotionAxisID();
       switch (drvlocal.eeAxisPollNow) {
@@ -1387,7 +1387,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
                                        &st_axis_status.encoderRaw);
     if (!comStatus) setDoubleParam(pC_->EthercatMCEncAct_,
                                    st_axis_status.encoderRaw);
-  } else if (pC_->features & FEATURE_BITS_V2) {
+  } else if (pC_->features_ & FEATURE_BITS_V2) {
     setDoubleParam(pC_->EthercatMCEncAct_, st_axis_status.encoderRaw);
   }
 
@@ -1478,7 +1478,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
     if (errIdString[0]) {
       snprintf(drvlocal.sErrorMessage, sizeof(drvlocal.sErrorMessage)-1, "E: %s %x",
                errIdString, nErrorId);
-    } else if ((pC_->features & FEATURE_BITS_ECMC) && nErrorId) {
+    } else if ((pC_->features_ & FEATURE_BITS_ECMC) && nErrorId) {
       /* emcmc has error messages */
       snprintf(drvlocal.sErrorMessage, sizeof(drvlocal.sErrorMessage)-1, "E: %s",
                sErrorMessage);

@@ -343,7 +343,7 @@ public:
   asynStatus writeReadOnErrorDisconnect(void);
   EthercatMCAxis* getAxis(asynUser *pasynUser);
   EthercatMCAxis* getAxis(int axisNo);
-  int features;
+  int features_;
 
   protected:
   void handleStatusChange(asynStatus status);
