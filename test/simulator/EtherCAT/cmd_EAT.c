@@ -820,6 +820,20 @@ static int motorHandleOneSetArg(const char *myarg_1, int motor_axis_no)
     cmd_buf_printf("OK");
     return 0;
   }
+  /* bStart= */
+  nvals = sscanf(myarg_1, "bStart=%d", &iValue);
+  if (nvals == 1) {
+    if (iValue == 1) {
+      (void)movePosition(motor_axis_no,
+                         cmd_Motor_cmd[motor_axis_no].fPosition,
+                         0, /* int relative, */
+                         cmd_Motor_cmd[motor_axis_no].fVelocity,
+                         cmd_Motor_cmd[motor_axis_no].fAcceleration);
+      cmd_buf_printf("OK");
+      return 0;
+    }
+  }
+
   return __LINE__;
 }
 
@@ -849,6 +863,10 @@ static int motorHandleGvlArg(const char *myarg_1)
   pTmp = strchr(myarg_1, '?');
   if (pTmp) {
     return motorHandleOneGetArg(myarg_1, motor_axis_no);
+  }
+  pTmp = strchr(myarg_1, '=');
+  if (pTmp) {
+    return motorHandleOneSetArg(myarg_1, motor_axis_no);
   }
   return __LINE__;
 }
