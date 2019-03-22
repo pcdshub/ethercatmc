@@ -469,4 +469,5 @@ public:
 
   friend class EthercatMCAxis;
   friend class EthercatMCIndexerAxis;
+  friend class EthercatMCGvlAxis;
 };
