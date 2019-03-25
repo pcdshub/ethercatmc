@@ -67,6 +67,8 @@ FILENAME...   EthercatMCController.h
 #define EthercatMCMCUErrMsgString            "MCUErrMsg"
 #define EthercatMCDbgStrToMcuString          "StrToMCU"
 
+#define HOMPROC_MANUAL_SETPOS    15
+
 extern const char *modNamEMC;
 
 extern "C" {

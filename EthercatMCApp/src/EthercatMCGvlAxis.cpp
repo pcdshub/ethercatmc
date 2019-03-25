@@ -23,17 +23,6 @@
 #define ASYN_TRACE_DEBUG     0x0080
 #endif
 
-/* temporally definition */
-#ifndef ERROR_MAIN_ENC_SET_SCALE_FAIL_DRV_ENABLED
-#define ERROR_MAIN_ENC_SET_SCALE_FAIL_DRV_ENABLED 0x2001C
-#endif
-
-#define NCOMMANDMOVEVEL  1
-#define NCOMMANDMOVEREL  2
-#define NCOMMANDMOVEABS  3
-#define NCOMMANDHOME    10
-#define HOMPROC_MANUAL_SETPOS    15
-
 /* The maximum number of polls we wait for the motor
    to "start" (report moving after a new move command */
 #define WAITNUMPOLLSBEFOREREADY 3
@@ -66,7 +55,7 @@ EthercatMCGvlAxis::EthercatMCGvlAxis(EthercatMCController *pC, int axisNo,
 #endif
   memset(&drvlocal, 0, sizeof(drvlocal));
   memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
-  //drvlocal.old_eeAxisError = eeAxisErrorIOCcomError;
+  drvlocal.old_eeAxisError = eeAxisErrorIOCcomError;
   drvlocal.axisFlags = axisFlags;
 
   /* We pretend to have an encoder (fActPosition) */
@@ -193,17 +182,6 @@ extern "C" int EthercatMCCreateGvlAxis(const char *EthercatMCName, int axisNo,
 asynStatus EthercatMCGvlAxis::initialPoll(void)
 {
   asynStatus status;
-
-  if (pC_->features_ & FEATURE_BITS_GVL) {
-    if (drvlocal.dirty.initialPollNeeded) {
-      asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-                "%sdrvlocal.dirty.initialPollNeeded=%d\n",
-                modNamEMC, drvlocal.dirty.initialPollNeeded);
-    }
-    drvlocal.dirty.initialPollNeeded = 0;
-    return asynSuccess;
-  }
-
   if (!drvlocal.dirty.initialPollNeeded)
     return asynSuccess;
 
@@ -258,26 +236,6 @@ void EthercatMCGvlAxis::report(FILE *fp, int level)
 }
 
 
-/** Set velocity and acceleration for the axis
- * \param[in] maxVelocity, mm/sec
- * \param[in] acceleration ???
- *
- */
-asynStatus EthercatMCGvlAxis::sendVelocityAndAccelExecute(double maxVeloEGU, double accEGU)
-{
-  asynStatus status;
-  /* We don't use minVelocity */
-  status = setValuesOnAxis("fAcceleration", accEGU,
-                           "fDeceleration", accEGU);
-  if (status) return status;
-  status = setValueOnAxis("fVelocity", maxVeloEGU);
-  if (status == asynSuccess) status = setValueOnAxis("bExecute", 1);
-#ifndef motorWaitPollsBeforeReadyString
-  drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
-#endif
-  return status;
-}
-
 
 /** Move the axis to a position, either absolute or relative
  * \param[in] position in steps
@@ -302,34 +260,24 @@ asynStatus EthercatMCGvlAxis::move(double position, int relative, double minVelo
   }
 
   if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
-  if (pC_->features_ & FEATURE_BITS_GVL) {
-    if (relative){
-      double actPosition;
-      pC_->getDoubleParam(axisNo_, pC_->motorPosition_, &actPosition);
-      position = position - actPosition;
-    }
-    snprintf(pC_->outString_, sizeof(pC_->outString_),
-             "%sGvl.axes[%d].fPosition=%f;"
-             "%sGvl.axes[%d].fVelocity=%f;"
-             "%sGvl.axes[%d].fAcceleration=%f;"
-             "%sGvl.axes[%d].bStart=1",
-             drvlocal.adsport_str, axisNo_, position * drvlocal.scaleFactor,
-             drvlocal.adsport_str, axisNo_, maxVelocity * drvlocal.scaleFactor,
-             drvlocal.adsport_str, axisNo_, acceleration * drvlocal.scaleFactor,
-             drvlocal.adsport_str, axisNo_);
-#ifndef motorWaitPollsBeforeReadyString
-    drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
-#endif
-    return pC_->writeReadACK(ASYN_TRACE_INFO);
-  } else {
-    int nCommand = relative ? NCOMMANDMOVEREL : NCOMMANDMOVEABS;
-    if (status == asynSuccess) status = setValueOnAxis("nCommand", nCommand);
-    if (status == asynSuccess) status = setValueOnAxis("nCmdData", 0);
-    if (status == asynSuccess) status = setValueOnAxis("fPosition", position * drvlocal.scaleFactor);
-    if (status == asynSuccess) status = sendVelocityAndAccelExecute(maxVelocity * drvlocal.scaleFactor,
-                                                                    acceleration * drvlocal.scaleFactor);
+  if (relative){
+    double actPosition;
+    pC_->getDoubleParam(axisNo_, pC_->motorPosition_, &actPosition);
+    position = position - actPosition;
   }
-  return status;
+  snprintf(pC_->outString_, sizeof(pC_->outString_),
+           "%sGvl.axes[%d].fPosition=%f;"
+           "%sGvl.axes[%d].fVelocity=%f;"
+           "%sGvl.axes[%d].fAcceleration=%f;"
+           "%sGvl.axes[%d].bStart=1",
+           drvlocal.adsport_str, axisNo_, position * drvlocal.scaleFactor,
+           drvlocal.adsport_str, axisNo_, maxVelocity * drvlocal.scaleFactor,
+           drvlocal.adsport_str, axisNo_, acceleration * drvlocal.scaleFactor,
+           drvlocal.adsport_str, axisNo_);
+#ifndef motorWaitPollsBeforeReadyString
+  drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
+#endif
+  return pC_->writeReadACK(ASYN_TRACE_INFO);
 }
 
 
@@ -342,33 +290,7 @@ asynStatus EthercatMCGvlAxis::move(double position, int relative, double minVelo
  */
 asynStatus EthercatMCGvlAxis::home(double minVelocity, double maxVelocity, double acceleration, int forwards)
 {
-  asynStatus status = asynSuccess;
-  int nCommand = NCOMMANDHOME;
-
-  int homProc = -1;
-  double homPos = 0.0;
-
-  drvlocal.eeAxisWarning = eeAxisWarningNoWarning;
-  /* The homPos may be undefined, then use 0.0 */
-  (void)pC_->getDoubleParam(axisNo_, pC_->EthercatMCHomPos_, &homPos);
-  status = pC_->getIntegerParam(axisNo_, pC_->EthercatMCHomProc_,&homProc);
-  if (homProc == HOMPROC_MANUAL_SETPOS)
-    return asynError;
-  /* The controller will do the home search, and change its internal
-     raw value to what we specified in fPosition. */
-  snprintf(pC_->outString_, sizeof(pC_->outString_),
-           "%sMain.M%d.bExecute=0;"
-           "%sMain.M%d.nCommand=%d;"
-           "%sMain.M%d.nCmdData=%d;"
-           "%sMain.M%d.fHomePosition=%f;"
-           "%sMain.M%d.bExecute=1",
-           drvlocal.adsport_str, axisNo_,
-           drvlocal.adsport_str, axisNo_, nCommand,
-           drvlocal.adsport_str, axisNo_, homProc,
-           drvlocal.adsport_str, axisNo_, homPos,
-           drvlocal.adsport_str, axisNo_);
-  return pC_->writeReadACK(ASYN_TRACE_INFO);
-
+  asynStatus status = asynError;
 #ifndef motorWaitPollsBeforeReadyString
   drvlocal.waitNumPollsBeforeReady += WAITNUMPOLLSBEFOREREADY;
 #endif
@@ -384,6 +306,7 @@ asynStatus EthercatMCGvlAxis::home(double minVelocity, double maxVelocity, doubl
  */
 asynStatus EthercatMCGvlAxis::moveVelocity(double minVelocity, double maxVelocity, double acceleration)
 {
+  asynStatus status = asynError;
   drvlocal.eeAxisWarning = eeAxisWarningNoWarning;
   /* Do range check */
   if (!drvlocal.scaleFactor) {
@@ -394,13 +317,7 @@ asynStatus EthercatMCGvlAxis::moveVelocity(double minVelocity, double maxVelocit
     return asynSuccess;
   }
 
-  asynStatus status = asynSuccess;
-
-  if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
-  if (status == asynSuccess) setValueOnAxis("nCommand", NCOMMANDMOVEVEL);
-  if (status == asynSuccess) status = setValueOnAxis("nCmdData", 0);
-  if (status == asynSuccess) status = sendVelocityAndAccelExecute(maxVelocity * drvlocal.scaleFactor,
-                                                                  acceleration * drvlocal.scaleFactor);
+  //if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
 
   return status;
 
@@ -414,9 +331,7 @@ asynStatus EthercatMCGvlAxis::moveVelocity(double minVelocity, double maxVelocit
 asynStatus EthercatMCGvlAxis::setPosition(double value)
 {
   asynStatus status = asynSuccess;
-  int nCommand = NCOMMANDHOME;
   int homProc = 0;
-  double homPos = value;
 
   status = pC_->getIntegerParam(axisNo_,
                                 pC_->EthercatMCHomProc_,
@@ -427,11 +342,6 @@ asynStatus EthercatMCGvlAxis::setPosition(double value)
 
   if (homProc != HOMPROC_MANUAL_SETPOS)
     return asynError;
-  if (status == asynSuccess) status = stopAxisInternal(__FUNCTION__, 0);
-  if (status == asynSuccess) status = setValueOnAxis("fHomePosition", homPos);
-  if (status == asynSuccess) status = setValueOnAxis("nCommand", nCommand );
-  if (status == asynSuccess) status = setValueOnAxis("nCmdData", homProc);
-  if (status == asynSuccess) status = setValueOnAxis("bExecute", 1);
 
   return status;
 }

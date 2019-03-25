@@ -9,6 +9,28 @@ extern "C" {
                               int axisFlags, const char *axisOptionsStr);
 };
 
+typedef struct {
+  /* Gvl members */
+  double fVelocity;
+  double fPosition;
+  double fAcceleration;
+  int bLimitFwd;
+  int bLimitBwd;
+  int bEnabled;
+  int bError;
+  int nErrorId;
+  double fActPosition;
+  int bHomed;
+  int bBusy;
+  /* needed */
+  /* nHomeProc
+     fHomePos */
+  /* neither V1 nor V2 nor Gvl, but calculated here */
+  int mvnNRdyNex; /* Not in struct. Calculated in poll() */
+  int motorStatusDirection; /* Not in struct. Calculated in pollAll() */
+  int motorDiffPostion;     /* Not in struct. Calculated in poll() */
+} st_gvl_axis_status_type;
+
 class epicsShareClass EthercatMCGvlAxis : public asynMotorAxis
 {
 public:
@@ -26,6 +48,7 @@ public:
   asynStatus pollAll(bool *moving);
   asynStatus pollAll(bool *moving, st_axis_status_type *pst_axis_status);
   asynStatus poll(bool *moving);
+
 private:
   typedef enum
   {

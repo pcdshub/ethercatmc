@@ -32,7 +32,6 @@
 #define NCOMMANDMOVEREL  2
 #define NCOMMANDMOVEABS  3
 #define NCOMMANDHOME    10
-#define HOMPROC_MANUAL_SETPOS    15
 
 /* The maximum number of polls we wait for the motor
    to "start" (report moving after a new move command */
