@@ -90,6 +90,7 @@ EthercatMCGvlAxis::EthercatMCGvlAxis(EthercatMCController *pC, int axisNo,
   if (axisFlags & AMPLIFIER_ON_FLAG_USING_CNEN) {
     setIntegerParam(pC->motorStatusGainSupport_, 1);
   }
+  pC_->features_ |= FEATURE_BITS_GVL;
   if (axisOptionsStr && axisOptionsStr[0]) {
     const char * const encoder_is_str = "encoder=";
     const char * const cfgfile_str = "cfgFile=";
@@ -148,7 +149,6 @@ EthercatMCGvlAxis::EthercatMCGvlAxis(EthercatMCController *pC, int axisNo,
       } else if (!strncmp(pThisOption, sFeatures_str, strlen(sFeatures_str))) {
         pThisOption += strlen(sFeatures_str);
         if (!strcmp(pThisOption, "Gvl")) {
-          pC_->features_ |= FEATURE_BITS_GVL;
         }
       }
       pThisOption = pNextOption;

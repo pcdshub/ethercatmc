@@ -18,5 +18,5 @@ epicsEnvSet("MOTOR_NAME",    "$(SM_MOTOR_NAME=m1)")
 epicsEnvSet("AXIS_NO",       "$(SM_AXIS_NO=1)")
 epicsEnvSet("DESC",          "$(SM_DESC=Lower=Right)")
 epicsEnvSet("AXISCONFIG",    "sFeatures=Gvl;stv1;adsPort=$(ADSPORT);HomProc=1")
-< EthercatMCAxis.cmd
+< EthercatMCGvlAxis.cmd
 < EthercatMCAxisdebug.cmd
