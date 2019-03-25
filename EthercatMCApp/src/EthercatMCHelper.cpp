@@ -11,7 +11,8 @@
 
 #include <epicsThread.h>
 
-#include "EthercatMC.h"
+#include "EthercatMCAxis.h"
+#include "EthercatMCController.h"
 
 #ifndef ASYN_TRACE_INFO
 #define ASYN_TRACE_INFO      0x0040

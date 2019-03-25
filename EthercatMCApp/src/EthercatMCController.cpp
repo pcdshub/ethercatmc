@@ -13,12 +13,15 @@ FILENAME... EthercatMCController.cpp
 
 #include <asynOctetSyncIO.h>
 #include <epicsExport.h>
-#include "EthercatMC.h"
+#include "EthercatMCController.h"
+#include "EthercatMCAxis.h"
 #include "EthercatMCIndexerAxis.h"
 
 #ifndef ASYN_TRACE_INFO
 #define ASYN_TRACE_INFO      0x0040
 #endif
+
+const char *modNamEMC = "EthercatMC:: ";
 
 const static char *const strEthercatMCCreateController = "EthercatMCCreateController";
 const static char *const strEthercatMCConfigController = "EthercatMCConfigController";
@@ -29,6 +32,51 @@ const static char *const strEthercatMCCreateIndexerAxisDef = "EthercatMCCreateIn
 const static char *const strCtrlReset = ".ctrl.ErrRst";
 
 const static char *const modulName = "EthercatMCAxis::";
+
+extern "C" const char *errStringFromErrId(int nErrorId)
+{
+  switch(nErrorId) {
+  case 0x4221:
+    return "Velo not allowed";
+  case 0x4223:
+    return "Axis positioning enable";
+  case 0x4450:
+  case 0x4451:
+    return "Follow error";
+  case 0x4260:
+    return "Amplifier off";
+  case 0x4263:
+    return "Is still proc";
+  case 0x42A0:
+    return "Consequ Err";
+  case 0x4460:
+    return "Low soft limit";
+  case 0x4461:
+    return "High soft limit";
+  case 0x4462:
+    return "Min position";
+  case 0x4463:
+    return "Max position";
+  case 0x4464:
+    return "HW fault";
+  case 0x4550:
+    return "Follow err pos";
+  case 0x4551:
+    return "Follow err vel";
+  case 0x4650:
+    return "Drv HW not rdy";
+  case 0x4655:
+    return "Inv IO data";
+  case 0x4B09:
+    return "Axis not ready";
+  case 0x4B0A:
+    return "Homing failed";
+  default:
+    return "";
+  }
+}
+
+
 
 /** Creates a new EthercatMCController object.
   * \param[in] portName          The name of the asyn port that will be created for this driver

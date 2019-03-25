@@ -12,7 +12,7 @@
 #include <epicsThread.h>
 
 #include "motor.h"
-#include "EthercatMC.h"
+#include "EthercatMCController.h"
 #include "EthercatMCIndexerAxis.h"
 
 #ifndef ASYN_TRACE_INFO

@@ -12,7 +12,8 @@
 #include <epicsThread.h>
 
 #include "motor.h"
-#include "EthercatMC.h"
+#include "EthercatMCAxis.h"
+#include "EthercatMCController.h"
 
 #ifndef ASYN_TRACE_INFO
 #define ASYN_TRACE_INFO      0x0040
@@ -37,7 +38,6 @@
    to "start" (report moving after a new move command */
 #define WAITNUMPOLLSBEFOREREADY 3
 
-const char *modNamEMC = "EthercatMCAxis:: ";
 
 //
 // These are the EthercatMCAxis methods
@@ -550,52 +550,6 @@ void EthercatMCAxis::report(FILE *fp, int level)
   // Call the base class method
   asynMotorAxis::report(fp, level);
 }
-
-
-extern "C" const char *errStringFromErrId(int nErrorId)
-{
-  switch(nErrorId) {
-  case 0x4221:
-    return "Velo not allowed";
-  case 0x4223:
-    return "Axis positioning enable";
-  case 0x4450:
-  case 0x4451:
-    return "Follow error";
-  case 0x4260:
-    return "Amplifier off";
-  case 0x4263:
-    return "Is still proc";
-  case 0x42A0:
-    return "Consequ Err";
-  case 0x4460:
-    return "Low soft limit";
-  case 0x4461:
-    return "High soft limit";
-  case 0x4462:
-    return "Min position";
-  case 0x4463:
-    return "Max position";
-  case 0x4464:
-    return "HW fault";
-  case 0x4550:
-    return "Follow err pos";
-  case 0x4551:
-    return "Follow err vel";
-  case 0x4650:
-    return "Drv HW not rdy";
-  case 0x4655:
-    return "Inv IO data";
-  case 0x4B09:
-    return "Axis not ready";
-  case 0x4B0A:
-    return "Homing failed";
-  default:
-    return "";
-  }
-}
-
-
 
 
 /** Set velocity and acceleration for the axis

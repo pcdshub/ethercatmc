@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "EthercatMC.h"
+#include "EthercatMCController.h"
 #include "EthercatMCIndexerAxis.h"
 
 #include <epicsThread.h>
