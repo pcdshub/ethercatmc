@@ -348,7 +348,8 @@ asynStatus EthercatMCGvlAxis::setPosition(double value)
 
 asynStatus EthercatMCGvlAxis::resetAxis(void)
 {
-  asynStatus status = asynSuccess;
+  asynStatus status = asynError;
+#if 0
   int EthercatMCErr;
   bool moving;
   /* Reset command error, if any */
@@ -374,6 +375,7 @@ asynStatus EthercatMCGvlAxis::resetAxis(void)
              modNamEMC, axisNo_, pasynManager->strStatus(status), (int)status);
   /* do a poll */
   poll(&moving);
+#endif
   return status;
 }
 
@@ -462,9 +464,11 @@ asynStatus EthercatMCGvlAxis::stopAxisInternal(const char *function_name, double
   asynStatus status = asynError;
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%sstopAxisInternal(%d) (%s)\n", modNamEMC, axisNo_, function_name);
+#if 0
   if (!(pC_->features_ & FEATURE_BITS_GVL)) {
     status = setValueOnAxisVerify("bExecute", "bExecute", 0, 1);
   }
+#endif
   return status;
 }
 
