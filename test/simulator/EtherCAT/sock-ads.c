@@ -74,24 +74,24 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
            ads_req_p->ams_header.source.port_low +
            ads_req_p->ams_header.source.port_high * 256
            );
-    LOGINFO7("%s/%s:%d ams_header cmd=%u.%u flags=%u.%u len=%u.%u.%u.%u err=%u.%u.%u.%u id=%u.%u.%u.%u\n",
+    LOGINFO7("%s/%s:%d ams_header cmd=%u flags=%u len=%u err=%u id=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
-             ads_req_p->ams_header.cmdID_low,
-             ads_req_p->ams_header.cmdID_high,
-             ads_req_p->ams_header.stateFlags_low,
-             ads_req_p->ams_header.stateFlags_high,
-             ads_req_p->ams_header.lenght_0,
-             ads_req_p->ams_header.lenght_1,
-             ads_req_p->ams_header.lenght_2,
-             ads_req_p->ams_header.lenght_3,
-             ads_req_p->ams_header.errorCode_0,
-             ads_req_p->ams_header.errorCode_1,
-             ads_req_p->ams_header.errorCode_2,
-             ads_req_p->ams_header.errorCode_3,
-             ads_req_p->ams_header.invokeID_0,
-             ads_req_p->ams_header.invokeID_1,
-             ads_req_p->ams_header.invokeID_2,
-             ads_req_p->ams_header.invokeID_3
+             ads_req_p->ams_header.cmdID_low +
+             (ads_req_p->ams_header.cmdID_high << 8),
+             ads_req_p->ams_header.stateFlags_low +
+             (ads_req_p->ams_header.stateFlags_high << 8),
+             ads_req_p->ams_header.lenght_0 +
+             (ads_req_p->ams_header.lenght_1 << 8) +
+             (ads_req_p->ams_header.lenght_2 << 16) +
+             (ads_req_p->ams_header.lenght_3 << 24),
+             ads_req_p->ams_header.errorCode_0 +
+             (ads_req_p->ams_header.errorCode_1 << 8) +
+             (ads_req_p->ams_header.errorCode_2 << 16) +
+             (ads_req_p->ams_header.errorCode_3 << 24),
+             ads_req_p->ams_header.invokeID_0 +
+             (ads_req_p->ams_header.invokeID_1 << 8) +
+             (ads_req_p->ams_header.invokeID_2 << 16) +
+             (ads_req_p->ams_header.invokeID_3 << 24)
            );
   return len;
 }
