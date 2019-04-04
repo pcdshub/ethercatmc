@@ -113,6 +113,7 @@ $(BIN)/sock-ads.o: \
  logerr_info.h \
  sock-util.h \
  sock-ads.h \
+ sock-util.h \
  sock-ads.c
 	$(CC) -c $(CFLAGS) sock-ads.c -o $@
 

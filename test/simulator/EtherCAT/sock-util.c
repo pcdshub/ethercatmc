@@ -280,9 +280,14 @@ static void handle_data_on_ADS_socket(int i, int fd)
       LOGINFO(" EOF i=%d fd=%d\n", i, fd);
     }
   } else {
+    size_t ret;
     len_used = client_cons[i].len_used + read_res;
     client_cons[i].len_used = len_used;
-    handle_ads_request(fd, (char *)&client_cons[i].buffer[0], len_used);
+    ret = handle_ads_request(fd, (char *)&client_cons[i].buffer[0], len_used);
+    if (ret != len_used) {
+        close_and_remove_client_con_i(i);
+    }
+    client_cons[i].len_used = 0;
   }
 }
 
@@ -484,6 +489,7 @@ void socket_loop(void)
     LOGERR_ERRNO("no listening socket for ADS!\n");
     exit(3);
   }
+  is_ADS = 1;
   add_client_con(listen_socket, is_listen, is_ADS);
 
   while (!stop_and_exit)

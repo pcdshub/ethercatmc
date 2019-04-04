@@ -1,3 +1,6 @@
+#ifndef LOGERR_INFO_H
+#define LOGERR_INFO_H
+#include <stdio.h>  /* FILE */
 #include <string.h> /* strerror */
 #include <errno.h>
 
@@ -86,3 +89,6 @@ do {                                             \
     return errcode;                             \
   }                                             \
   while(0)
+
+
+#endif
