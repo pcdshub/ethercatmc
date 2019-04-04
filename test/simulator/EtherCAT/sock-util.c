@@ -36,7 +36,7 @@
 #include "logerr_info.h"
 
 /* defines */
-#define NUM_CLIENT_CONS 5
+#define NUM_CLIENT_CONS 10
 #define CLIENT_CONS_BUFLEN 1024
 
 /*****************************************************************************/
@@ -48,6 +48,8 @@ typedef struct client_con_type {
   time_t        last_active_sec;
   time_t        idleTimeout;
   int           fd;
+  int           is_listen;
+  int           is_ADS;
 } client_con_type;
 
 /* static variables */
@@ -63,15 +65,18 @@ void init_client_cons(void)
   }
 }
 
-void add_client_con(int fd)
+void add_client_con(int fd, int is_listen, int is_ADS)
 {
   unsigned int i;
   for (i=0; i < NUM_CLIENT_CONS; i++) {
     if (client_cons[i].fd < 0) {
       client_cons[i].fd = fd;
       client_cons[i].idleTimeout = 0;
-      LOGINFO7("%s/%s:%d add i=%d fd=%d\n",
-               __FILE__,__FUNCTION__, __LINE__, i, fd);
+      client_cons[i].is_listen = is_listen;
+      client_cons[i].is_ADS = is_ADS;
+      LOGINFO7("%s/%s:%d add i=%d fd=%d is_listen=%d is_ADS=%d\n",
+               __FILE__,__FUNCTION__, __LINE__,
+               i, fd, is_listen, is_ADS);
       return;
     }
   }
@@ -145,7 +150,6 @@ int get_listen_socket(const char *listen_port_asc)
     LOGERR_ERRNO("startWinSock() failed\n");
     exit(3);
   }
-  init_client_cons();
 
 #ifndef USE_WINSOCK2
   /* initialize the hints */
@@ -259,7 +263,21 @@ int get_listen_socket(const char *listen_port_asc)
   return sockfd;
 }
 
-static void handle_data_on_socket(int i, int fd)
+static void handle_data_on_ADS_socket(int i, int fd)
+{
+  ssize_t read_res = 0;
+  size_t len_used = client_cons[i].len_used;
+
+  /* append received data to the end
+     keep one place for the '\n'  */
+
+  read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
+                  CLIENT_CONS_BUFLEN - len_used - 1, 0);
+  LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
+           __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
+
+}
+  static void handle_data_on_ASC_socket(int i, int fd)
 {
   ssize_t read_res = 0;
   size_t len_used = client_cons[i].len_used;
@@ -306,14 +324,12 @@ static void handle_data_on_socket(int i, int fd)
 }
 
 /*****************************************************************************/
-void handle_accepted_socket(int listen_socket, int accepted_socket)
+void socket_loop_with_select(void)
 {
   /* We come here if we have accepted a new connection */
   unsigned int i;
   int end_recv_loop = 0;
   int end_select_loop = 0;
-
-  add_client_con(accepted_socket);
   do
   {
     do
@@ -331,9 +347,12 @@ void handle_accepted_socket(int listen_socket, int accepted_socket)
       tv_select.tv_sec = max_timeout;
       tv_select.tv_usec = 0;
 
-      FD_SET(listen_socket, &rfds);
       for (i=0; i < NUM_CLIENT_CONS; i++) {
         int fd = client_cons[i].fd;
+        LOGINFO7("%s/%s:%d select(): i=%u fd=%d\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 i, fd);
+
         time_t idleTimeout = client_cons[i].idleTimeout;
         if (fd < 0) continue;
         if (idleTimeout) {
@@ -358,7 +377,6 @@ void handle_accepted_socket(int listen_socket, int accepted_socket)
           }
         }
       }
-      maxfd = listen_socket > maxfd ? listen_socket : maxfd;
       LOGINFO7("%s/%s:%d select(): maxfd=%d tv_sec=%lu\n",
                __FILE__, __FUNCTION__, __LINE__,
                maxfd, (unsigned long)tv_select.tv_sec);
@@ -373,22 +391,28 @@ void handle_accepted_socket(int listen_socket, int accepted_socket)
         end_select_loop = 1;
         end_recv_loop = 1;
       } else {
-        if (FD_ISSET (listen_socket, &rfds)) {
-          LOGINFO7("%s/%s:%d FD_ISSET (listen_socket)\n",
-                   __FILE__, __FUNCTION__, __LINE__);
-          end_recv_loop = 1;
-        } else {
-          unsigned int i;
+        unsigned int i;
 
-          for (i=0; i < NUM_CLIENT_CONS; i++) {
-            int fd = client_cons[i].fd;
-            if (fd < 0) continue;
-            if (FD_ISSET (fd, &rfds)) {
-              LOGINFO7("%s/%s:%d FD_ISSET fd=%d\n",
-                       __FILE__, __FUNCTION__, __LINE__, fd);
-              client_cons[i].last_active_sec = tv_now.tv_sec;
-              handle_data_on_socket(i, fd);
+        for (i=0; i < NUM_CLIENT_CONS; i++) {
+          int fd = client_cons[i].fd;
+          if (fd < 0) continue;
+          if (FD_ISSET (fd, &rfds)) {
+            LOGINFO7("%s/%s:%d FD_ISSET fd=%d\n",
+                     __FILE__, __FUNCTION__, __LINE__, fd);
+            if (client_cons[i].is_listen) {
+              int is_listen = 0;
+              int accepted_socket;
+              accepted_socket = accept(client_cons[i].fd, NULL, NULL);
+              LOGINFO7("%s/%s:%d accepted_socket=%d\n",
+                       __FILE__, __FUNCTION__, __LINE__, accepted_socket);
+              add_client_con(accepted_socket, is_listen, client_cons[i].is_ADS);
             } else {
+              client_cons[i].last_active_sec = tv_now.tv_sec;
+              if (client_cons[i].is_ADS) {
+                handle_data_on_ADS_socket(i, fd);
+              } else {
+                handle_data_on_ASC_socket(i, fd);
+              }
             }
           }
         }
@@ -429,32 +453,32 @@ void send_to_socket(int fd, const char *buf, unsigned len)
 /*****************************************************************************/
 void socket_loop(void)
 {
-  static const char *listen_port_asc = "5000";
+  static int is_listen = 1;
   int listen_socket;
-  int accepted_socket;
+  int is_ADS = 0;
   int stop_and_exit = 0;
 
-  listen_socket = get_listen_socket(listen_port_asc);
+  init_client_cons();
 
+  listen_socket = get_listen_socket("5000");
   if (listen_socket < 0)
   {
-    LOGERR_ERRNO("no listening socket!\n");
+    LOGERR_ERRNO("no listening socket for ASCII!\n");
     exit(3);
   }
+  add_client_con(listen_socket, is_listen, is_ADS);
+
+  listen_socket = get_listen_socket("48898");
+  if (listen_socket < 0)
+  {
+    LOGERR_ERRNO("no listening socket for ADS!\n");
+    exit(3);
+  }
+  add_client_con(listen_socket, is_listen, is_ADS);
 
   while (!stop_and_exit)
   {
-    accepted_socket = accept(listen_socket, NULL, NULL);
-    if (accepted_socket < 0)
-    {
-      LOGERR("accept() failed\n");
-      stop_and_exit = 1;
-      continue;
-    }
-
-    LOGINFO("Connection accepted fd=%d\n", accepted_socket);
-    handle_accepted_socket(listen_socket, accepted_socket);
-    LOGINFO("Connection closed\n");
+    socket_loop_with_select();
   }
 }
 
