@@ -25,6 +25,10 @@ int indexerHandleADS_ADR_getMemory(unsigned adsport,
                                    unsigned indexOffset,
                                    unsigned len_in_PLC,
                                    void     *buf);
+int indexerHandleADS_ADR_setMemory(unsigned adsport,
+                                   unsigned indexOffset,
+                                   unsigned len_in_PLC,
+                                   void     *buf);
 
 void indexerHandlePLCcycle(void);
 #endif

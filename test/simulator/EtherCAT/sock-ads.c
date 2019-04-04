@@ -60,6 +60,22 @@ typedef struct {
 } ads_read_req_type;
 
 typedef struct {
+  uint8_t indexGroup_0;
+  uint8_t indexGroup_1;
+  uint8_t indexGroup_2;
+  uint8_t indexGroup_3;
+  uint8_t indexOffset_0;
+  uint8_t indexOffset_1;
+  uint8_t indexOffset_2;
+  uint8_t indexOffset_3;
+  uint8_t lenght_0;
+  uint8_t lenght_1;
+  uint8_t lenght_2;
+  uint8_t lenght_3;
+  uint8_t data[256];
+} ADS_Write_req_type;
+
+typedef struct {
   uint8_t result_0;
   uint8_t result_1;
   uint8_t result_2;
@@ -83,8 +99,16 @@ typedef struct {
   uint8_t data;
 } ADS_Read_rep_type;
 
+typedef struct {
+  uint8_t result_0;
+  uint8_t result_1;
+  uint8_t result_2;
+  uint8_t result_3;
+} ADS_Write_rep_type;
+
 static const uint16_t ADS_Read_Device_Info = 1;
 static const uint16_t ADS_Read             = 2;
+static const uint16_t ADS_Write            = 3;
 
 size_t handle_ads_request(int fd, char *buf, size_t len)
 {
@@ -214,6 +238,56 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                                          &ADS_Read_rep_p->data);
     send_to_socket(fd, buf, (unsigned)send_len);
     return len;
+  } else if (cmdId == ADS_Write) {
+    ADS_Write_req_type *ADS_Write_req_p = (ADS_Write_req_type *)&ads_req_p->data;
+    ADS_Write_rep_type *ADS_Write_rep_p = (ADS_Write_rep_type *)&ads_req_p->data;
+    uint32_t indexGroup = (uint32_t)ADS_Write_req_p->indexGroup_0 +
+                          (ADS_Write_req_p->indexGroup_1 << 8) +
+                          (ADS_Write_req_p->indexGroup_2 << 16) +
+                          (ADS_Write_req_p->indexGroup_3 << 24);
+    uint32_t indexOffset = (uint32_t)ADS_Write_req_p->indexOffset_0 +
+                          (ADS_Write_req_p->indexOffset_1 << 8) +
+                          (ADS_Write_req_p->indexOffset_2 << 16) +
+                          (ADS_Write_req_p->indexOffset_3 << 24);
+    uint32_t len_in_PLC = (uint32_t)ADS_Write_req_p->lenght_0 +
+                          (ADS_Write_req_p->lenght_1 << 8) +
+                          (ADS_Write_req_p->lenght_2 << 16) +
+                          (ADS_Write_req_p->lenght_3 << 24);
+    size_t send_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
+      sizeof(*ADS_Write_rep_p);
+
+    memset(ADS_Write_rep_p, 0, sizeof(*ADS_Write_rep_p));
+    ads_req_p->ams_header.stateFlags_low = 5;
+    ads_req_p->ams_header.stateFlags_high = 0;
+
+    LOGINFO7("%s/%s:%d ADS_Writecmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u send_len=%u\n",
+             __FILE__,__FUNCTION__, __LINE__,
+             indexGroup, indexOffset,len_in_PLC,
+             (unsigned)send_len);
+    if (len_in_PLC == 2) {
+      unsigned value;
+      value = ADS_Write_req_p->data[0] +
+        (ADS_Write_req_p->data[1] << 8);
+
+      LOGINFO7("%s/%s:%d ADS_Writecmd data=0x%x 0x%x value=0x%x\n",
+               __FILE__,__FUNCTION__, __LINE__,
+               ADS_Write_req_p->data[0],
+               ADS_Write_req_p->data[1],value);
+      indexerHandleADS_ADR_putUInt(adsport,
+                                   indexOffset,
+                                   len_in_PLC,
+                                   value);
+    } else {
+      (void)indexerHandleADS_ADR_setMemory(adsport,
+                                           indexOffset,
+                                           len_in_PLC,
+                                           &ADS_Write_req_p->data);
+    }
+    indexerHandlePLCcycle();
+    send_to_socket(fd, buf, (unsigned)send_len);
+    return len;
   }
+
+
   return 0; // len;
 }
