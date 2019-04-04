@@ -76,6 +76,7 @@ MOTOROBJS=\
 
 TELOBJS=\
  $(BIN)/main.o \
+ $(BIN)/sock-ads.o \
  $(BIN)/sock-util.o \
  $(BIN)/cmd.o \
  $(BIN)/cmd_buf.o
@@ -107,12 +108,22 @@ $(BIN)/main.o: \
  main.c
 	$(CC) -c $(CFLAGS) main.c -o $@
 
+$(BIN)/sock-ads.o: \
+ Makefile \
+ logerr_info.h \
+ sock-util.h \
+ sock-ads.h \
+ sock-ads.c
+	$(CC) -c $(CFLAGS) sock-ads.c -o $@
+
 $(BIN)/sock-util.o: \
  Makefile \
  logerr_info.h \
  sock-util.h \
+ sock-ads.h \
  sock-util.c
 	$(CC) -c $(CFLAGS) sock-util.c -o $@
+
 
 $(BIN)/cmd.o: \
  Makefile \

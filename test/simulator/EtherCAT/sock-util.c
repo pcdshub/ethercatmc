@@ -9,6 +9,8 @@
 #include <sys/time.h>
 
 #include "sock-util.h"
+#include "sock-ads.h"
+
 #if (!defined _WIN32 && !defined __WIN32__ && !defined __CYGWIN__)
   #include <signal.h>
 #endif
@@ -268,16 +270,24 @@ static void handle_data_on_ADS_socket(int i, int fd)
   ssize_t read_res = 0;
   size_t len_used = client_cons[i].len_used;
 
-  /* append received data to the end
-     keep one place for the '\n'  */
-
   read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
                   CLIENT_CONS_BUFLEN - len_used - 1, 0);
   LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
            __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
-
+  if (read_res <= 0)  {
+    if (read_res == 0) {
+      close_and_remove_client_con_i(i);
+      LOGINFO(" EOF i=%d fd=%d\n", i, fd);
+    }
+  } else {
+    len_used = client_cons[i].len_used + read_res;
+    client_cons[i].len_used = len_used;
+    handle_ads_request(fd, (char *)&client_cons[i].buffer[0], len_used);
+  }
 }
-  static void handle_data_on_ASC_socket(int i, int fd)
+
+
+static void handle_data_on_ASC_socket(int i, int fd)
 {
   ssize_t read_res = 0;
   size_t len_used = client_cons[i].len_used;
