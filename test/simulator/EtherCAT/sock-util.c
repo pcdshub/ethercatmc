@@ -443,6 +443,9 @@ void send_to_socket(int fd, const char *buf, unsigned len)
   int res;
   errno = 0;
   res = send(fd, buf, len, 0);
+  LOGINFO7("%s/%s:%d fd=%d len=%u res=%d\n",
+           __FILE__,__FUNCTION__, __LINE__,
+           fd, len, res);
 #ifdef ENOTSOCK
   if (res == -1 && errno == ENOTSOCK) {
 #else

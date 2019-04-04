@@ -3,6 +3,7 @@
 #include "sock-ads.h"
 #include "sock-util.h"
 #include "logerr_info.h"
+#include "indexer.h"
 
 typedef struct ams_netid_port_type {
   uint8_t netID[6];
@@ -70,12 +71,27 @@ typedef struct {
   char    deviceName[16];
 } ADS_Read_Device_Info_rep_type;
 
+typedef struct {
+  uint8_t result_0;
+  uint8_t result_1;
+  uint8_t result_2;
+  uint8_t result_3;
+  uint8_t lenght_0;
+  uint8_t lenght_1;
+  uint8_t lenght_2;
+  uint8_t lenght_3;
+  uint8_t data;
+} ADS_Read_rep_type;
+
 static const uint16_t ADS_Read_Device_Info = 1;
 static const uint16_t ADS_Read             = 2;
 
 size_t handle_ads_request(int fd, char *buf, size_t len)
 {
   ads_req_type *ads_req_p = (ads_req_type*)buf;
+  uint16_t adsport = ads_req_p->ams_header.target.port_low +
+    (ads_req_p->ams_header.target.port_high << 8);
+
   uint16_t cmdId = ads_req_p->ams_header.cmdID_low +
                    (ads_req_p->ams_header.cmdID_high << 8);
 
@@ -154,6 +170,11 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
     return len;
   } else if (cmdId == ADS_Read) {
     ads_read_req_type *ads_read_req_p = (ads_read_req_type *)&ads_req_p->data;
+    size_t send_len;
+    size_t payload_len;
+    ADS_Read_rep_type *ADS_Read_rep_p;
+    ADS_Read_rep_p = (ADS_Read_rep_type *)&ads_req_p->data;
+
     uint32_t indexGroup = (uint32_t)ads_read_req_p->indexGroup_0 +
                           (ads_read_req_p->indexGroup_1 << 8) +
                           (ads_read_req_p->indexGroup_2 << 16) +
@@ -162,30 +183,37 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                           (ads_read_req_p->indexOffset_1 << 8) +
                           (ads_read_req_p->indexOffset_2 << 16) +
                           (ads_read_req_p->indexOffset_3 << 24);
-    uint32_t length = (uint32_t)ads_read_req_p->lenght_0 +
-                      (ads_read_req_p->lenght_1 << 8) +
+    uint32_t len_in_PLC = (uint32_t)ads_read_req_p->lenght_0 +
+      (ads_read_req_p->lenght_1 << 8) +
                       (ads_read_req_p->lenght_2 << 16) +
                       (ads_read_req_p->lenght_3 << 24);
-    LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=0x%x indexOffset=%u length=%u \n",
-             __FILE__,__FUNCTION__, __LINE__,
-             indexGroup, indexOffset,length
-             );
+    payload_len = sizeof(*ADS_Read_rep_p) -  sizeof(ADS_Read_rep_p->data) + len_in_PLC;
+    send_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) + payload_len;
 
-    LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=%u.%u.%u.%u indexOffset=%u.%u.%u.%u length=%u.%u.%u.%u\n",
+    memset(ADS_Read_rep_p, 0, sizeof(*ADS_Read_rep_p));
+    ads_req_p->ams_header.stateFlags_low = 5;
+    ads_req_p->ams_header.stateFlags_high = 0;
+    ads_req_p->ams_header.lenght_0 = (uint8_t)(payload_len);
+    ads_req_p->ams_header.lenght_1 = (uint8_t)(payload_len << 8);
+    ads_req_p->ams_header.lenght_2 = (uint8_t)(payload_len << 16);
+    ads_req_p->ams_header.lenght_3 = (uint8_t)(payload_len << 24);
+
+
+    LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u payload_len=%u send_len=%u\n",
              __FILE__,__FUNCTION__, __LINE__,
-             ads_read_req_p->indexGroup_0,
-             ads_read_req_p->indexGroup_1,
-             ads_read_req_p->indexGroup_2,
-             ads_read_req_p->indexGroup_3,
-             ads_read_req_p->indexOffset_0,
-             ads_read_req_p->indexOffset_1,
-             ads_read_req_p->indexOffset_2,
-             ads_read_req_p->indexOffset_3,
-             ads_read_req_p->lenght_0,
-             ads_read_req_p->lenght_1,
-             ads_read_req_p->lenght_2,
-             ads_read_req_p->lenght_3
-             );
+             indexGroup, indexOffset,len_in_PLC,
+             (unsigned)payload_len, (unsigned)send_len);
+    ADS_Read_rep_p->lenght_0 = (uint8_t)(len_in_PLC);
+    ADS_Read_rep_p->lenght_1 = (uint8_t)(len_in_PLC << 8);
+    ADS_Read_rep_p->lenght_2 = (uint8_t)(len_in_PLC << 16);
+    ADS_Read_rep_p->lenght_3 = (uint8_t)(len_in_PLC << 24);
+    indexerHandlePLCcycle();
+    (void)indexerHandleADS_ADR_getMemory(adsport,
+                                         indexOffset,
+                                         len_in_PLC,
+                                         &ADS_Read_rep_p->data);
+    send_to_socket(fd, buf, (unsigned)send_len);
+    return len;
   }
   return 0; // len;
 }

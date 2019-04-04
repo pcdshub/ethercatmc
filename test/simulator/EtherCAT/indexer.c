@@ -686,6 +686,16 @@ int indexerHandleADS_ADR_getString(unsigned adsport,
   return 0;
 };
 
+int indexerHandleADS_ADR_getMemory(unsigned adsport,
+                                   unsigned offset,
+                                   unsigned len_in_PLC,
+                                   void *buf)
+{
+  init();
+  memcpy(buf, &idxData.memoryBytes[offset], len_in_PLC);
+  return 0;
+};
+
 void indexerHandlePLCcycle(void)
 {
   unsigned devNum = 1;

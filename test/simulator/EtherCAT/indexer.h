@@ -21,5 +21,10 @@ int indexerHandleADS_ADR_getString(unsigned adsport,
                                    unsigned indexOffset,
                                    unsigned len_in_PLC,
                                    char **sValue);
+int indexerHandleADS_ADR_getMemory(unsigned adsport,
+                                   unsigned indexOffset,
+                                   unsigned len_in_PLC,
+                                   void     *buf);
+
 void indexerHandlePLCcycle(void);
 #endif
