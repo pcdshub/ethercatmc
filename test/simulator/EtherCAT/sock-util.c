@@ -438,7 +438,7 @@ void socket_loop_with_select(void)
 }
 
 /*****************************************************************************/
-void send_to_socket(int fd, const char *buf, unsigned len)
+void send_to_socket(int fd, const void *buf, unsigned len)
 {
   int res;
   errno = 0;

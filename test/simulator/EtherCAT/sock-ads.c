@@ -110,6 +110,21 @@ static const uint16_t ADS_Read_Device_Info = 1;
 static const uint16_t ADS_Read             = 2;
 static const uint16_t ADS_Write            = 3;
 
+static void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len)
+{
+  uint32_t ams_payload_len = total_len - sizeof(ads_req_p->ams_tcp_header);
+  LOGINFO7("%s/%s:%d total_len=%u ams_payload_len=%u\n",
+           __FILE__,__FUNCTION__, __LINE__,
+           total_len, ams_payload_len);
+  ads_req_p->ams_header.stateFlags_low = 5;
+  ads_req_p->ams_header.stateFlags_high = 0;
+  ads_req_p->ams_header.lenght_0 = (uint8_t)ams_payload_len;
+  ads_req_p->ams_header.lenght_1 = (uint8_t)(ams_payload_len << 8);
+  ads_req_p->ams_header.lenght_2 = (uint8_t)(ams_payload_len << 16);
+  ads_req_p->ams_header.lenght_3 = (uint8_t)(ams_payload_len << 24);
+  send_to_socket(fd, ads_req_p, total_len);
+}
+
 size_t handle_ads_request(int fd, char *buf, size_t len)
 {
   ads_req_type *ads_req_p = (ads_req_type*)buf;
@@ -118,17 +133,18 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
 
   uint16_t cmdId = ads_req_p->ams_header.cmdID_low +
                    (ads_req_p->ams_header.cmdID_high << 8);
+  uint32_t ams_lenght = ads_req_p->ams_tcp_header.lenght_0 +
+    (ads_req_p->ams_tcp_header.lenght_1 << 8) +
+    (ads_req_p->ams_tcp_header.lenght_2 << 16) +
+    (ads_req_p->ams_tcp_header.lenght_3 <<24);
 
-  LOGINFO7("%s/%s:%d len=%lu tcp_header=%x %x len=%x %x %x %x\n",
+  LOGINFO7("%s/%s:%d len=%lu AMS tcp_header=%x %x ams_lenght=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
            (unsigned long)len,
            ads_req_p->ams_tcp_header.res0,
            ads_req_p->ams_tcp_header.res1,
-           ads_req_p->ams_tcp_header.lenght_0,
-           ads_req_p->ams_tcp_header.lenght_1,
-           ads_req_p->ams_tcp_header.lenght_2,
-           ads_req_p->ams_tcp_header.lenght_3
-           );
+           ams_lenght);
+
   LOGINFO7("%s/%s:%d ams_header target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
            __FILE__,__FUNCTION__, __LINE__,
            ads_req_p->ams_header.target.netID[0],
@@ -169,8 +185,9 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
 
 
   if (cmdId == ADS_Read_Device_Info) {
-    size_t send_len;
-    send_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
+    uint32_t total_len;
+
+    total_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
       sizeof(ADS_Read_Device_Info_rep_type);
     ADS_Read_Device_Info_rep_type *ADS_Read_Device_Info_rep_p;
     ADS_Read_Device_Info_rep_p = (ADS_Read_Device_Info_rep_type *)&ads_req_p->data;
@@ -183,14 +200,9 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
     strncpy(ADS_Read_Device_Info_rep_p->deviceName,
             "Simulator",
             sizeof(ADS_Read_Device_Info_rep_p->deviceName) - 1);
-    ads_req_p->ams_header.stateFlags_low = 5;
-    ads_req_p->ams_header.stateFlags_high = 0;
-    ads_req_p->ams_header.lenght_0 = (uint8_t)(sizeof(ADS_Read_Device_Info_rep_type));
-    ads_req_p->ams_header.lenght_1 = (uint8_t)(sizeof(ADS_Read_Device_Info_rep_type) << 8);
-    ads_req_p->ams_header.lenght_2 = (uint8_t)(sizeof(ADS_Read_Device_Info_rep_type) << 16);
-    ads_req_p->ams_header.lenght_3 = (uint8_t)(sizeof(ADS_Read_Device_Info_rep_type) << 24);
-
-    send_to_socket(fd, buf, (unsigned)send_len);
+    total_len = total_len - sizeof(ADS_Read_Device_Info_rep_p->deviceName) +
+      strlen(ADS_Read_Device_Info_rep_p->deviceName);
+    send_ams_reply(fd, ads_req_p, total_len);
     return len;
   } else if (cmdId == ADS_Read) {
     ads_read_req_type *ads_read_req_p = (ads_read_req_type *)&ads_req_p->data;
@@ -253,8 +265,7 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                           (ADS_Write_req_p->lenght_1 << 8) +
                           (ADS_Write_req_p->lenght_2 << 16) +
                           (ADS_Write_req_p->lenght_3 << 24);
-    size_t send_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
-      sizeof(*ADS_Write_rep_p);
+    size_t send_len = sizeof(*ads_req_p) + sizeof(*ADS_Write_rep_p);
 
     memset(ADS_Write_rep_p, 0, sizeof(*ADS_Write_rep_p));
     ads_req_p->ams_header.stateFlags_low = 5;
