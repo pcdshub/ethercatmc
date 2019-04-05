@@ -99,6 +99,10 @@ typedef struct {
 } indexerInfoType0_type;
 
 typedef struct {
+    uint16_t   size;
+} indexerInfoType1_type;
+
+typedef struct {
   char name[33]; /* leave one byte for trailing '\0' */
 } indexerInfoType4_type;
 
@@ -176,6 +180,7 @@ static union {
     /* Area for the indexer. union of the different info types */
     union {
       indexerInfoType0_type  infoType0;
+      indexerInfoType1_type  infoType1;
       indexerInfoType4_type  infoType4;
       indexerInfoType15_type infoType15;
       } indexer;
@@ -534,6 +539,11 @@ static int indexerHandleIndexerCmd(unsigned offset,
 
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
+    case 1:
+      idxData.memoryStruct.indexer.infoType1.size =
+        indexerDeviceAbsStraction[devNum].size;
+      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      return 0;
     case 4:
       /* get values from device table */
       strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
@@ -708,7 +718,7 @@ int indexerHandleADS_ADR_setMemory(unsigned adsport,
 
 void indexerHandlePLCcycle(void)
 {
-  unsigned devNum = 1;
+  unsigned devNum = 0;
   init();
   while (devNum < (sizeof(indexerDeviceAbsStraction)/
                    sizeof(indexerDeviceAbsStraction[0]))) {
@@ -734,6 +744,18 @@ void indexerHandlePLCcycle(void)
         indexerMotorParamInterface(devNum, offset);
       }
       break;
+    case TYPECODE_INDEXER:
+      {
+        uint16_t indexer_ack = idxData.memoryStruct.indexer_ack;
+        LOGINFO6("%s/%s:%d devNum=%u indexer_ack=0x%x\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 devNum, indexer_ack);
+
+        if (!(indexer_ack & 0x8000)) {
+          unsigned len_in_PLC = sizeof(indexer_ack);
+          indexerHandleIndexerCmd(offsetIndexer, len_in_PLC, indexer_ack);
+        }
+      }
     default:
     break;
     }
