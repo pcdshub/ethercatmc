@@ -262,7 +262,8 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                           (ADS_Write_req_p->lenght_1 << 8) +
                           (ADS_Write_req_p->lenght_2 << 16) +
                           (ADS_Write_req_p->lenght_3 << 24);
-    size_t total_len = sizeof(*ads_req_p) + sizeof(*ADS_Write_rep_p);
+    size_t total_len = sizeof(*ads_req_p) -
+      sizeof(ads_req_p->data) + sizeof(*ADS_Write_rep_p);
 
     memset(ADS_Write_rep_p, 0, sizeof(*ADS_Write_rep_p));
 
