@@ -35,6 +35,16 @@
 
 const char *modNamEMC = "EthercatMCAxis:: ";
 
+extern "C" {
+  double getNowTimeSecs(void)
+  {
+    epicsTimeStamp nowTime;
+    epicsTimeGetCurrent(&nowTime);
+    return nowTime.secPastEpoch + (nowTime.nsec * 0.000000001);
+  }
+}
+
+
 //
 // These are the EthercatMCAxis methods
 //
@@ -1288,7 +1298,9 @@ asynStatus EthercatMCAxis::poll(bool *moving)
   if (!drvlocal.scaleFactor) return comStatus;
 
   memset(&st_axis_status, 0, sizeof(st_axis_status));
+  double timeBeforePoll = getNowTimeSecs();
   comStatus = pollAll(moving, &st_axis_status);
+  double timeAfterPoll = getNowTimeSecs();
   if (comStatus) {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sout=%s in=%s return=%s (%d)\n",
@@ -1419,14 +1431,14 @@ asynStatus EthercatMCAxis::poll(bool *moving)
         drvlocal.old_st_axis_status.bExecute   != st_axis_status.bExecute ||
         drvlocal.old_st_axis_status.atTarget   != st_axis_status.atTarget) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-                "%spoll(%d) mvnNRdyNexAt=%d Ver=%d bBusy=%d bExecute=%d bEnabled=%d atTarget=%d wf=%d ENC=%g fPosition=%g fActPosition=%g\n",
+                "%spoll(%d) mvnNRdyNexAt=%d Ver=%d bBusy=%d bExecute=%d bEnabled=%d wf=%d fPosition=%g fActPosition=%g deltaTime=%g\n",
                 modNamEMC, axisNo_, st_axis_status.mvnNRdyNex,
                 drvlocal.supported.statusVer,
                 st_axis_status.bBusy, st_axis_status.bExecute,
-                st_axis_status.bEnabled, st_axis_status.atTarget,
+                st_axis_status.bEnabled,
                 waitNumPollsBeforeReady_,
-                st_axis_status.encoderRaw, st_axis_status.fPosition,
-                st_axis_status.fActPosition);
+                st_axis_status.fPosition, st_axis_status.fActPosition,
+                timeAfterPoll - timeBeforePoll);
     }
   }
   setIntegerParam(pC_->motorStatusDirection_, st_axis_status.motorStatusDirection);
