@@ -170,7 +170,7 @@ static int motorHandleADS_ADR_getInt(unsigned adsport,
     *iValue = (int)getEncoderPos(2);
     return 0;
   }
-  RETURN_ERROR_OR_DIE(__LINE__, "%s/%s:%d indexGroup=0x%x indexOffset=0x%x",
+  CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__, "%s/%s:%d indexGroup=0x%x indexOffset=0x%x",
                       __FILE__, __FUNCTION__, __LINE__,
                       indexGroup,
                       indexOffset);
@@ -211,7 +211,7 @@ static int motorHandleADS_ADR_putInt(unsigned adsport,
     }
   }
 
-  RETURN_ERROR_OR_DIE(__LINE__, "%s/%s:%d indexGroup=0x%x indexOffset=0x%x",
+  CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__, "%s/%s:%d indexGroup=0x%x indexOffset=0x%x",
                __FILE__, __FUNCTION__, __LINE__,
                indexGroup,
                indexOffset);
@@ -545,7 +545,7 @@ static int cmdEAThandleADS_ADR(const char *arg)
         }
         break;
       default:
-        RETURN_ERROR_OR_DIE(__LINE__,
+        CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__,
                             "%s/%s:%d "
                             "adsport=%u indexGroup=0x%x indexOffset=0x%x len_in_PLC=%u type_in_PLC=%u\n",
                             __FILE__, __FUNCTION__, __LINE__,
@@ -797,14 +797,14 @@ static int motorHandleOneSetArg(const char *myarg_1, int motor_axis_no)
         }
         break;
         default:
-          RETURN_ERROR_OR_DIE(__LINE__,
+          CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__,
                               "%s/%s:%d line=%s command_no=%u",
                               __FILE__, __FUNCTION__, __LINE__,
                               myarg_1, cmd_Motor_cmd[motor_axis_no].nCommand);
       }
       return 0;
     }
-    RETURN_ERROR_OR_DIE(__LINE__,
+    CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__,
                         "%s/%s:%d line=%s invalid_iValue=%u '.'",
                         __FILE__, __FUNCTION__, __LINE__,
                         myarg_1,  iValue);
@@ -845,7 +845,7 @@ static int motorHandleGvlArg(const char *myarg_1)
 
   nvals = sscanf(myarg_1, "axes[%d]", &motor_axis_no);
   if (nvals != 1) {
-    RETURN_ERROR_OR_DIE(__LINE__,
+    CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__,
                         "%s/%s:%d line=%s myarg_1=%s nvals=%d",
                         __FILE__, __FUNCTION__, __LINE__,
                         myarg_1, myarg_1, nvals);
@@ -854,7 +854,7 @@ static int motorHandleGvlArg(const char *myarg_1)
   /* Jump over "]." */
   myarg_1 = strchr(myarg_1, '.');
   if (!myarg_1) {
-    RETURN_ERROR_OR_DIE(__LINE__,
+    CMD_BUF_PRINTF_RETURN_ERROR_OR_DIE(__LINE__,
                         "%s/%s:%d line=%s missing '.'",
                         __FILE__, __FUNCTION__, __LINE__,
                         myarg_1);
@@ -921,20 +921,20 @@ static void motorHandleOneArg(const char *myarg_1)
         cmd_buf_printf("OK");
         return;
       }
-      RETURN_OR_DIE("%s/%s:%d myarg_1=%s err_code=%d",
+      CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d myarg_1=%s err_code=%d",
                     __FILE__, __FUNCTION__, __LINE__,
                     myarg_1,
                     err_code);
     }
     nvals = sscanf(myarg_1, "%u/", &adsport);
     if (nvals != 1) {
-      RETURN_OR_DIE("%s/%s:%d myarg_1=%s",
+      CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d myarg_1=%s",
                     __FILE__, __FUNCTION__, __LINE__,
                     myarg_1);
     }
     myarg_tmp = strchr(myarg_1, '/');
     if (!myarg_tmp) {
-      RETURN_OR_DIE("%s/%s:%d line=%s missing '/'",
+      CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d line=%s missing '/'",
                     __FILE__, __FUNCTION__, __LINE__,
                     myarg);
     }
@@ -951,7 +951,7 @@ static void motorHandleOneArg(const char *myarg_1)
       cmd_buf_printf("%s", buf);
       return;
     } else {
-      RETURN_OR_DIE("%s/%s:%d line=%s nvals=%d",
+      CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d line=%s nvals=%d",
                     __FILE__, __FUNCTION__, __LINE__,
                     myarg, nvals);
     }
@@ -1007,14 +1007,14 @@ static void motorHandleOneArg(const char *myarg_1)
   /* e.g. M1.nCommand=3 */
   nvals = sscanf(myarg_1, "M%d.", &motor_axis_no);
   if (nvals != 1) {
-    RETURN_OR_DIE("%s/%s:%d line=%s myarg_1=%s nvals=%d",
+    CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d line=%s myarg_1=%s nvals=%d",
                   __FILE__, __FUNCTION__, __LINE__,
                   myarg, myarg_1, nvals);
   }
   AXIS_CHECK_RETURN(motor_axis_no);
   myarg_1 = strchr(myarg_1, '.');
   if (!myarg_1) {
-    RETURN_OR_DIE("%s/%s:%d line=%s missing '.'",
+    CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d line=%s missing '.'",
                   __FILE__, __FUNCTION__, __LINE__,
                   myarg);
   }
@@ -1102,7 +1102,7 @@ static void motorHandleOneArg(const char *myarg_1)
     return;
   }
   /* if we come here, we do not understand the command */
-  RETURN_OR_DIE("%s/%s:%d line=%s",
+  CMD_BUF_PRINTF_RETURN_OR_DIE("%s/%s:%d line=%s",
                 __FILE__, __FUNCTION__, __LINE__,
                 myarg);
 }
