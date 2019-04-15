@@ -13,6 +13,7 @@ USR_DEPENDENCIES += calc,3.6.1
 
 
 SOURCES = \
+  EthercatMCApp/src/EthercatMCADS.cpp \
   EthercatMCApp/src/EthercatMCAxis.cpp \
   EthercatMCApp/src/EthercatMCController.cpp \
   EthercatMCApp/src/EthercatMCHelper.cpp \
