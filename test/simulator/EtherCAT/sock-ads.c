@@ -67,9 +67,9 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
 
   if (cmdId == ADS_READ_DEVICE_INFO) {
     const static char *const deviceName = "Simulator";
-    uint32_t total_len;
+    uint32_t total_len_reply;
 
-    total_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
+    total_len_reply = sizeof(*ads_req_p) - sizeof(ads_req_p->data) +
       sizeof(ADS_Read_Device_Info_rep_type);
     ADS_Read_Device_Info_rep_type *ADS_Read_Device_Info_rep_p;
     ADS_Read_Device_Info_rep_p = (ADS_Read_Device_Info_rep_type *)&ads_req_p->data;
@@ -85,11 +85,11 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
         memcpy(ADS_Read_Device_Info_rep_p->deviceName,
              deviceName, strlen(deviceName));
     }
-    send_ams_reply(fd, ads_req_p, total_len);
+    send_ams_reply(fd, ads_req_p, total_len_reply);
     return len;
   } else if (cmdId == ADS_READ) {
     ads_read_req_type *ads_read_req_p = (ads_read_req_type *)&ads_req_p->data;
-    size_t total_len;
+    size_t total_len_reply;
     size_t payload_len;
     ADS_Read_rep_type *ADS_Read_rep_p;
     ADS_Read_rep_p = (ADS_Read_rep_type *)&ads_req_p->data;
@@ -107,14 +107,14 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                       (ads_read_req_p->lenght_2 << 16) +
                       (ads_read_req_p->lenght_3 << 24);
     payload_len = sizeof(*ADS_Read_rep_p) -  sizeof(ADS_Read_rep_p->data) + len_in_PLC;
-    total_len = sizeof(*ads_req_p) - sizeof(ads_req_p->data) + payload_len;
+    total_len_reply = sizeof(*ads_req_p) - sizeof(ads_req_p->data) + payload_len;
 
     memset(ADS_Read_rep_p, 0, sizeof(*ADS_Read_rep_p));
 
-    LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u payload_len=%u total_len=%u\n",
+    LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u payload_len=%u total_len_reply=%u\n",
              __FILE__,__FUNCTION__, __LINE__,
              indexGroup, indexOffset,len_in_PLC,
-             (unsigned)payload_len, (unsigned)total_len);
+             (unsigned)payload_len, (unsigned)total_len_reply);
     ADS_Read_rep_p->lenght_0 = (uint8_t)(len_in_PLC);
     ADS_Read_rep_p->lenght_1 = (uint8_t)(len_in_PLC << 8);
     ADS_Read_rep_p->lenght_2 = (uint8_t)(len_in_PLC << 16);
@@ -124,14 +124,14 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                                          indexOffset,
                                          len_in_PLC,
                                          &ADS_Read_rep_p->data);
-    send_ams_reply(fd, ads_req_p, total_len);
+    send_ams_reply(fd, ads_req_p, total_len_reply);
     return len;
   } else if (cmdId == ADS_WRITE) {
-    size_t total_len = sizeof(*ads_req_p) -
+    size_t total_len_reply = sizeof(*ads_req_p) -
       sizeof(ads_req_p->data) + sizeof(ADS_Write_rep_type);
-    handleAMSwrite(fd, ads_req_p, total_len);
+    handleAMSwrite(fd, ads_req_p);
     indexerHandlePLCcycle();
-    send_ams_reply(fd, ads_req_p, total_len);
+    send_ams_reply(fd, ads_req_p, total_len_reply);
     return len;
   } else {
     RETURN_ERROR_OR_DIE(__LINE__,

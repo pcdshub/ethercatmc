@@ -111,7 +111,7 @@ typedef struct {
   uint8_t result_3;
 } ADS_Write_rep_type;
 
-void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len);
-void handleAMSwrite(int fd, ads_req_type *ads_req_p, size_t total_len);
+void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len_reply);
+void handleAMSwrite(int fd, ads_req_type *ads_req_p);
 
 #endif
