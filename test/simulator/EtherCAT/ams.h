@@ -81,6 +81,26 @@ typedef struct {
 } ADS_Write_req_type;
 
 typedef struct {
+  uint8_t indexGroup_0;
+  uint8_t indexGroup_1;
+  uint8_t indexGroup_2;
+  uint8_t indexGroup_3;
+  uint8_t indexOffset_0;
+  uint8_t indexOffset_1;
+  uint8_t indexOffset_2;
+  uint8_t indexOffset_3;
+  uint8_t rd_len_0;
+  uint8_t rd_len_1;
+  uint8_t rd_len_2;
+  uint8_t rd_len_3;
+  uint8_t wr_len_0;
+  uint8_t wr_len_1;
+  uint8_t wr_len_2;
+  uint8_t wr_len_3;
+  uint8_t data[256];
+} ADS_ReadWrite_req_type;
+
+typedef struct {
   uint8_t result_0;
   uint8_t result_1;
   uint8_t result_2;
@@ -109,9 +129,23 @@ typedef struct {
   uint8_t result_1;
   uint8_t result_2;
   uint8_t result_3;
+  uint8_t lenght_0;
+  uint8_t lenght_1;
+  uint8_t lenght_2;
+  uint8_t lenght_3;
+  uint8_t data;
+} ADS_ReadWrite_rep_type;
+
+
+typedef struct {
+  uint8_t result_0;
+  uint8_t result_1;
+  uint8_t result_2;
+  uint8_t result_3;
 } ADS_Write_rep_type;
 
 void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len_reply);
 void handleAMSwrite(int fd, ads_req_type *ads_req_p);
+void handleAMSreadwrite(int fd, ads_req_type *ads_req_p);
 
 #endif

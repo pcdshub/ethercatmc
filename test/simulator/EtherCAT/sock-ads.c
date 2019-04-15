@@ -133,6 +133,19 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
     indexerHandlePLCcycle();
     send_ams_reply(fd, ads_req_p, total_len_reply);
     return len;
+  } else if (cmdId == ADS_READ_WRITE) {
+    //size_t total_len_reply = sizeof(*ads_req_p) -
+    //  sizeof(ads_req_p->data) + sizeof(ADS_ReadWrite_rep_type);
+    handleAMSreadwrite(fd, ads_req_p);
+#if 0
+    indexerHandlePLCcycle();
+    send_ams_reply(fd, ads_req_p, total_len_reply);
+    return len;
+#else
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d command not implemented =%u",
+                        __FILE__, __FUNCTION__, __LINE__, cmdId);
+#endif
   } else {
     RETURN_ERROR_OR_DIE(__LINE__,
                         "%s/%s:%d command not implemented =%u",
