@@ -1,5 +1,6 @@
 #ifndef LOGERR_INFO_H
 #define LOGERR_INFO_H
+#include <stdlib.h> /* exit() */
 #include <stdio.h>  /* FILE */
 #include <string.h> /* strerror */
 #include <errno.h>
