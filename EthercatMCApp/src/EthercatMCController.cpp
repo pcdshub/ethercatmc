@@ -87,8 +87,11 @@ extern "C" const char *errStringFromErrId(int nErrorId)
   * \param[in] movingPollPeriod  The time between polls when any axis is moving
   * \param[in] idlePollPeriod    The time between polls when no axis is moving
   */
-EthercatMCController::EthercatMCController(const char *portName, const char *MotorPortName, int numAxes,
-                                               double movingPollPeriod,double idlePollPeriod)
+EthercatMCController::EthercatMCController(const char *portName,
+                                           const char *MotorPortName, int numAxes,
+                                           double movingPollPeriod,
+                                           double idlePollPeriod,
+                                           const char *optionStr)
   :  asynMotorController(portName, numAxes, NUM_VIRTUAL_MOTOR_PARAMS,
                          0, // No additional interfaces beyond those in base class
                          0, // No additional callback interfaces beyond those in base class
@@ -172,6 +175,15 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
     asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
               "%s cannot connect to motor controller\n", modulName);
   }
+#if 0
+  asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
+            "%s optionStr=\"%s\"\n",
+            modulName, optionStr ? optionStr : "NULL");
+#else
+  printf("%s:%d %s optionStr=\"%s\"\n",
+         __FILE__, __LINE__,
+         modulName, optionStr ? optionStr : "NULL");
+#endif
   startPoller(movingPollPeriod, idlePollPeriod, 2);
 }
 
@@ -184,10 +196,16 @@ EthercatMCController::EthercatMCController(const char *portName, const char *Mot
   * \param[in] movingPollPeriod  The time in ms between polls when any axis is moving
   * \param[in] idlePollPeriod    The time in ms between polls when no axis is moving
   */
-extern "C" int EthercatMCCreateController(const char *portName, const char *MotorPortName, int numAxes,
-                                            int movingPollPeriod, int idlePollPeriod)
+extern "C" int EthercatMCCreateController(const char *portName,
+                                          const char *MotorPortName,
+                                          int numAxes,
+                                          int movingPollPeriod,
+                                          int idlePollPeriod,
+                                          const char *optionStr)
 {
-  new EthercatMCController(portName, MotorPortName, 1+numAxes, movingPollPeriod/1000., idlePollPeriod/1000.);
+  new EthercatMCController(portName, MotorPortName, 1+numAxes,
+                           movingPollPeriod/1000., idlePollPeriod/1000.,
+                           optionStr);
   return(asynSuccess);
 }
 
@@ -567,16 +585,19 @@ static const iocshArg EthercatMCCreateControllerArg1 = {"EPICS ASYN TCP motor po
 static const iocshArg EthercatMCCreateControllerArg2 = {"Number of axes", iocshArgInt};
 static const iocshArg EthercatMCCreateControllerArg3 = {"Moving poll period (ms)", iocshArgInt};
 static const iocshArg EthercatMCCreateControllerArg4 = {"Idle poll period (ms)", iocshArgInt};
+static const iocshArg EthercatMCCreateControllerArg5 = {"options", iocshArgString};
 static const iocshArg *const EthercatMCCreateControllerArgs[] = {&EthercatMCCreateControllerArg0,
                                                             &EthercatMCCreateControllerArg1,
                                                             &EthercatMCCreateControllerArg2,
                                                             &EthercatMCCreateControllerArg3,
-                                                            &EthercatMCCreateControllerArg4};
-static const iocshFuncDef EthercatMCCreateControllerDef = {strEthercatMCCreateController, 5,
+                                                            &EthercatMCCreateControllerArg4,
+                                                            &EthercatMCCreateControllerArg5};
+static const iocshFuncDef EthercatMCCreateControllerDef = {strEthercatMCCreateController, 6,
                                                            EthercatMCCreateControllerArgs};
 static void EthercatMCCreateContollerCallFunc(const iocshArgBuf *args)
 {
-  EthercatMCCreateController(args[0].sval, args[1].sval, args[2].ival, args[3].ival, args[4].ival);
+  EthercatMCCreateController(args[0].sval, args[1].sval, args[2].ival,
+                             args[3].ival, args[4].ival, args[5].sval);
 }
 
 /* EthercatMCConfigController */

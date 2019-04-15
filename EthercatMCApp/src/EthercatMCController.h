@@ -119,7 +119,10 @@ public:
 #define FEATURE_BITS_SIM              (1<<6)
 #define FEATURE_BITS_GVL              (1<<7)
 
-  EthercatMCController(const char *portName, const char *EthercatMCPortName, int numAxes, double movingPollPeriod, double idlePollPeriod);
+  EthercatMCController(const char *portName, const char *EthercatMCPortName,
+                       int numAxes, double movingPollPeriod,
+                       double idlePollPeriod,
+                       const char *optionStr);
 
   void report(FILE *fp, int level);
   asynStatus setMCUErrMsg(const char *value);
