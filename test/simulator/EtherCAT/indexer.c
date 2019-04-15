@@ -692,6 +692,12 @@ int indexerHandleADS_ADR_getString(unsigned adsport,
                                    char **sValue)
 {
   init();
+  if (offset + len_in_PLC > sizeof(idxData)) {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d out of range: offset=%u len_in_PLC=%u",
+                       __FILE__, __FUNCTION__, __LINE__,
+                       offset, len_in_PLC);
+  }
   *sValue = (char *)&idxData.memoryBytes[offset];
   return 0;
 };
@@ -702,6 +708,12 @@ int indexerHandleADS_ADR_getMemory(unsigned adsport,
                                    void *buf)
 {
   init();
+  if (offset + len_in_PLC > sizeof(idxData)) {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d out of range: offset=%u len_in_PLC=%u",
+                        __FILE__, __FUNCTION__, __LINE__,
+                        offset, len_in_PLC);
+  }
   memcpy(buf, &idxData.memoryBytes[offset], len_in_PLC);
   return 0;
 };
@@ -712,6 +724,12 @@ int indexerHandleADS_ADR_setMemory(unsigned adsport,
                                    void *buf)
 {
   init();
+  if (offset + len_in_PLC > sizeof(idxData)) {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d out of range: offset=%u len_in_PLC=%u",
+                        __FILE__, __FUNCTION__, __LINE__,
+                        offset, len_in_PLC);
+  }
   memcpy(&idxData.memoryBytes[offset], buf, len_in_PLC);
   return 0;
 };
