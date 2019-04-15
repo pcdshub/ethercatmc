@@ -1,131 +1,10 @@
 #include <inttypes.h>
 #include <string.h>
+#include "ams.h"
 #include "sock-ads.h"
 #include "sock-util.h"
 #include "logerr_info.h"
 #include "indexer.h"
-
-typedef struct ams_netid_port_type {
-  uint8_t netID[6];
-  uint8_t port_low;
-  uint8_t port_high;
-} ams_netid_port_type;
-
-
-typedef struct {
-  struct ams_tcp_header {
-    uint8_t res0;
-    uint8_t res1;
-    uint8_t lenght_0;
-    uint8_t lenght_1;
-    uint8_t lenght_2;
-    uint8_t lenght_3;
-  } ams_tcp_header;
-  struct ams_header {
-    ams_netid_port_type target;
-    ams_netid_port_type source;
-    uint8_t cmdID_low;
-    uint8_t cmdID_high;
-    uint8_t stateFlags_low;
-    uint8_t stateFlags_high;
-    uint8_t lenght_0;
-    uint8_t lenght_1;
-    uint8_t lenght_2;
-    uint8_t lenght_3;
-    uint8_t errorCode_0;
-    uint8_t errorCode_1;
-    uint8_t errorCode_2;
-    uint8_t errorCode_3;
-    uint8_t invokeID_0;
-    uint8_t invokeID_1;
-    uint8_t invokeID_2;
-    uint8_t invokeID_3;
-  } ams_header;
-  uint8_t data[256]; /* May be more or less */
-} ads_req_type;
-
-typedef struct {
-  uint8_t indexGroup_0;
-  uint8_t indexGroup_1;
-  uint8_t indexGroup_2;
-  uint8_t indexGroup_3;
-  uint8_t indexOffset_0;
-  uint8_t indexOffset_1;
-  uint8_t indexOffset_2;
-  uint8_t indexOffset_3;
-  uint8_t lenght_0;
-  uint8_t lenght_1;
-  uint8_t lenght_2;
-  uint8_t lenght_3;
-} ads_read_req_type;
-
-typedef struct {
-  uint8_t indexGroup_0;
-  uint8_t indexGroup_1;
-  uint8_t indexGroup_2;
-  uint8_t indexGroup_3;
-  uint8_t indexOffset_0;
-  uint8_t indexOffset_1;
-  uint8_t indexOffset_2;
-  uint8_t indexOffset_3;
-  uint8_t lenght_0;
-  uint8_t lenght_1;
-  uint8_t lenght_2;
-  uint8_t lenght_3;
-  uint8_t data[256];
-} ADS_Write_req_type;
-
-typedef struct {
-  uint8_t result_0;
-  uint8_t result_1;
-  uint8_t result_2;
-  uint8_t result_3;
-  uint8_t major;
-  uint8_t minor;
-  uint8_t versionBuild_low;
-  uint8_t versionBuild_high;
-  char    deviceName[16];
-} ADS_Read_Device_Info_rep_type;
-
-typedef struct {
-  uint8_t result_0;
-  uint8_t result_1;
-  uint8_t result_2;
-  uint8_t result_3;
-  uint8_t lenght_0;
-  uint8_t lenght_1;
-  uint8_t lenght_2;
-  uint8_t lenght_3;
-  uint8_t data;
-} ADS_Read_rep_type;
-
-typedef struct {
-  uint8_t result_0;
-  uint8_t result_1;
-  uint8_t result_2;
-  uint8_t result_3;
-} ADS_Write_rep_type;
-
-static const uint16_t ADS_Read_Device_Info = 1;
-static const uint16_t ADS_Read             = 2;
-static const uint16_t ADS_Write            = 3;
-
-static void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len)
-{
-  uint32_t ams_payload_len = total_len -
-    sizeof(ads_req_p->ams_tcp_header) -
-    sizeof(ads_req_p->ams_header);
-  LOGINFO7("%s/%s:%d total_len=%u ams_payload_len=%u\n",
-           __FILE__,__FUNCTION__, __LINE__,
-           total_len, ams_payload_len);
-  ads_req_p->ams_header.stateFlags_low = 5;
-  ads_req_p->ams_header.stateFlags_high = 0;
-  ads_req_p->ams_header.lenght_0 = (uint8_t)ams_payload_len;
-  ads_req_p->ams_header.lenght_1 = (uint8_t)(ams_payload_len << 8);
-  ads_req_p->ams_header.lenght_2 = (uint8_t)(ams_payload_len << 16);
-  ads_req_p->ams_header.lenght_3 = (uint8_t)(ams_payload_len << 24);
-  send_to_socket(fd, ads_req_p, total_len);
-}
 
 size_t handle_ads_request(int fd, char *buf, size_t len)
 {
@@ -186,7 +65,7 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
            );
 
 
-  if (cmdId == ADS_Read_Device_Info) {
+  if (cmdId == ADS_READ_DEVICE_INFO) {
     const static char *const deviceName = "Simulator";
     uint32_t total_len;
 
@@ -208,7 +87,7 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
     }
     send_ams_reply(fd, ads_req_p, total_len);
     return len;
-  } else if (cmdId == ADS_Read) {
+  } else if (cmdId == ADS_READ) {
     ads_read_req_type *ads_read_req_p = (ads_read_req_type *)&ads_req_p->data;
     size_t total_len;
     size_t payload_len;
@@ -247,52 +126,17 @@ size_t handle_ads_request(int fd, char *buf, size_t len)
                                          &ADS_Read_rep_p->data);
     send_ams_reply(fd, ads_req_p, total_len);
     return len;
-  } else if (cmdId == ADS_Write) {
-    ADS_Write_req_type *ADS_Write_req_p = (ADS_Write_req_type *)&ads_req_p->data;
-    ADS_Write_rep_type *ADS_Write_rep_p = (ADS_Write_rep_type *)&ads_req_p->data;
-    uint32_t indexGroup = (uint32_t)ADS_Write_req_p->indexGroup_0 +
-                          (ADS_Write_req_p->indexGroup_1 << 8) +
-                          (ADS_Write_req_p->indexGroup_2 << 16) +
-                          (ADS_Write_req_p->indexGroup_3 << 24);
-    uint32_t indexOffset = (uint32_t)ADS_Write_req_p->indexOffset_0 +
-                          (ADS_Write_req_p->indexOffset_1 << 8) +
-                          (ADS_Write_req_p->indexOffset_2 << 16) +
-                          (ADS_Write_req_p->indexOffset_3 << 24);
-    uint32_t len_in_PLC = (uint32_t)ADS_Write_req_p->lenght_0 +
-                          (ADS_Write_req_p->lenght_1 << 8) +
-                          (ADS_Write_req_p->lenght_2 << 16) +
-                          (ADS_Write_req_p->lenght_3 << 24);
+  } else if (cmdId == ADS_WRITE) {
     size_t total_len = sizeof(*ads_req_p) -
-      sizeof(ads_req_p->data) + sizeof(*ADS_Write_rep_p);
-
-    memset(ADS_Write_rep_p, 0, sizeof(*ADS_Write_rep_p));
-
-    LOGINFO7("%s/%s:%d ADS_Writecmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u total_len=%u\n",
-             __FILE__,__FUNCTION__, __LINE__,
-             indexGroup, indexOffset,len_in_PLC,
-             (unsigned)total_len);
-    if (len_in_PLC == 2) {
-      unsigned value;
-      value = ADS_Write_req_p->data[0] +
-        (ADS_Write_req_p->data[1] << 8);
-
-      LOGINFO7("%s/%s:%d ADS_Writecmd data=0x%x 0x%x value=0x%x\n",
-               __FILE__,__FUNCTION__, __LINE__,
-               ADS_Write_req_p->data[0],
-               ADS_Write_req_p->data[1],value);
-      indexerHandleADS_ADR_putUInt(adsport,
-                                   indexOffset,
-                                   len_in_PLC,
-                                   value);
-    } else {
-      (void)indexerHandleADS_ADR_setMemory(adsport,
-                                           indexOffset,
-                                           len_in_PLC,
-                                           &ADS_Write_req_p->data);
-    }
+      sizeof(ads_req_p->data) + sizeof(ADS_Write_rep_type);
+    handleAMSwrite(fd, ads_req_p, total_len);
     indexerHandlePLCcycle();
     send_ams_reply(fd, ads_req_p, total_len);
     return len;
+  } else {
+    RETURN_ERROR_OR_DIE(__LINE__,
+                        "%s/%s:%d command not implemented =%u",
+                        __FILE__, __FUNCTION__, __LINE__, cmdId);
   }
 
 
