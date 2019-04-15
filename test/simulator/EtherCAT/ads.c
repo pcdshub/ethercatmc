@@ -2,7 +2,7 @@
 #include "logerr_info.h"
 #include "indexer.h"
 #include "sock-util.h"
-#include "ams.h"
+#include "ads.h"
 
 #define ADSIGRP_SYM_INFOBYNAMEEX 0xF009
 

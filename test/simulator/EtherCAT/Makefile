@@ -75,7 +75,7 @@ MOTOROBJS=\
  $(BIN)/indexer.o
 
 TELOBJS=\
- $(BIN)/ams.o \
+ $(BIN)/ads.o \
  $(BIN)/main.o \
  $(BIN)/sock-ads.o \
  $(BIN)/sock-util.o \
@@ -102,12 +102,12 @@ ALLOBJS=$(MOTOROBJS) $(TELOBJS) $(WINOBJS)
 $(BIN)/simMotor$(EXE): $(ALLOBJS)
 	$(CC) $(ALLOBJS) $(LINKWINSOCK) -o $@
 
-$(BIN)/ams.o: \
+$(BIN)/ads.o: \
  Makefile \
- ams.h \
+ ads.h \
  logerr_info.h \
- ams.c
-	$(CC) -c $(CFLAGS) ams.c -o $@
+ ads.c
+	$(CC) -c $(CFLAGS) ads.c -o $@
 
 $(BIN)/main.o: \
  Makefile \
@@ -118,7 +118,7 @@ $(BIN)/main.o: \
 
 $(BIN)/sock-ads.o: \
  Makefile \
- ams.h \
+ ads.h \
  logerr_info.h \
  sock-util.h \
  sock-ads.h \
