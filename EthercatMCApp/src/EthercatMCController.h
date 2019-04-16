@@ -152,7 +152,6 @@ public:
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
-  asynStatus writeControllerBinary(const char *buffer, size_t bufferLen);
   asynStatus getPlcMemoryUint(unsigned indexOffset,
                               unsigned *value, size_t lenInPlc);
   asynStatus getPlcMemorySint(unsigned indexOffset,
