@@ -10,22 +10,25 @@
 #define ADS_READ_WRITE        9
 
 
-typedef struct ams_netid_port_type {
+typedef struct {
+  uint8_t res0;
+  uint8_t res1;
+  uint8_t lenght_0;
+  uint8_t lenght_1;
+  uint8_t lenght_2;
+  uint8_t lenght_3;
+} ams_tcp_header_type;
+
+  typedef struct ams_netid_port_type {
   uint8_t netID[6];
   uint8_t port_low;
   uint8_t port_high;
 } ams_netid_port_type;
 
 
+
 typedef struct {
-  struct ams_tcp_header {
-    uint8_t res0;
-    uint8_t res1;
-    uint8_t lenght_0;
-    uint8_t lenght_1;
-    uint8_t lenght_2;
-    uint8_t lenght_3;
-  } ams_tcp_header;
+  ams_tcp_header_type ams_tcp_header;
   struct ams_header {
     ams_netid_port_type target;
     ams_netid_port_type source;
