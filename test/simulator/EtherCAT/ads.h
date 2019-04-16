@@ -156,6 +156,7 @@ typedef struct {
 } ADS_Write_rep_type;
 
 void send_ams_reply(int fd, ams_hdr_type *ams_hdr_p, uint32_t total_len_reply);
+void handleADSread(int fd, ams_hdr_type *ams_hdr_p);
 void handleADSwrite(int fd, ams_hdr_type *ams_hdr_p);
 void handleADSreadwrite(int fd, ams_hdr_type *ams_hdr_p);
 

@@ -1,11 +1,55 @@
 #include <string.h>
 #include "logerr_info.h"
-#include "indexer.h"
 #include "sock-util.h"
+#include "indexer.h"
 #include "ads.h"
 
 #define ADSIGRP_SYM_INFOBYNAMEEX 0xF009
 
+
+void handleADSread(int fd, ams_hdr_type *ams_hdr_p)
+{
+  ads_read_req_type *ads_read_req_p = (ads_read_req_type *)ams_hdr_p;
+  size_t total_len_reply;
+  size_t payload_len;
+  ADS_Read_rep_type *ADS_Read_rep_p;
+  ADS_Read_rep_p = (ADS_Read_rep_type *)ams_hdr_p;
+  uint16_t adsport = ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8);
+
+  uint32_t indexGroup = (uint32_t)ads_read_req_p->indexGroup_0 +
+                        (ads_read_req_p->indexGroup_1 << 8) +
+                        (ads_read_req_p->indexGroup_2 << 16) +
+                        (ads_read_req_p->indexGroup_3 << 24);
+  uint32_t indexOffset = (uint32_t)ads_read_req_p->indexOffset_0 +
+                        (ads_read_req_p->indexOffset_1 << 8) +
+                        (ads_read_req_p->indexOffset_2 << 16) +
+                        (ads_read_req_p->indexOffset_3 << 24);
+  uint32_t len_in_PLC = (uint32_t)ads_read_req_p->lenght_0 +
+    (ads_read_req_p->lenght_1 << 8) +
+                    (ads_read_req_p->lenght_2 << 16) +
+                    (ads_read_req_p->lenght_3 << 24);
+  payload_len      = sizeof(ADS_Read_rep_p->response) + len_in_PLC;
+  total_len_reply = sizeof(*ADS_Read_rep_p) -
+                    sizeof(ADS_Read_rep_p->response) + payload_len;
+
+  memset(&ADS_Read_rep_p->response, 0, sizeof(ADS_Read_rep_p->response));
+
+  LOGINFO7("%s/%s:%d ADS_Readcmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u payload_len=%u total_len_reply=%u\n",
+           __FILE__,__FUNCTION__, __LINE__,
+           indexGroup, indexOffset,len_in_PLC,
+           (unsigned)payload_len, (unsigned)total_len_reply);
+  ADS_Read_rep_p->response.lenght_0 = (uint8_t)(len_in_PLC);
+  ADS_Read_rep_p->response.lenght_1 = (uint8_t)(len_in_PLC << 8);
+  ADS_Read_rep_p->response.lenght_2 = (uint8_t)(len_in_PLC << 16);
+  ADS_Read_rep_p->response.lenght_3 = (uint8_t)(len_in_PLC << 24);
+  indexerHandlePLCcycle();
+  {
+    uint8_t *data_ptr = (uint8_t *)ADS_Read_rep_p + sizeof(*ADS_Read_rep_p);
+    (void)indexerHandleADS_ADR_getMemory(adsport, indexOffset,
+                                         len_in_PLC, data_ptr);
+  }
+  send_ams_reply(fd, ams_hdr_p, total_len_reply);
+}
 
 void handleADSwrite(int fd, ams_hdr_type *ams_hdr_p)
 {
@@ -46,7 +90,9 @@ void handleADSwrite(int fd, ams_hdr_type *ams_hdr_p)
     (void)indexerHandleADS_ADR_setMemory(adsport, indexOffset,
                                          len_in_PLC, data_ptr);
   }
+  send_ams_reply(fd, ams_hdr_p, sizeof(ADS_Write_rep_type));
 }
+
 
 void handleADSreadwrite(int fd, ams_hdr_type *ams_hdr_p)
 {
