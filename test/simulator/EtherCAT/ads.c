@@ -154,10 +154,7 @@ void handleADSreadwrite(int fd, ams_hdr_type *ams_hdr_p)
 
 void send_ams_reply(int fd, ams_hdr_type *ams_hdr_p, uint32_t total_len_reply)
 {
-  uint32_t ams_payload_len = total_len_reply -
-    sizeof(ams_hdr_p->ams_tcp_header) -
-    sizeof(ams_hdr_p->target) -
-    sizeof(ams_hdr_p->source) - 16; /* TODO */
+  uint32_t ams_payload_len = total_len_reply - sizeof(*ams_hdr_p);
 
   LOGINFO7("%s/%s:%d total_len_reply=%u ams_payload_len=%u id=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
