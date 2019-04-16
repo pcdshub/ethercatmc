@@ -271,7 +271,7 @@ static void handle_data_on_ADS_socket(int i, int fd)
   size_t len_used = client_cons[i].len_used;
 
   read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
-                  CLIENT_CONS_BUFLEN - len_used - 1, 0);
+                  CLIENT_CONS_BUFLEN - len_used, 0);
   LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
            __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
   if (read_res <= 0)  {
@@ -283,7 +283,8 @@ static void handle_data_on_ADS_socket(int i, int fd)
     size_t ret;
     len_used = client_cons[i].len_used + read_res;
     client_cons[i].len_used = len_used;
-    ret = handle_ads_request(fd, (char *)&client_cons[i].buffer[0], len_used);
+    ret = handle_ams_request(fd, (char *)&client_cons[i].buffer[0],
+                             len_used, CLIENT_CONS_BUFLEN);
     if (ret != len_used) {
         close_and_remove_client_con_i(i);
     }

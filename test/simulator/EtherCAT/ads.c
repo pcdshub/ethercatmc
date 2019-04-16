@@ -7,12 +7,11 @@
 #define ADSIGRP_SYM_INFOBYNAMEEX 0xF009
 
 
-void handleAMSwrite(int fd, ads_req_type *ads_req_p)
+void handleADSwrite(int fd, ams_hdr_type *ams_hdr_p)
 {
-  ADS_Write_req_type *ADS_Write_req_p = (ADS_Write_req_type *)&ads_req_p->data;
-  ADS_Write_rep_type *ADS_Write_rep_p = (ADS_Write_rep_type *)&ads_req_p->data;
-  uint16_t adsport = ads_req_p->ams_header.target.port_low +
-    (ads_req_p->ams_header.target.port_high << 8);
+  ADS_Write_req_type *ADS_Write_req_p = (ADS_Write_req_type *)ams_hdr_p;
+  ADS_Write_rep_type *ADS_Write_rep_p = (ADS_Write_rep_type *)ams_hdr_p;
+  uint16_t adsport = ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8);
 
   uint32_t indexGroup = (uint32_t)ADS_Write_req_p->indexGroup_0 +
                         (ADS_Write_req_p->indexGroup_1 << 8) +
@@ -27,7 +26,7 @@ void handleAMSwrite(int fd, ads_req_type *ads_req_p)
                         (ADS_Write_req_p->lenght_2 << 16) +
                         (ADS_Write_req_p->lenght_3 << 24);
 
-  memset(ADS_Write_rep_p, 0, sizeof(*ADS_Write_rep_p));
+  memset(&ADS_Write_rep_p->response, 0, sizeof(ADS_Write_rep_p->response));
 
   LOGINFO7("%s/%s:%d ADS_Writecmd indexGroup=0x%x indexOffset=%u len_in_PLC=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
@@ -53,12 +52,11 @@ void handleAMSwrite(int fd, ads_req_type *ads_req_p)
   }
 }
 
-void handleAMSreadwrite(int fd, ads_req_type *ads_req_p)
+void handleADSreadwrite(int fd, ams_hdr_type *ams_hdr_p)
 {
-  ADS_ReadWrite_req_type *ADS_ReadWrite_req_p = (ADS_ReadWrite_req_type *)&ads_req_p->data;
-  ADS_ReadWrite_rep_type *ADS_ReadWrite_rep_p = (ADS_ReadWrite_rep_type *)&ads_req_p->data;
-  uint16_t adsport = ads_req_p->ams_header.target.port_low +
-    (ads_req_p->ams_header.target.port_high << 8);
+  ADS_ReadWrite_req_type *ADS_ReadWrite_req_p = (ADS_ReadWrite_req_type *)ams_hdr_p;
+  ADS_ReadWrite_rep_type *ADS_ReadWrite_rep_p = (ADS_ReadWrite_rep_type *)ams_hdr_p;
+  uint16_t adsport = ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8);
 
   uint32_t indexGroup = (uint32_t)ADS_ReadWrite_req_p->indexGroup_0 +
                         (ADS_ReadWrite_req_p->indexGroup_1 << 8) +
@@ -112,19 +110,27 @@ void handleAMSreadwrite(int fd, ads_req_type *ads_req_p)
   }
 }
 
-void send_ams_reply(int fd, ads_req_type *ads_req_p, uint32_t total_len_reply)
+void send_ams_reply(int fd, ams_hdr_type *ams_hdr_p, uint32_t total_len_reply)
 {
   uint32_t ams_payload_len = total_len_reply -
-    sizeof(ads_req_p->ams_tcp_header) -
-    sizeof(ads_req_p->ams_header);
-  LOGINFO7("%s/%s:%d total_len_reply=%u ams_payload_len=%u\n",
+    sizeof(ams_hdr_p->ams_tcp_header) -
+    sizeof(ams_hdr_p->target) -
+    sizeof(ams_hdr_p->source) - 16; /* TODO */
+
+  LOGINFO7("%s/%s:%d total_len_reply=%u ams_payload_len=%u id=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
-           total_len_reply, ams_payload_len);
-  ads_req_p->ams_header.stateFlags_low = 5;
-  ads_req_p->ams_header.stateFlags_high = 0;
-  ads_req_p->ams_header.lenght_0 = (uint8_t)ams_payload_len;
-  ads_req_p->ams_header.lenght_1 = (uint8_t)(ams_payload_len << 8);
-  ads_req_p->ams_header.lenght_2 = (uint8_t)(ams_payload_len << 16);
-  ads_req_p->ams_header.lenght_3 = (uint8_t)(ams_payload_len << 24);
-  send_to_socket(fd, ads_req_p, total_len_reply);
+           total_len_reply, ams_payload_len,
+           ams_hdr_p->invokeID_0 +
+           (ams_hdr_p->invokeID_1 << 8) +
+           (ams_hdr_p->invokeID_2 << 16) +
+           (ams_hdr_p->invokeID_3 << 24)
+           );
+
+  ams_hdr_p->stateFlags_low = 5;
+  ams_hdr_p->stateFlags_high = 0;
+  ams_hdr_p->lenght_0 = (uint8_t)ams_payload_len;
+  ams_hdr_p->lenght_1 = (uint8_t)(ams_payload_len << 8);
+  ams_hdr_p->lenght_2 = (uint8_t)(ams_payload_len << 16);
+  ams_hdr_p->lenght_3 = (uint8_t)(ams_payload_len << 24);
+  send_to_socket(fd, ams_hdr_p, total_len_reply);
 }

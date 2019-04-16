@@ -3,6 +3,6 @@
 
 #include <stddef.h>
 
-size_t handle_ads_request(int fd, char *buf, size_t len);
+size_t handle_ams_request(int fd, char *buf, size_t len, size_t buff_len_max);
 
 #endif
