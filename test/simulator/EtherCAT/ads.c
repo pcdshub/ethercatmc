@@ -32,23 +32,19 @@ void handleADSwrite(int fd, ams_hdr_type *ams_hdr_p)
            __FILE__,__FUNCTION__, __LINE__,
            indexGroup, indexOffset,len_in_PLC);
   if (len_in_PLC == 2) {
+    uint8_t *data_ptr = (uint8_t *)ADS_Write_req_p + sizeof(*ADS_Write_req_p);
     unsigned value;
-    value = ADS_Write_req_p->data[0] +
-      (ADS_Write_req_p->data[1] << 8);
+    value = data_ptr[0] + (data_ptr [1] << 8);
 
     LOGINFO7("%s/%s:%d ADS_Writecmd data=0x%x 0x%x value=0x%x\n",
              __FILE__,__FUNCTION__, __LINE__,
-             ADS_Write_req_p->data[0],
-             ADS_Write_req_p->data[1],value);
-    indexerHandleADS_ADR_putUInt(adsport,
-                                 indexOffset,
-                                 len_in_PLC,
-                                 value);
+             data_ptr[0], data_ptr[1], value);
+    indexerHandleADS_ADR_putUInt(adsport, indexOffset,
+                                 len_in_PLC, value);
   } else {
-    (void)indexerHandleADS_ADR_setMemory(adsport,
-                                         indexOffset,
-                                         len_in_PLC,
-                                         &ADS_Write_req_p->data);
+    uint8_t *data_ptr = (uint8_t *)ADS_Write_req_p + sizeof(*ADS_Write_req_p);
+    (void)indexerHandleADS_ADR_setMemory(adsport, indexOffset,
+                                         len_in_PLC, data_ptr);
   }
 }
 

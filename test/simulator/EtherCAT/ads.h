@@ -80,7 +80,6 @@ typedef struct {
   uint8_t lenght_1;
   uint8_t lenght_2;
   uint8_t lenght_3;
-  uint8_t data[256];
 } ADS_Write_req_type;
 
 typedef struct {
@@ -130,7 +129,6 @@ typedef struct {
     uint8_t lenght_1;
     uint8_t lenght_2;
     uint8_t lenght_3;
-    uint8_t data;
   } response;
 } ADS_Read_rep_type;
 
@@ -144,7 +142,6 @@ typedef struct {
   uint8_t lenght_1;
   uint8_t lenght_2;
   uint8_t lenght_3;
-  uint8_t data;
 } ADS_ReadWrite_rep_type;
 
 
