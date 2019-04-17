@@ -108,8 +108,8 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   int iRes;
   asynStatus status;
   if (ctrlLocal.useADSbinary) {
+    *value = 0;
     /* This works on little endian boxes only */
-    memset(value, 0, lenInPlc);
     status = getPlcMemory(indexGroup, indexOffset,
                           value, lenInPlc);
     return status;
