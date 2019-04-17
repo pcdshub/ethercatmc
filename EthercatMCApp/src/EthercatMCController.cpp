@@ -175,15 +175,60 @@ EthercatMCController::EthercatMCController(const char *portName,
     asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
               "%s cannot connect to motor controller\n", modulName);
   }
-#if 0
-  asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
-            "%s optionStr=\"%s\"\n",
-            modulName, optionStr ? optionStr : "NULL");
-#else
   printf("%s:%d %s optionStr=\"%s\"\n",
          __FILE__, __LINE__,
          modulName, optionStr ? optionStr : "NULL");
-#endif
+  if (optionStr && optionStr[0]) {
+    const char * const adsPort_str        = "adsPort=";
+    const char * const amsNetIdRemote_str = "amsNetIdRemote=";
+    const char * const amsNetIdLocal_str  = "amsNetIdLocal=";
+    char *pOptions = strdup(optionStr);
+    char *pThisOption = pOptions;
+    char *pNextOption = pOptions;
+
+    while (pNextOption && pNextOption[0]) {
+      pNextOption = strchr(pNextOption, ';');
+      if (pNextOption) {
+        *pNextOption = '\0'; /* Terminate */
+        pNextOption++;       /* Jump to (possible) next */
+      }
+      if (!strncmp(pThisOption, adsPort_str, strlen(adsPort_str))) {
+        pThisOption += strlen(adsPort_str);
+        int adsPort = atoi(pThisOption);
+        if (adsPort > 0) {
+          ctrlLocal.adsport = (unsigned)adsPort;
+        }
+      } else if (!strncmp(pThisOption, amsNetIdRemote_str,
+                          strlen(amsNetIdRemote_str))) {
+        ams_netid_port_type ams_netid_port;
+        int nvals;
+        memset(&ams_netid_port, 0, sizeof(ams_netid_port));
+        pThisOption += strlen(amsNetIdRemote_str);
+        nvals = sscanf(pThisOption, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
+                       &ams_netid_port.netID[0],
+                       &ams_netid_port.netID[1],
+                       &ams_netid_port.netID[2],
+                       &ams_netid_port.netID[3],
+                       &ams_netid_port.netID[4],
+                       &ams_netid_port.netID[5]);
+        printf("%s:%d %s nvals=%d amsNetIdRemote=%u.%u.%u.%u.%u.%u\n",
+               __FILE__, __LINE__,
+               modulName, nvals,
+               ams_netid_port.netID[0], ams_netid_port.netID[1],
+               ams_netid_port.netID[2], ams_netid_port.netID[3],
+               ams_netid_port.netID[4], ams_netid_port.netID[5]);
+        if (nvals == 6) {
+          memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
+        }
+      }
+      pThisOption = pNextOption;
+    }
+    free(pOptions);
+  }
+  asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
+            "%s optionStr=\"%s\"\n",
+            modulName, optionStr ? optionStr : "NULL");
+
   startPoller(movingPollPeriod, idlePollPeriod, 2);
 }
 
@@ -464,9 +509,11 @@ asynStatus EthercatMCController::poll(void)
   asynStatus status = asynSuccess;
 
   asynPrint(pasynUserController_, ASYN_TRACE_FLOW,
-                    "%spoll ctrlLocal.initialPollDone=%d\n",
+            "%spoll ctrlLocal.initialPollDone=%d\n",
             modNamEMC, ctrlLocal.initialPollDone);
-
+#if 1
+  status = initialPollIndexer();
+#else
   if (!features_) {
     features_ = getFeatures();
   }
@@ -476,7 +523,7 @@ asynStatus EthercatMCController::poll(void)
       if (!status) ctrlLocal.initialPollDone = 1;
     }
   }
-
+#endif
   return status;
 }
 

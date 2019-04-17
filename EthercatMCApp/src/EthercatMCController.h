@@ -8,6 +8,7 @@ FILENAME...   EthercatMCController.h
 #include "asynMotorController.h"
 #include "asynMotorAxis.h"
 #include "EthercatMCAxis.h"
+#include "EthercatMCADSdefs.h"
 
 #ifndef motorRecResolutionString
 #define CREATE_MOTOR_REC_RESOLUTION
@@ -73,7 +74,12 @@ extern const char *modNamEMC;
 
 extern "C" {
   int EthercatMCCreateAxis(const char *EthercatMCName, int axisNo,
-                      int axisFlags, const char *axisOptionsStr);
+                           int axisFlags, const char *axisOptionsStr);
+
+  asynStatus EthercatMCADSgetPlcMemoryUint(asynUser *pasynUser,
+                                           unsigned indexOffset,
+                                           unsigned *value,
+                                           size_t lenInPlc);
   asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
                                           const char *outdata, size_t outlen,
                                           char *indata, size_t inlen);
@@ -134,6 +140,10 @@ public:
 
   protected:
   void handleStatusChange(asynStatus status);
+  /* memory bytes via ADS */
+  asynStatus getPlcMemory(unsigned indexGroup,
+                          unsigned indexOffset,
+                          void *data, size_t lenInPlc);
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned devNum, unsigned infoType);
   void parameterFloatReadBack(unsigned axisNo,
@@ -179,6 +189,9 @@ public:
     unsigned int isConnected;
     unsigned int initialPollDone;
     unsigned int indexerOffset;
+    ams_netid_port_type remote;
+    ams_netid_port_type local;
+    unsigned adsport;
     struct {
       unsigned int stAxisStatus_V1  :1;
       unsigned int stAxisStatus_V2  :1;
@@ -188,7 +201,6 @@ public:
     } supported;
   } ctrlLocal;
 
-  unsigned adsport;
 
   /* First parameter */
   int EthercatMCErr_;

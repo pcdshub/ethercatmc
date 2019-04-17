@@ -230,8 +230,8 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
   }
   snprintf(pC_->outString_, sizeof(pC_->outString_),
            "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f;ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
-           pC_->adsport, indexGroup, drvlocal.iOffset + 4, position,
-           pC_->adsport, indexGroup, drvlocal.iOffset + 8, cmdReason);
+           pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 4, position,
+           pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 8, cmdReason);
   return pC_->writeReadACK(traceMask);
 }
 
@@ -369,15 +369,15 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
              "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
              "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-             pC_->adsport,
+             pC_->ctrlLocal.adsport,
              indexGroup, drvlocal.iOffset,         /* Actual value on pos 0 */
-             pC_->adsport,
+             pC_->ctrlLocal.adsport,
              indexGroup, drvlocal.iOffset + 4,     /* Target value on pos 4 */
-             pC_->adsport,
+             pC_->ctrlLocal.adsport,
              indexGroup, drvlocal.iOffset + 8,     /* CmdStatusAux value on pos 8 */
-             pC_->adsport,
+             pC_->ctrlLocal.adsport,
              indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
-             pC_->adsport,
+             pC_->ctrlLocal.adsport,
              indexGroup, drvlocal.iOffset + 0xC);  /* ParamValue on 0xC*/
 
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
@@ -474,7 +474,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
       snprintf(pC_->outString_, sizeof(pC_->outString_),
                "ADSPORT=%u/.ADR.16#%X,16#%X,2,18=%d",
-               pC_->adsport,
+               pC_->ctrlLocal.adsport,
                indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
                newParamCtrl
                );
