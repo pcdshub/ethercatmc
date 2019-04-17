@@ -192,6 +192,7 @@ public:
     ams_netid_port_type remote;
     ams_netid_port_type local;
     unsigned adsport;
+    int useADSbinary;
     struct {
       unsigned int stAxisStatus_V1  :1;
       unsigned int stAxisStatus_V2  :1;

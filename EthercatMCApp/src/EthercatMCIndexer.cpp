@@ -107,11 +107,13 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   int nvals;
   int iRes;
   asynStatus status;
-  unsigned tmp;
-  (void)getPlcMemory(indexGroup,
-                     indexOffset,
-                     &tmp,
-                     sizeof(tmp));
+  if (ctrlLocal.useADSbinary) {
+    /* This works on little endian boxes only */
+    memset(value, 0, lenInPlc);
+    status = getPlcMemory(indexGroup, indexOffset,
+                          value, lenInPlc);
+    return status;
+  }
   if (lenInPlc == 2) {
     snprintf(outString_, sizeof(outString_),
              "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?",
@@ -255,6 +257,22 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   int nvals;
   double fRes;
   asynStatus status;
+
+
+  if (ctrlLocal.useADSbinary) {
+    /* This works on little endian boxes only */
+    memset(value, 0, lenInPlc);
+    if (lenInPlc == 4) {
+      float res;
+      status = getPlcMemory(indexGroup, indexOffset,
+                            &res, sizeof(res));
+      *value = (double)res;
+      return status;
+    } else if (lenInPlc == 8) {
+      return getPlcMemory(indexGroup, indexOffset, value, lenInPlc);
+    }
+    return asynError;
+  }
 
   if (lenInPlc == 4) {
     snprintf(outString_, sizeof(outString_),
@@ -836,11 +854,16 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                 modNamEMC, ctrlLocal.adsport, iTmpVer, tmp_version,
                 pasynManager->strStatus(status), (int)status);
       if (status) return status;
-      if ((tmp_version == 2015.02) || (tmp_version == 2015.020020)) {
+      if ((tmp_version == 2015.02) ||
+          (tmp_version == 2015.020020) ||
+          ( iTmpVer == 0x44fbe0a4)) {
         version = tmp_version;
       } else {
         ctrlLocal.adsport++;
       }
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sadsport=%u version=%f\n",
+                modNamEMC, ctrlLocal.adsport, version);
     }
   }
   if (!version) status = asynDisabled;

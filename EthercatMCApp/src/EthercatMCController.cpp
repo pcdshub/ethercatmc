@@ -185,7 +185,8 @@ EthercatMCController::EthercatMCController(const char *portName,
     char *pOptions = strdup(optionStr);
     char *pThisOption = pOptions;
     char *pNextOption = pOptions;
-
+    int hasRemoteAmsNetId = 0;
+    int hasLocalAmsNetId = 0;
     while (pNextOption && pNextOption[0]) {
       pNextOption = strchr(pNextOption, ';');
       if (pNextOption) {
@@ -218,6 +219,7 @@ EthercatMCController::EthercatMCController(const char *portName,
                ams_netid_port.netID[2], ams_netid_port.netID[3],
                ams_netid_port.netID[4], ams_netid_port.netID[5]);
         if (nvals == 6) {
+          hasRemoteAmsNetId = 1;
           memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
         }
       } else if (!strncmp(pThisOption, amsNetIdLocal_str,
@@ -240,12 +242,16 @@ EthercatMCController::EthercatMCController(const char *portName,
                ams_netid_port.netID[2], ams_netid_port.netID[3],
                ams_netid_port.netID[4], ams_netid_port.netID[5]);
         if (nvals == 6) {
+          hasLocalAmsNetId = 1;
           memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
         }
       }
       pThisOption = pNextOption;
     }
     free(pOptions);
+    if (hasRemoteAmsNetId && hasLocalAmsNetId) {
+      ctrlLocal.useADSbinary = 1;
+    }
   }
   asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
             "%s optionStr=\"%s\"\n",
