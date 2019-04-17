@@ -243,7 +243,7 @@ EthercatMCController::EthercatMCController(const char *portName,
                ams_netid_port.netID[4], ams_netid_port.netID[5]);
         if (nvals == 6) {
           hasLocalAmsNetId = 1;
-          memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
+          memcpy(&ctrlLocal.local, &ams_netid_port, sizeof(ctrlLocal.local));
         }
       }
       pThisOption = pNextOption;
