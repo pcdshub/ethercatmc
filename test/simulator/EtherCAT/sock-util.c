@@ -265,77 +265,49 @@ int get_listen_socket(const char *listen_port_asc)
   return sockfd;
 }
 
-static void handle_data_on_ADS_socket(int i, int fd)
+static void handle_data_on_ADS_socket(int i, int fd, ssize_t read_res, size_t len_used)
 {
-  ssize_t read_res = 0;
-  size_t len_used = client_cons[i].len_used;
-
-  read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
-                  CLIENT_CONS_BUFLEN - len_used, 0);
+  size_t ret;
   LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
            __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
-  if (read_res <= 0)  {
-    if (read_res == 0) {
-      close_and_remove_client_con_i(i);
-      LOGINFO(" EOF i=%d fd=%d\n", i, fd);
-    }
-  } else {
-    size_t ret;
-    len_used = client_cons[i].len_used + read_res;
-    client_cons[i].len_used = len_used;
-    ret = handle_ams_request(fd, (char *)&client_cons[i].buffer[0],
-                             len_used, CLIENT_CONS_BUFLEN);
-    if (ret != len_used) {
-        close_and_remove_client_con_i(i);
-    }
-    client_cons[i].len_used = 0;
+  ret = handle_ams_request(fd, (char *)&client_cons[i].buffer[0],
+                           len_used, CLIENT_CONS_BUFLEN);
+  if (ret != len_used) {
+    close_and_remove_client_con_i(i);
   }
+  client_cons[i].len_used = 0;
 }
 
 
-static void handle_data_on_ASC_socket(int i, int fd)
+static void handle_data_on_ASC_socket(int i, int fd, ssize_t read_res, size_t len_used)
 {
-  ssize_t read_res = 0;
-  size_t len_used = client_cons[i].len_used;
-
   /* append received data to the end
      keep one place for the '\n'  */
+  char *pNewline;
 
-  read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
-                  CLIENT_CONS_BUFLEN - len_used - 1, 0);
   LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
            __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
-  if (read_res <= 0)  {
-    if (read_res == 0) {
-      close_and_remove_client_con_i(i);
-      LOGINFO(" EOF i=%d fd=%d\n", i, fd);
-    }
-  } else {
-    char *pNewline;
-    len_used = client_cons[i].len_used + read_res;
-    client_cons[i].len_used = len_used;
-    client_cons[i].buffer[len_used] = '\0';
-    pNewline = strchr((char *)client_cons[i].buffer, '\n');
-    LOGINFO7("%s/%s:%d FD_ISSET i=%d fd=%d len_used=%lu pNewline=%d\n",
+  client_cons[i].buffer[len_used] = '\0';
+  pNewline = strchr((char *)client_cons[i].buffer, '\n');
+  LOGINFO7("%s/%s:%d FD_ISSET i=%d fd=%d len_used=%lu pNewline=%d\n",
+           __FILE__, __FUNCTION__, __LINE__, i, fd,
+           (unsigned long)len_used, pNewline ? 1 : 0);
+  if (pNewline) {
+    size_t line_len = 1 + (void*)pNewline - (void*)client_cons[i].buffer;
+    int had_cr = 0;
+    LOGINFO7("%s/%s:%d FD_ISSET i=%d fd=%d line_len=%lu\n",
              __FILE__, __FUNCTION__, __LINE__, i, fd,
-             (unsigned long)len_used, pNewline ? 1 : 0);
-    if (pNewline) {
-      size_t line_len = 1 + (void*)pNewline - (void*)client_cons[i].buffer;
-      int had_cr = 0;
-      LOGINFO7("%s/%s:%d FD_ISSET i=%d fd=%d line_len=%lu\n",
-               __FILE__, __FUNCTION__, __LINE__, i, fd,
-               (unsigned long)line_len);
-      *pNewline = 0; /* Remove '\n' */
-      if (line_len > 1) pNewline--;
-      if (*pNewline == '\r') {
-        had_cr = 1;
-        *pNewline = '\0';
-      }
-      if (handle_input_line(fd, (const char *)&client_cons[i].buffer[0], had_cr, 1)) {
-        close_and_remove_client_con_i(i);
-      }
-      client_cons[i].len_used = 0;
+             (unsigned long)line_len);
+    *pNewline = 0; /* Remove '\n' */
+    if (line_len > 1) pNewline--;
+    if (*pNewline == '\r') {
+      had_cr = 1;
+      *pNewline = '\0';
     }
+    if (handle_input_line(fd, (const char *)&client_cons[i].buffer[0], had_cr, 1)) {
+      close_and_remove_client_con_i(i);
+    }
+    client_cons[i].len_used = 0;
   }
 }
 
@@ -424,10 +396,28 @@ void socket_loop_with_select(void)
               add_client_con(accepted_socket, is_listen, client_cons[i].is_ADS);
             } else {
               client_cons[i].last_active_sec = tv_now.tv_sec;
-              if (client_cons[i].is_ADS) {
-                handle_data_on_ADS_socket(i, fd);
+              ssize_t read_res;
+              size_t len_used = client_cons[i].len_used;
+              read_res = recv(fd, (char *)&client_cons[i].buffer[len_used],
+                              CLIENT_CONS_BUFLEN - len_used - 1, 0);
+              if (read_res <= 0)  {
+                if (read_res == 0) {
+                  close_and_remove_client_con_i(i);
+                  LOGINFO(" EOF i=%d fd=%d\n", i, fd);
+                }
+              }
+              len_used = client_cons[i].len_used + read_res;
+              client_cons[i].len_used = len_used;
+              LOGINFO7("%s/%s:%d buf[0]=0x%x buf[1]=0x%x\n",
+                       __FILE__, __FUNCTION__, __LINE__,
+                       client_cons[i].buffer[0],
+                       client_cons[i].buffer[1]);
+
+              if (client_cons[i].is_ADS &&
+                  (!client_cons[i].buffer[0] && !client_cons[i].buffer[1])) {
+                handle_data_on_ADS_socket(i, fd, read_res, len_used);
               } else {
-                handle_data_on_ASC_socket(i, fd);
+                handle_data_on_ASC_socket(i, fd, read_res, len_used);
               }
             }
           }

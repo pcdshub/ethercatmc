@@ -47,6 +47,14 @@ void handleADSread(int fd, ams_hdr_type *ams_hdr_p)
     uint8_t *data_ptr = (uint8_t *)ADS_Read_rep_p + sizeof(*ADS_Read_rep_p);
     (void)indexerHandleADS_ADR_getMemory(adsport, indexOffset,
                                          len_in_PLC, data_ptr);
+  LOGINFO7("%s/%s:%d ADS_Readcmd ADS_Read_rep_p=%p data_ptr=%p data=0x%2x 0x%2x 0x%2x 0x%2x\n",
+           __FILE__,__FUNCTION__, __LINE__,
+           ADS_Read_rep_p, data_ptr,
+           data_ptr[0],
+           data_ptr[1],
+           data_ptr[2],
+           data_ptr[3]
+           );
   }
   send_ams_reply(fd, ams_hdr_p, total_len_reply);
 }

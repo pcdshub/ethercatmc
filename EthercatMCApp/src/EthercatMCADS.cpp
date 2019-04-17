@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "EthercatMCController.h"
 #include "EthercatMCADSdefs.h"
 #include <asynOctetSyncIO.h>
@@ -62,8 +63,10 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                        DEFAULT_CONTROLLER_TIMEOUT,
                                        pnwrite, pnread, peomReason);
   asynPrint(pasynUser, ASYN_TRACE_INFO,
-            "%sXXXXXXXXXXXpasynOctetSyncIO->writeRead outlen=%u status=%s (%d)\n",
+            "%sXXXXXXXXXXXpasynOctetSyncIO->writeRead outlen=%u inlen=%u nread=%lu, status=%s (%d)\n",
             modNamEMC,  (unsigned)outlen,
+            (unsigned)inlen,
+            (unsigned long)*pnread,
             pasynManager->strStatus(status), status);
 
 #endif
@@ -94,10 +97,10 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
 {
   asynUser *pasynUser = pasynUserController_;
   ads_read_req_type ads_read_req;
-  struct {
-    ams_hdr_type ams_hdr;
-    uint8_t readValue[4];
-  } ams_rep;
+
+  size_t read_buf_len = sizeof(ADS_Read_rep_type) + lenInPlc;
+  void *p_read_buf = malloc(read_buf_len);
+
   asynStatus status;
   static uint32_t invokeID;
   uint32_t ams_payload_len = sizeof(ads_read_req.ams_hdr) -
@@ -107,6 +110,7 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
   int eomReason = 0;
 
   memset(&ads_read_req, 0, sizeof(ads_read_req));
+  memset(p_read_buf, 0, read_buf_len);
   invokeID++;
 
   ads_read_req.ams_hdr.ams_tcp_hdr.length_0 = (uint8_t)ams_payload_len;
@@ -137,13 +141,13 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
 
   status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
                                               (const char*)&ads_read_req, sizeof(ads_read_req),
-                                              (char *)&ams_rep, sizeof(ams_rep),
+                                              (char*)p_read_buf, read_buf_len,
                                               &nwrite, &nread, &eomReason);
 
 
   {
     int len = (int)nread;
-    uint8_t *data = (uint8_t *)&ams_rep;
+    uint8_t *data = (uint8_t *)p_read_buf;
     unsigned pos = 0;
     int tracelevel = ASYN_TRACE_INFO;
     while (len > 0) {
@@ -170,20 +174,16 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
   asynPrint(pasynUser, ASYN_TRACE_INFO,
             "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
             modNamEMC,  (unsigned)nread,
-            (unsigned)sizeof(ams_rep),
+            (unsigned) read_buf_len,
             eomReason,
             (unsigned)lenInPlc);
-  if (lenInPlc == 4) {
-    uint32_t returned_value;
-    returned_value = ams_rep.readValue[0] +
-      (ams_rep.readValue[1] << 8) +
-      (ams_rep.readValue[2] << 16) +
-      (ams_rep.readValue[3] << 24);
 
-    asynPrint(pasynUser, ASYN_TRACE_INFO,
-              "%sYYYY indexGroup=0x%x indexOffset=%u returned_value=%u\n",
-              modNamEMC, indexGroup, indexOffset,
-              returned_value);
-      }
+  if (!status) {
+    uint8_t *src_ptr = (uint8_t*) p_read_buf;
+    src_ptr += sizeof(ADS_Read_rep_type);
+    memcpy(data, src_ptr, lenInPlc);
+  }
+
+  free(p_read_buf);
   return status;
 }

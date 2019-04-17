@@ -829,7 +829,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
 
       status = getPlcMemoryUint(ctrlLocal.indexerOffset, &iTmpVer, lenInPlc);
       if (status) return status;
-      exit(1);
 
       status = getPlcMemoryDouble(ctrlLocal.indexerOffset, &tmp_version, lenInPlc);
       asynPrint(pasynUserController_, ASYN_TRACE_INFO,
