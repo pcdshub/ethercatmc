@@ -118,9 +118,9 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
   ads_read_req.ams_hdr.ams_tcp_hdr.length_2 = (uint8_t)(ams_payload_len >> 16);
   ads_read_req.ams_hdr.ams_tcp_hdr.length_3 = (uint8_t)(ams_payload_len >> 24);
   memcpy(&ads_read_req.ams_hdr.target,
-         &ctrlLocal.remote,
-         sizeof(ads_read_req.ams_hdr.target));
-
+         &ctrlLocal.remote,  sizeof(ads_read_req.ams_hdr.target));
+  memcpy(&ads_read_req.ams_hdr.source,
+         &ctrlLocal.local, sizeof(ads_read_req.ams_hdr.source));
   ads_read_req.ams_hdr.cmdID_low = ADS_READ;
   ads_read_req.ams_hdr.invokeID_0 = (uint8_t)invokeID;
   ads_read_req.ams_hdr.invokeID_1 = (uint8_t)(invokeID >> 8);
@@ -213,9 +213,37 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
   {
     int len = (int)nread;
     uint8_t *data = (uint8_t *)p_read_buf;
+    int count;
     unsigned pos = 0;
     int tracelevel = ASYN_TRACE_INFO;
     while (len > 0) {
+      struct {
+        char asc_txt[8];
+        char space[2];
+        char hex_txt[8][3];
+        char nul;
+      } print_buf;
+      memset(&print_buf, ' ', sizeof(print_buf));
+      print_buf.nul = '\0';
+      for (count = 0; count < 8; count++) {
+        if (count < len) {
+          unsigned char c = (unsigned char)data[count];
+          if (c > 0x32 && c < 0x7F)
+            print_buf.asc_txt[count] = c;
+          else
+            print_buf.asc_txt[count] = '.';
+          snprintf((char*)&print_buf.hex_txt[count],
+                   sizeof(print_buf.hex_txt[count]),
+                   "%02x", c);
+          /* Replace NUL with ' ' after snprintf */
+          print_buf.hex_txt[count][2] = ' ';
+        }
+      }
+#if 1
+      asynPrint(pasynUser, tracelevel,
+                "%s[%02x]%s\n",
+                modNamEMC, pos, (char*)&print_buf);
+#else
       asynPrint(pasynUser, tracelevel,
                 "%s[%02x]%c%c%c%c%c%c%c%c  %02x %02x %02x %02x %02x %02x %02x %02x\n",
                 modNamEMC, pos,
@@ -230,6 +258,7 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
                 data[0], data[1], data[2], data[3],
                 data[4], data[5], data[6], data[7]
                 );
+#endif
       len -= 8;
       data += 8;
       pos += 8;
