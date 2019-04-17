@@ -220,6 +220,28 @@ EthercatMCController::EthercatMCController(const char *portName,
         if (nvals == 6) {
           memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
         }
+      } else if (!strncmp(pThisOption, amsNetIdLocal_str,
+                          strlen(amsNetIdLocal_str))) {
+        ams_netid_port_type ams_netid_port;
+        int nvals;
+        memset(&ams_netid_port, 0, sizeof(ams_netid_port));
+        pThisOption += strlen(amsNetIdLocal_str);
+        nvals = sscanf(pThisOption, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
+                       &ams_netid_port.netID[0],
+                       &ams_netid_port.netID[1],
+                       &ams_netid_port.netID[2],
+                       &ams_netid_port.netID[3],
+                       &ams_netid_port.netID[4],
+                       &ams_netid_port.netID[5]);
+        printf("%s:%d %s nvals=%d amsNetIdLocal=%u.%u.%u.%u.%u.%u\n",
+               __FILE__, __LINE__,
+               modulName, nvals,
+               ams_netid_port.netID[0], ams_netid_port.netID[1],
+               ams_netid_port.netID[2], ams_netid_port.netID[3],
+               ams_netid_port.netID[4], ams_netid_port.netID[5]);
+        if (nvals == 6) {
+          memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
+        }
       }
       pThisOption = pNextOption;
     }

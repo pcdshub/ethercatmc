@@ -9,7 +9,7 @@ epicsEnvSet("PREFIX",        "$(SM_PREFIX=IOC:)")
 epicsEnvSet("PREC",          "$(SM_PREC=3)")
 epicsEnvSet("SM_NOAXES",     "3")
 epicsEnvSet("ADSPORT",       "$(ECM_ADSPORT=851)")
-epicsEnvSet("ECM_OPTIONS",   "amsNetIdRemote=5.40.216.206.1.1"
+epicsEnvSet("ECM_OPTIONS",   "amsNetIdRemote=5.40.216.206.1.1;amsNetIdLocal=127.0.0.1.1.1"
 
 < EthercatMCController.cmd
 
