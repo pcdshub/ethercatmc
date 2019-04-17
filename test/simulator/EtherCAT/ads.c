@@ -163,7 +163,7 @@ void handleADSreadwrite(int fd, ams_hdr_type *ams_hdr_p)
 void send_ams_reply(int fd, ams_hdr_type *ams_hdr_p, uint32_t total_len_reply)
 {
   uint32_t ams_payload_len = total_len_reply - sizeof(*ams_hdr_p);
-
+  ams_netid_port_type ams_netid_port_tmp;
   LOGINFO7("%s/%s:%d total_len_reply=%u ams_payload_len=%u id=%u\n",
            __FILE__,__FUNCTION__, __LINE__,
            total_len_reply, ams_payload_len,
@@ -172,6 +172,10 @@ void send_ams_reply(int fd, ams_hdr_type *ams_hdr_p, uint32_t total_len_reply)
            (ams_hdr_p->invokeID_2 << 16) +
            (ams_hdr_p->invokeID_3 << 24)
            );
+  /* Swap source and target */
+  memcpy(&ams_netid_port_tmp, &ams_hdr_p->target,  sizeof(ams_netid_port_type));
+  memcpy(&ams_hdr_p->target,  &ams_hdr_p->source,  sizeof(ams_netid_port_type));
+  memcpy(&ams_hdr_p->source,  &ams_netid_port_tmp, sizeof(ams_netid_port_type));
 
   ams_hdr_p->stateFlags_low = 5;
   ams_hdr_p->stateFlags_high = 0;
