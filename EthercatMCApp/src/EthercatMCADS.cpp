@@ -139,6 +139,34 @@ asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
                                               (const char*)&ads_read_req, sizeof(ads_read_req),
                                               (char *)&ams_rep, sizeof(ams_rep),
                                               &nwrite, &nread, &eomReason);
+
+
+  {
+    int len = (int)nread;
+    uint8_t *data = (uint8_t *)&ams_rep;
+    unsigned pos = 0;
+    int tracelevel = ASYN_TRACE_INFO;
+    while (len > 0) {
+      asynPrint(pasynUser, tracelevel,
+                "%s[%02x]%c%c%c%c%c%c%c%c  %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                modNamEMC, pos,
+                data[0] >= 0x32 && data[0] < 0x7F ? data[0] : '.',
+                data[1] >= 0x32 && data[1] < 0x7F ? data[1] : '.',
+                data[2] >= 0x32 && data[2] < 0x7F ? data[2] : '.',
+                data[3] >= 0x32 && data[3] < 0x7F ? data[3] : '.',
+                data[4] >= 0x32 && data[4] < 0x7F ? data[4] : '.',
+                data[5] >= 0x32 && data[5] < 0x7F ? data[5] : '.',
+                data[6] >= 0x32 && data[6] < 0x7F ? data[6] : '.',
+                data[7] >= 0x32 && data[7] < 0x7F ? data[7] : '.',
+                data[0], data[1], data[2], data[3],
+                data[4], data[5], data[6], data[7]
+                );
+      len -= 8;
+      data += 8;
+      pos += 8;
+    }
+  }
+
   asynPrint(pasynUser, ASYN_TRACE_INFO,
             "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
             modNamEMC,  (unsigned)nread,
