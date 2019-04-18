@@ -10,6 +10,47 @@
 static uint32_t invokeID;
 
 extern "C"
+void EthercatMChexdump(asynUser *pasynUser, int tracelevel, const char *help_txt,
+                       const void* buf, size_t buflen)
+{
+  int len = (int)buflen;
+  uint8_t *data = (uint8_t *)buf;
+  int count;
+  unsigned pos = 0;
+  while (len > 0) {
+    struct {
+      char asc_txt[8];
+      char space[2];
+      char hex_txt[8][3];
+      char nul;
+    } print_buf;
+    memset(&print_buf, ' ', sizeof(print_buf));
+    print_buf.nul = '\0';
+    for (count = 0; count < 8; count++) {
+      if (count < len) {
+        unsigned char c = (unsigned char)data[count];
+        if (c > 0x32 && c < 0x7F)
+          print_buf.asc_txt[count] = c;
+        else
+          print_buf.asc_txt[count] = '.';
+        snprintf((char*)&print_buf.hex_txt[count],
+                 sizeof(print_buf.hex_txt[count]),
+                 "%02x", c);
+        /* Replace NUL with ' ' after snprintf */
+        print_buf.hex_txt[count][2] = ' ';
+      }
+    }
+    asynPrint(pasynUser, tracelevel,
+              "%s %s [%02x]%s\n",
+              modNamEMC, help_txt, pos, (char*)&print_buf);
+    len -= 8;
+    data += 8;
+    pos += 8;
+  }
+}
+
+
+extern "C"
 asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                               const char *outdata, size_t outlen,
                                               char *indata, size_t inlen,
@@ -97,6 +138,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                                                     void *data,
                                                     size_t lenInPlc)
 {
+  int tracelevel = ASYN_TRACE_INFO;
   asynUser *pasynUser = pasynUserController_;
   ads_read_req_type ads_read_req;
 
@@ -146,7 +188,6 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                                               &nwrite, &nread, &eomReason);
 
   {
-    int tracelevel = ASYN_TRACE_INFO;
     ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
     ams_hdr_type *ams_hdr_p = (ams_hdr_type*)ADS_Read_rep_p;
     uint16_t cmdId = ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high << 8);
@@ -211,60 +252,8 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
               (ADS_Read_rep_p->response.length_3 << 24)
               );
   }
-  {
-    int len = (int)nread;
-    uint8_t *data = (uint8_t *)p_read_buf;
-    int count;
-    unsigned pos = 0;
-    int tracelevel = ASYN_TRACE_INFO;
-    while (len > 0) {
-      struct {
-        char asc_txt[8];
-        char space[2];
-        char hex_txt[8][3];
-        char nul;
-      } print_buf;
-      memset(&print_buf, ' ', sizeof(print_buf));
-      print_buf.nul = '\0';
-      for (count = 0; count < 8; count++) {
-        if (count < len) {
-          unsigned char c = (unsigned char)data[count];
-          if (c > 0x32 && c < 0x7F)
-            print_buf.asc_txt[count] = c;
-          else
-            print_buf.asc_txt[count] = '.';
-          snprintf((char*)&print_buf.hex_txt[count],
-                   sizeof(print_buf.hex_txt[count]),
-                   "%02x", c);
-          /* Replace NUL with ' ' after snprintf */
-          print_buf.hex_txt[count][2] = ' ';
-        }
-      }
-#if 1
-      asynPrint(pasynUser, tracelevel,
-                "%s RD [%02x]%s\n",
-                modNamEMC, pos, (char*)&print_buf);
-#else
-      asynPrint(pasynUser, tracelevel,
-                "%s[%02x]%c%c%c%c%c%c%c%c  %02x %02x %02x %02x %02x %02x %02x %02x\n",
-                modNamEMC, pos,
-                data[0] >= 0x32 && data[0] < 0x7F ? data[0] : '.',
-                data[1] >= 0x32 && data[1] < 0x7F ? data[1] : '.',
-                data[2] >= 0x32 && data[2] < 0x7F ? data[2] : '.',
-                data[3] >= 0x32 && data[3] < 0x7F ? data[3] : '.',
-                data[4] >= 0x32 && data[4] < 0x7F ? data[4] : '.',
-                data[5] >= 0x32 && data[5] < 0x7F ? data[5] : '.',
-                data[6] >= 0x32 && data[6] < 0x7F ? data[6] : '.',
-                data[7] >= 0x32 && data[7] < 0x7F ? data[7] : '.',
-                data[0], data[1], data[2], data[3],
-                data[4], data[5], data[6], data[7]
-                );
-#endif
-      len -= 8;
-      data += 8;
-      pos += 8;
-    }
-  }
+  EthercatMChexdump(pasynUser, tracelevel, "RD",
+                    p_read_buf, nread);
 
   asynPrint(pasynUser, ASYN_TRACE_INFO,
             "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
@@ -345,42 +334,8 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
             "%s WR indexGroup=0x%x indexOffset=%u lenInPlc=%u\n",
             modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc
             );
-  {
-    int len = (int)write_buf_len;
-    uint8_t *data = (uint8_t *)p_write_buf;
-    int count;
-    unsigned pos = 0;
-    while (len > 0) {
-      struct {
-        char asc_txt[8];
-        char space[2];
-        char hex_txt[8][3];
-        char nul;
-      } print_buf;
-      memset(&print_buf, ' ', sizeof(print_buf));
-      print_buf.nul = '\0';
-      for (count = 0; count < 8; count++) {
-        if (count < len) {
-          unsigned char c = (unsigned char)data[count];
-          if (c > 0x32 && c < 0x7F)
-            print_buf.asc_txt[count] = c;
-          else
-            print_buf.asc_txt[count] = '.';
-          snprintf((char*)&print_buf.hex_txt[count],
-                   sizeof(print_buf.hex_txt[count]),
-                   "%02x", c);
-          /* Replace NUL with ' ' after snprintf */
-          print_buf.hex_txt[count][2] = ' ';
-        }
-      }
-      asynPrint(pasynUser, tracelevel,
-                "%s WR [%02x]%s\n",
-                modNamEMC, pos, (char*)&print_buf);
-      len -= 8;
-      data += 8;
-      pos += 8;
-    }
-  }
+  EthercatMChexdump(pasynUser, tracelevel, "WR",
+                    p_write_buf, write_buf_len);
 
   status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
                                               (const char*)p_write_buf, write_buf_len,
