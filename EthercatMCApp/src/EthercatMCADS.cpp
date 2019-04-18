@@ -90,10 +90,10 @@ restore_Eos:
 }
 
 
-asynStatus EthercatMCController::getPlcMemory(unsigned indexGroup,
-                                              unsigned indexOffset,
-                                              void *data,
-                                              size_t lenInPlc)
+asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
+                                                    unsigned indexOffset,
+                                                    void *data,
+                                                    size_t lenInPlc)
 {
   asynUser *pasynUser = pasynUserController_;
   ads_read_req_type ads_read_req;

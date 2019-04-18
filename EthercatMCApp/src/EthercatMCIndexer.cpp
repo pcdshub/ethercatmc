@@ -111,14 +111,12 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
     uint8_t raw[4];
     unsigned ret;
     if (lenInPlc == 2) {
-      status = getPlcMemory(indexGroup, indexOffset,
-                            raw, lenInPlc);
+      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
       ret = (unsigned)raw[0] + (raw[1] << 8);
       *value = ret;
       return status;
     } else if (lenInPlc == 4) {
-      status = getPlcMemory(indexGroup, indexOffset,
-                            raw, lenInPlc);
+      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
       ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
       *value = ret;
       return status;
@@ -234,12 +232,11 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
     memset(value, 0, lenInPlc);
     if (lenInPlc == 4) {
       float res;
-      status = getPlcMemory(indexGroup, indexOffset,
-                            &res, sizeof(res));
+      status = getPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
       *value = (double)res;
       return status;
     } else if (lenInPlc == 8) {
-      return getPlcMemory(indexGroup, indexOffset, value, lenInPlc);
+      return getPlcMemoryViaADS(indexGroup, indexOffset, value, lenInPlc);
     }
     return asynError;
   }

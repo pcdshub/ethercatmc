@@ -141,9 +141,9 @@ public:
   protected:
   void handleStatusChange(asynStatus status);
   /* memory bytes via ADS */
-  asynStatus getPlcMemory(unsigned indexGroup,
-                          unsigned indexOffset,
-                          void *data, size_t lenInPlc);
+  asynStatus getPlcMemoryViaADS(unsigned indexGroup,
+                                unsigned indexOffset,
+                                void *data, size_t lenInPlc);
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned devNum, unsigned infoType);
   void parameterFloatReadBack(unsigned axisNo,
