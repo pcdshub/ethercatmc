@@ -166,6 +166,10 @@ asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
   int traceMask = 0;
   asynStatus status;
 
+  if (ctrlLocal.useADSbinary) {
+    memset(value, 0, len);
+    return getPlcMemoryViaADS(indexGroup, indexOffset, value, len);
+  }
   snprintf(outString_, sizeof(outString_),
            "ADSPORT=%u/.ADR.16#%X,16#%X,%d,30?",
            ctrlLocal.adsport,
@@ -293,6 +297,17 @@ asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
                                                     size_t lenInPlc)
 {
   asynStatus status;
+
+  if (ctrlLocal.useADSbinary) {
+    if (lenInPlc == 4) {
+      float res = (float)value;
+      return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    } else if (lenInPlc == 8) {
+      double res = value;
+      return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    }
+    return asynError;
+  }
 
   if (lenInPlc == 4) {
     snprintf(outString_, sizeof(outString_),
