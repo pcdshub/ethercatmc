@@ -535,7 +535,7 @@ static int cmdEAThandleADS_ADR(const char *arg)
           if (indexGroup == 0x4020) {
             res = indexerHandleADS_ADR_getString(adsport, indexOffset, len_in_PLC, &sValue);
             LOGINFO6("%s/%s:%d "
-                     "res=%d sValue=%s\n",
+                     "res=%d sValue=\"%s\"\n",
                      __FILE__, __FUNCTION__, __LINE__,
                      res, sValue);
             if (res) return res;

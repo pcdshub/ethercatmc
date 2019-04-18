@@ -45,8 +45,6 @@ EthercatMCCreateController("$(MOTOR_PORT)", "$(ASYN_PORT)", "$(NUMAXES)", "200",
 #define ASYN_TRACE_WARNING   0x0020
 #define ASYN_TRACE_INFO      0x0040
 asynSetTraceMask("$(ASYN_PORT)", -1, 0x41)
-asynSetTraceMask("$(ASYN_PORT)", -1, 0xFF)
-
 
 
 #/* traceIO mask definitions*/

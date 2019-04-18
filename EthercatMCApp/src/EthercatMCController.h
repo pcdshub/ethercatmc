@@ -144,6 +144,9 @@ public:
   asynStatus getPlcMemoryViaADS(unsigned indexGroup,
                                 unsigned indexOffset,
                                 void *data, size_t lenInPlc);
+  asynStatus setPlcMemoryViaADS(unsigned indexGroup,
+                                unsigned indexOffset,
+                                const void *data, size_t lenInPlc);
   /* Indexer */
   asynStatus readDeviceIndexer(unsigned devNum, unsigned infoType);
   void parameterFloatReadBack(unsigned axisNo,
