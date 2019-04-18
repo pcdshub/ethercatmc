@@ -161,68 +161,6 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   return asynDisabled;
 }
 
-asynStatus EthercatMCController::getPlcMemorySint(unsigned indexOffset,
-                                                  int *value,
-                                                  size_t lenInPlc)
-{
-  int traceMask = 0;
-  int nvals;
-  int iRes;
-  asynStatus status;
-
-  if (ctrlLocal.useADSbinary) {
-    int8_t raw[4];
-    int ret;
-    if (lenInPlc == 2) {
-      status = getPlcMemory(indexGroup, indexOffset,
-                            raw, lenInPlc);
-      ret = (int)raw[0] + (raw[1] * 256);
-      *value = ret;
-      return status;
-    } else if (lenInPlc == 4) {
-      status = getPlcMemory(indexGroup, indexOffset,
-                            raw, lenInPlc);
-      ret = (int)raw[0] + (raw[1] * 0x100 ) + (raw[2] * 0x10000) + (raw[3] * 0x1000000);
-      *value = ret;
-      return status;
-    } else {
-      return asynError;
-    }
-  }
-
-  if (lenInPlc == 2) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,2,2?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
-  } else if (lenInPlc == 4) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,3?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
-  } else if (lenInPlc == 8) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,8,20?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
-  } else {
-    return asynError;
-  }
-  status = writeReadControllerPrint(traceMask);
-  if (status) return status;
-
-  nvals = sscanf(inString_, "%d", &iRes);
-  if (nvals == 1) {
-    *value = iRes;
-    return asynSuccess;
-  }
-
-  asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-            "%snvals=%d command=\"%s\" response=\"%s\"\n",
-            modNamEMC, nvals, outString_, inString_);
-  return asynDisabled;
-}
-
 asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
                                                     char *value,
                                                     size_t len)
