@@ -80,6 +80,7 @@ extern "C" {
                                            unsigned indexOffset,
                                            unsigned *value,
                                            size_t lenInPlc);
+  asynStatus disconnect_C(asynUser *pasynUser);
   asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
                                           const char *outdata, size_t outlen,
                                           char *indata, size_t inlen);

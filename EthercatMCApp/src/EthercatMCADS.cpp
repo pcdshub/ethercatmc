@@ -101,27 +101,46 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                        indata, inlen,
                                        DEFAULT_CONTROLLER_TIMEOUT,
                                        pnwrite, pnread, peomReason);
-  asynPrint(pasynUser, ASYN_TRACE_INFO,
-            "%sXXXXXXXXXXXpasynOctetSyncIO->writeRead outlen=%u inlen=%u nread=%lu, status=%s (%d)\n",
-            modNamEMC,  (unsigned)outlen,
-            (unsigned)inlen,
-            (unsigned long)*pnread,
-            pasynManager->strStatus(status), status);
+  if ((status == asynTimeout) ||
+      (!status && !*pnread && (*peomReason & ASYN_EOM_END))) {
+    int eomReason = *peomReason;
+    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+              "%s calling disconnect_C nread=%lu eomReason=%x (%s%s%s) status=%d\n",
+              modNamEMC, (unsigned long)*pnread,
+              eomReason,
+              eomReason & ASYN_EOM_CNT ? "CNT" : "",
+              eomReason & ASYN_EOM_EOS ? "EOS" : "",
+              eomReason & ASYN_EOM_END ? "END" : "",
+              status);
+    disconnect_C(pasynUser);
+    status = asynError; /* TimeOut -> Error */
+  } else {
+    asynPrint(pasynUser, ASYN_TRACE_INFO,
+              "%spasynOctetSyncIO->writeRead outlen=%u inlen=%u nread=%lu, status=%s (%d)\n",
+              modNamEMC,  (unsigned)outlen,
+              (unsigned)inlen,
+              (unsigned long)*pnread,
+              pasynManager->strStatus(status), status);
+  }
 
 restore_Eos:
   {
     asynStatus cmdStatus;
     cmdStatus = pasynOctetSyncIO->setInputEos(pasynUser,
                                               old_InputEos, old_InputEosLen);
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%scmdStatus=%s (%d)\n", modNamEMC,
-              pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+    if (cmdStatus) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%scmdStatus=%s (%d)\n", modNamEMC,
+                pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+    }
     cmdStatus = pasynOctetSyncIO->setOutputEos(pasynUser,
                                                old_OutputEos,
                                                old_OutputEosLen);
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%scmdStatus=%s (%d)\n", modNamEMC,
-              pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+    if (cmdStatus) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%scmdStatus=%s (%d)\n", modNamEMC,
+                pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+    }
   }
   return status;
 }
@@ -181,6 +200,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                                               (char*)p_read_buf, read_buf_len,
                                               &nwrite, &nread, &eomReason);
 
+  if (!status)
   {
     ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
     ams_hdr_type *ams_hdr_p = (ams_hdr_type*)ADS_Read_rep_p;
@@ -189,6 +209,14 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
       (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
       (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
       (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
+    uint32_t ads_result = ADS_Read_rep_p->response.result_0 +
+      (ADS_Read_rep_p->response.result_1 << 8) +
+      (ADS_Read_rep_p->response.result_2 << 16) +
+      (ADS_Read_rep_p->response.result_3 << 24);
+    uint32_t ads_length = ADS_Read_rep_p->response.length_0 +
+      (ADS_Read_rep_p->response.length_1 << 8) +
+      (ADS_Read_rep_p->response.length_2 << 16) +
+      (ADS_Read_rep_p->response.length_3 << 24);
 
     asynPrint(pasynUser, tracelevel,
               "nread=%lu AMS tcp_hdr.res0=%x tcp_hdr.res1=%x ams_length=%u\n",
@@ -217,7 +245,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
               ams_hdr_p->source.port_high * 256
               );
     asynPrint(pasynUser, tracelevel,
-              "ams_hdr cmd=%u flags=%u len=%u err=%u id=%u\n",
+              "ams_hdr cmd=%u flags=%u len=%u err=%u id=%u ads_result=0x%x ads_length=%u\n",
               cmdId,
               ams_hdr_p->stateFlags_low +
               (ams_hdr_p->stateFlags_high << 8),
@@ -232,36 +260,27 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
               ams_hdr_p->invokeID_0 +
               (ams_hdr_p->invokeID_1 << 8) +
               (ams_hdr_p->invokeID_2 << 16) +
-              (ams_hdr_p->invokeID_3 << 24)
+              (ams_hdr_p->invokeID_3 << 24),
+              ads_result, ads_length
               );
-    asynPrint(pasynUser, tracelevel,
-              "ads_read_rep result=0x%x len=%u\n",
-              ADS_Read_rep_p->response.result_0 +
-              (ADS_Read_rep_p->response.result_1 << 8) +
-              (ADS_Read_rep_p->response.result_2 << 16) +
-              (ADS_Read_rep_p->response.result_3 << 24),
-              ADS_Read_rep_p->response.length_0 +
-              (ADS_Read_rep_p->response.length_1 << 8) +
-              (ADS_Read_rep_p->response.length_2 << 16) +
-              (ADS_Read_rep_p->response.length_3 << 24)
-              );
+    EthercatMChexdump(pasynUser, tracelevel, "IN",
+                      p_read_buf, nread);
+
+    asynPrint(pasynUser, ASYN_TRACE_INFO,
+              "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
+              modNamEMC,  (unsigned)nread,
+              (unsigned) read_buf_len,
+              eomReason,
+              (unsigned)lenInPlc);
+
+    if (!status && !ads_result) {
+      uint8_t *src_ptr = (uint8_t*) p_read_buf;
+      src_ptr += sizeof(ADS_Read_rep_type);
+      memcpy(data, src_ptr, ads_length);
+      EthercatMChexdump(pasynUser, tracelevel, "RD",
+                        src_ptr, ads_length);
+    }
   }
-  EthercatMChexdump(pasynUser, tracelevel, "RD",
-                    p_read_buf, nread);
-
-  asynPrint(pasynUser, ASYN_TRACE_INFO,
-            "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
-            modNamEMC,  (unsigned)nread,
-            (unsigned) read_buf_len,
-            eomReason,
-            (unsigned)lenInPlc);
-
-  if (!status) {
-    uint8_t *src_ptr = (uint8_t*) p_read_buf;
-    src_ptr += sizeof(ADS_Read_rep_type);
-    memcpy(data, src_ptr, lenInPlc);
-  }
-
   free(p_read_buf);
   return status;
 }

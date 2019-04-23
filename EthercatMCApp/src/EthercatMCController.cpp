@@ -352,6 +352,31 @@ asynStatus EthercatMCController::configController(int needOkOrDie, const char *v
   return status;
 }
 
+extern "C" asynStatus disconnect_C(asynUser *pasynUser)
+{
+  asynStatus status = asynError;
+  asynInterface *pasynInterface = NULL;
+  asynCommon     *pasynCommon = NULL;
+  pasynInterface = pasynManager->findInterface(pasynUser,
+                                               asynCommonType,
+                                               0 /* FALSE */);
+  if (pasynInterface) {
+    pasynCommon = (asynCommon *)pasynInterface->pinterface;
+    status = pasynCommon->disconnect(pasynInterface->drvPvt,
+                                       pasynUser);
+    if (status != asynSuccess) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%s status=%s (%d)\n",
+                modulName, pasynManager->strStatus(status), (int)status);
+    }
+  } else {
+    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+              "%s pasynInterface=%p pasynCommon=%p\n",
+              modulName, pasynInterface, pasynCommon);
+  }
+  return status;
+}
+
 extern "C"
 asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
                                         const char *outdata, size_t outlen,
@@ -375,27 +400,7 @@ asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
               eomReason & ASYN_EOM_EOS ? "EOS" : "",
               eomReason & ASYN_EOM_END ? "END" : "",
               pasynManager->strStatus(status), status);
-#if 1
-    asynInterface *pasynInterface = NULL;
-    asynCommon     *pasynCommon = NULL;
-    pasynInterface = pasynManager->findInterface(pasynUser,
-                                                 asynCommonType,
-                                                 0 /* FALSE */);
-    if (pasynInterface) {
-      pasynCommon = (asynCommon *)pasynInterface->pinterface;
-      status = pasynCommon->disconnect(pasynInterface->drvPvt,
-                                       pasynUser);
-      if (status != asynSuccess) {
-        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                  "%s out=%s status=%s (%d)\n",
-                  modulName, outdata, pasynManager->strStatus(status), (int)status);
-      }
-    } else {
-      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%s pasynInterface=%p pasynCommon=%p\n",
-                modulName, pasynInterface, pasynCommon);
-    }
-#endif
+    disconnect_C(pasynUser);
     return asynError; /* TimeOut -> Error */
   }
   return status;
