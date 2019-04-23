@@ -436,43 +436,74 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
             pasynManager->strStatus(status), (int)status);
   if (status) return status;
   while (counter < 5) {
-    double fValue;
     unsigned cmdSubParamIndex = 0;
-    int nvals;
-    if (lenInPlcPara == 4) {
-      if (paramIndex < 30) {
-        /* parameters below 30 are unsigned integers in the PLC
-         Read them as integers from PLC, and parse into a double */
+    double fValue;
+    if (ctrlLocal.useADSbinary) {
+      if (lenInPlcPara == 4) {
+        if (paramIndex < 30) {
+          /* parameters below 30 are unsigned integers in the PLC
+             Read them as integers from PLC, and parse into a double */
+          struct {
+            uint16_t  paramCtrl;
+            uint32_t  paramValue;
+          } paramIf;
+          status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+                                      &paramIf,
+                                      sizeof(paramIf));
+          cmdSubParamIndex = paramIf.paramCtrl;
+          fValue           = (double)paramIf.paramValue;
+        } else {
+          struct {
+            uint16_t  paramCtrl;
+            float     paramValue;
+          } paramIf;
+          status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+                                      &paramIf,
+                                      sizeof(paramIf));
+          cmdSubParamIndex = paramIf.paramCtrl;
+          fValue           = (double)paramIf.paramValue;
+        }
+      } else {
+        return asynError;
+      }
+      if (status) return status;
+    } else {
+      int nvals;
+      if (lenInPlcPara == 4) {
+        if (paramIndex < 30) {
+          /* parameters below 30 are unsigned integers in the PLC
+             Read them as integers from PLC, and parse into a double */
+          snprintf(outString_, sizeof(outString_),
+                   "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,19?",
+                   ctrlLocal.adsport, indexGroup, paramIfOffset,
+                   ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+        } else {
+          snprintf(outString_, sizeof(outString_),
+                   "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
+                   ctrlLocal.adsport, indexGroup, paramIfOffset,
+                   ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+        }
+      } else if (lenInPlcPara == 8) {
         snprintf(outString_, sizeof(outString_),
-                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,19?",
+                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
                  ctrlLocal.adsport, indexGroup, paramIfOffset,
                  ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
       } else {
-        snprintf(outString_, sizeof(outString_),
-                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-                 ctrlLocal.adsport, indexGroup, paramIfOffset,
-                 ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
+        asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%snlenInPlcPara=%u\n",
+                  modNamEMC, lenInPlcPara);
+        return asynError;
       }
-    } else if (lenInPlcPara == 8) {
-      snprintf(outString_, sizeof(outString_),
-               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
-               ctrlLocal.adsport, indexGroup, paramIfOffset,
-               ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
-    } else {
-      asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%snlenInPlcPara=%u\n",
-                modNamEMC, lenInPlcPara);
-      return asynError;
-    }
-    status = writeReadOnErrorDisconnect();
-    if (status) return status;
-    nvals = sscanf(inString_, "%u;%lf", &cmdSubParamIndex, &fValue);
-    if (nvals != 2) {
-      traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-      asynPrint(pasynUserController_, traceMask,
-                "%sout=%s in=%s\n",
-                modNamEMC, outString_, inString_);
-      return asynError;
+      status = writeReadOnErrorDisconnect();
+      if (status) return status;
+      nvals = sscanf(inString_, "%u;%lf", &cmdSubParamIndex, &fValue);
+      if (nvals != 2) {
+        traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+        asynPrint(pasynUserController_, traceMask,
+                  "%sout=%s in=%s\n",
+                  modNamEMC, outString_, inString_);
+        return asynError;
+      }
     }
 
     if (cmdSubParamIndex == cmdAcked) {

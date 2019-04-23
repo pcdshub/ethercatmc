@@ -268,14 +268,23 @@ int get_listen_socket(const char *listen_port_asc)
 static void handle_data_on_ADS_socket(int i, int fd, ssize_t read_res, size_t len_used)
 {
   size_t ret;
-  LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
-           __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
-  ret = handle_ams_request(fd, (char *)&client_cons[i].buffer[0],
-                           len_used, CLIENT_CONS_BUFLEN);
-  if (ret != len_used) {
+  if (client_cons[i].buffer[0] || client_cons[i].buffer[1]) {
+    LOGINFO7("%s/%s:%d fd=%d NOT AMS! buffer[0]=%u buffer[1]=%u buffer=\"%s\"\n",
+             __FILE__, __FUNCTION__, __LINE__, fd,
+             client_cons[i].buffer[0], client_cons[i].buffer[1],
+             client_cons[i].buffer);
     close_and_remove_client_con_i(i);
+  } else {
+    LOGINFO7("%s/%s:%d FD_ISSET fd=%d read_res=%ld\n",
+             __FILE__, __FUNCTION__, __LINE__, fd, (long)read_res);
+
+    ret = handle_ams_request(fd, (char *)&client_cons[i].buffer[0],
+                             len_used, CLIENT_CONS_BUFLEN);
+    if (ret != len_used) {
+      close_and_remove_client_con_i(i);
+    }
+    client_cons[i].len_used = 0;
   }
-  client_cons[i].len_used = 0;
 }
 
 
@@ -413,8 +422,7 @@ void socket_loop_with_select(void)
                        client_cons[i].buffer[0],
                        client_cons[i].buffer[1]);
 
-              if (client_cons[i].is_ADS &&
-                  (!client_cons[i].buffer[0] && !client_cons[i].buffer[1])) {
+              if (client_cons[i].is_ADS) {
                 handle_data_on_ADS_socket(i, fd, read_res, len_used);
               } else {
                 handle_data_on_ASC_socket(i, fd, read_res, len_used);

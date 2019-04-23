@@ -228,11 +228,26 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
     pC_->getDoubleParam(axisNo_, pC_->motorPosition_, &actPosition);
     position = position - actPosition;
   }
-  snprintf(pC_->outString_, sizeof(pC_->outString_),
-           "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f;ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
-           pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 4, position,
-           pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 8, cmdReason);
-  return pC_->writeReadACK(traceMask);
+  if (pC_->ctrlLocal.useADSbinary) {
+    if (drvlocal.iTypCode == 0x5008) {
+      struct {
+        float    position;
+        uint16_t cmdReason;
+      } posCmd;
+      posCmd.position = (float)position;
+      posCmd.cmdReason = (uint16_t)cmdReason;
+      return pC_->setPlcMemoryViaADS(indexGroup, drvlocal.iOffset + 4,
+                                &posCmd, sizeof(posCmd));
+    } else {
+      return asynError;
+    }
+  } else {
+    snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f;ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
+             pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 4, position,
+             pC_->ctrlLocal.adsport, indexGroup, drvlocal.iOffset + 8, cmdReason);
+    return pC_->writeReadACK(traceMask);
+  }
 }
 
 
@@ -362,44 +377,72 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         setIntegerParam(pC_->motorStatusCommsError_, 0);
       }
     }
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%spoll(%d) useADSbinary=%d iTypCode=0x%x\n",
+              modNamEMC, axisNo_,
+              pC_->ctrlLocal.useADSbinary,
+              drvlocal.iTypCode);
+    if (pC_->ctrlLocal.useADSbinary) {
+      if (drvlocal.iTypCode == 0x5008) {
+        struct {
+          float     actPosition;
+          float     targetPosition;
+          uint16_t  statusReasonAux;
+          uint16_t  paramCtrl;
+          float     paramValue;
+        } posStatusParam;
+        status = pC_->getPlcMemoryViaADS(indexGroup, drvlocal.iOffset,
+                                         &posStatusParam,
+                                         sizeof(posStatusParam));
+        if (status) {
+          return status;
+        }
+        actPosition = posStatusParam.actPosition;
+        targetPosition = posStatusParam.targetPosition;
+        statusReasonAux = posStatusParam.statusReasonAux;
+        paramCtrl = posStatusParam.paramCtrl;
+        paramValue = posStatusParam.paramValue;
+      } else {
+        return asynError;
+      }
+    } else {
+      snprintf(pC_->outString_, sizeof(pC_->outString_),
+               "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
+               "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
+               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
+               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
+               "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
+               pC_->ctrlLocal.adsport,
+               indexGroup, drvlocal.iOffset,         /* Actual value on pos 0 */
+               pC_->ctrlLocal.adsport,
+               indexGroup, drvlocal.iOffset + 4,     /* Target value on pos 4 */
+               pC_->ctrlLocal.adsport,
+               indexGroup, drvlocal.iOffset + 8,     /* CmdStatusAux value on pos 8 */
+               pC_->ctrlLocal.adsport,
+               indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
+               pC_->ctrlLocal.adsport,
+               indexGroup, drvlocal.iOffset + 0xC);  /* ParamValue on 0xC*/
 
-    snprintf(pC_->outString_, sizeof(pC_->outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?;"
-             "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
-             "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;"
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-             pC_->ctrlLocal.adsport,
-             indexGroup, drvlocal.iOffset,         /* Actual value on pos 0 */
-             pC_->ctrlLocal.adsport,
-             indexGroup, drvlocal.iOffset + 4,     /* Target value on pos 4 */
-             pC_->ctrlLocal.adsport,
-             indexGroup, drvlocal.iOffset + 8,     /* CmdStatusAux value on pos 8 */
-             pC_->ctrlLocal.adsport,
-             indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
-             pC_->ctrlLocal.adsport,
-             indexGroup, drvlocal.iOffset + 0xC);  /* ParamValue on 0xC*/
-
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
-              "%sout=%s\n",
-              modNamEMC, pC_->outString_);
-    status = pC_->writeReadOnErrorDisconnect();
-    if (status) {
-      return status;
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+                "%sout=%s\n",
+                modNamEMC, pC_->outString_);
+      status = pC_->writeReadOnErrorDisconnect();
+      if (status) {
+        return status;
+      }
+      nvals = sscanf(pC_->inString_, "%lf;%lf;%u;%u;%lf",
+                     &actPosition, &targetPosition, &statusReasonAux,
+                     &paramCtrl, &paramValue);
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
+                "%sin=%s nvals=%d\n",
+                modNamEMC, pC_->inString_, nvals);
+      if (nvals != 5) {
+        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%snvals=%d command=\"%s\" response=\"%s\"\n",
+                  modNamEMC, nvals, pC_->outString_, pC_->inString_);
+        return asynError;
+      }
     }
-    nvals = sscanf(pC_->inString_, "%lf;%lf;%u;%u;%lf",
-                   &actPosition, &targetPosition, &statusReasonAux,
-                   &paramCtrl, &paramValue);
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_DEBUG,
-              "%sin=%s nvals=%d\n",
-              modNamEMC, pC_->inString_, nvals);
-    if (nvals != 5) {
-      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%snvals=%d command=\"%s\" response=\"%s\"\n",
-                modNamEMC, nvals, pC_->outString_, pC_->inString_);
-      return asynError;
-    }
-
     setDoubleParam(pC_->motorPosition_, actPosition);
     drvlocal.hasProblem = 0;
     idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
@@ -466,19 +509,17 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     /* Read back the parameters one by one */
     if (pollReadBackInBackGround &&
         !nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {
-      unsigned newParamCtrl;
       drvlocal.pollNowIdx++;
       if (drvlocal.pollNowIdx >= sizeof(pollNowParams)/sizeof(pollNowParams[0])) {
         drvlocal.pollNowIdx = 0;
       }
-      newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
-      snprintf(pC_->outString_, sizeof(pC_->outString_),
-               "ADSPORT=%u/.ADR.16#%X,16#%X,2,18=%d",
-               pC_->ctrlLocal.adsport,
-               indexGroup, drvlocal.iOffset + 0xA,   /* ParamCtl on 0xA*/
-               newParamCtrl
-               );
-      pC_->writeReadACK(ASYN_TRACE_FLOW);
+      if (drvlocal.iTypCode == 0x5008) {
+        uint16_t newParamCtrl;
+        size_t lenInPlc = sizeof(newParamCtrl);
+        newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
+        pC_->setPlcMemoryInteger(drvlocal.iOffset + 0xA,
+                                 newParamCtrl,  lenInPlc);
+      }
     }
     callParamCallbacks();
   }
