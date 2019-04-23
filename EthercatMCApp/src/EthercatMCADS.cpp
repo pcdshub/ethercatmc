@@ -97,10 +97,6 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
               pasynManager->strStatus(status), (int)status);
     goto restore_Eos;
   }
-#if 0
-  status = writeReadOnErrorDisconnect_C(pasynUser, outdata, outlen,
-                                        indata, inlen);
-#else
   status = pasynOctetSyncIO->writeRead(pasynUser, outdata, outlen,
                                        indata, inlen,
                                        DEFAULT_CONTROLLER_TIMEOUT,
@@ -111,8 +107,6 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
             (unsigned)inlen,
             (unsigned long)*pnread,
             pasynManager->strStatus(status), status);
-
-#endif
 
 restore_Eos:
   {
