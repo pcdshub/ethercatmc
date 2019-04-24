@@ -51,6 +51,46 @@ void EthercatMChexdump(asynUser *pasynUser, int tracelevel, const char *help_txt
 
 
 extern "C"
+void EthercatMCamsdump(asynUser *pasynUser, int tracelevel, const char *help_txt,
+                       const ams_hdr_type *ams_hdr_p)
+{
+  uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
+    (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
+    (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
+    (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
+    uint32_t ams_lenght = ams_hdr_p->length_0 +
+      (ams_hdr_p->length_1 << 8) +
+      (ams_hdr_p->length_2 << 16) +
+      (ams_hdr_p->length_3 << 24);
+    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +
+      (ams_hdr_p->errorCode_1 << 8) +
+      (ams_hdr_p->errorCode_2 << 16) +
+      (ams_hdr_p->errorCode_3 << 24);
+    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +
+      (ams_hdr_p->invokeID_1 << 8) +
+      (ams_hdr_p->invokeID_2 << 16) +
+      (ams_hdr_p->invokeID_3 << 24);
+  asynPrint(pasynUser, tracelevel,
+            "ams_tcp_hdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
+            ams_tcp_hdr_len,
+            ams_hdr_p->target.netID[0], ams_hdr_p->target.netID[1],
+            ams_hdr_p->target.netID[2], ams_hdr_p->target.netID[3],
+            ams_hdr_p->target.netID[4], ams_hdr_p->target.netID[5],
+            ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8),
+            ams_hdr_p->source.netID[0],  ams_hdr_p->source.netID[1],
+            ams_hdr_p->source.netID[2],  ams_hdr_p->source.netID[3],
+            ams_hdr_p->source.netID[4],  ams_hdr_p->source.netID[5],
+            ams_hdr_p->source.port_low + (ams_hdr_p->source.port_high << 8)
+            );
+  asynPrint(pasynUser, tracelevel,
+            "ams_hdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u\n",
+            ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high <<8),
+            ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),
+            ams_lenght, ams_errorCode, ams_invokeID);
+}
+
+
+extern "C"
 asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                               const char *outdata, size_t outlen,
                                               char *indata, size_t inlen,
@@ -180,6 +220,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
   memcpy(&ads_read_req.ams_hdr.source,
          &ctrlLocal.local, sizeof(ads_read_req.ams_hdr.source));
   ads_read_req.ams_hdr.cmdID_low = ADS_READ;
+  ads_read_req.ams_hdr.stateFlags_low = 0x4; /* Command */
   ads_read_req.ams_hdr.invokeID_0 = (uint8_t)invokeID;
   ads_read_req.ams_hdr.invokeID_1 = (uint8_t)(invokeID >> 8);
   ads_read_req.ams_hdr.invokeID_2 = (uint8_t)(invokeID >> 16);
@@ -196,6 +237,8 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
   ads_read_req.length_1 = (uint8_t)(lenInPlc >> 8);
   ads_read_req.length_2 = (uint8_t)(lenInPlc >> 16);
   ads_read_req.length_3 = (uint8_t)(lenInPlc >> 24);
+
+  EthercatMCamsdump(pasynUser, tracelevel, "RDMEM", &ads_read_req.ams_hdr);
 
   status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
                                               (const char*)&ads_read_req, sizeof(ads_read_req),
@@ -310,6 +353,7 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
   memcpy(&ads_write_req_p->ams_hdr.source,
          &ctrlLocal.local, sizeof(ads_write_req_p->ams_hdr.source));
   ads_write_req_p->ams_hdr.cmdID_low = ADS_WRITE;
+  ads_write_req_p->ams_hdr.stateFlags_low = 0x4; /* Command */
   ads_write_req_p->ams_hdr.invokeID_0 = (uint8_t)invokeID;
   ads_write_req_p->ams_hdr.invokeID_1 = (uint8_t)(invokeID >> 8);
   ads_write_req_p->ams_hdr.invokeID_2 = (uint8_t)(invokeID >> 16);
@@ -337,6 +381,7 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
             "%s WR indexGroup=0x%x indexOffset=%u lenInPlc=%u\n",
             modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc
             );
+  EthercatMCamsdump(pasynUser, tracelevel, "WRMEM", &ads_write_req_p->ams_hdr);
   EthercatMChexdump(pasynUser, tracelevel, "WR",
                     p_write_buf, write_buf_len);
 
