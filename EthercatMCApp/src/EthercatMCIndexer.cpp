@@ -854,6 +854,7 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
 asynStatus EthercatMCController::initialPollIndexer(void)
 {
   asynStatus status;
+  uint32_t iTmpVer = 0;
   double version = 0.0;
   struct {
     char desc[34];
@@ -872,32 +873,17 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   memset(&descVersAuthors, 0, sizeof(descVersAuthors));
   if (!ctrlLocal.adsport) {
     ctrlLocal.adsport = 851;
-    while ((ctrlLocal.adsport < MAX_ADSPORT) && !version) {
-      double tmp_version;
-      unsigned int iTmpVer = 0;
-      size_t lenInPlc = 4;
-
-      status = getPlcMemoryUint(ctrlLocal.indexerOffset, &iTmpVer, lenInPlc);
-      if (status) return status;
-
-      status = getPlcMemoryDouble(ctrlLocal.indexerOffset, &tmp_version, lenInPlc);
-      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                "%sadsport=%u iTmpVer=0x%08x indexerVersion=%f status=%s (%d)\n",
-                modNamEMC, ctrlLocal.adsport, iTmpVer, tmp_version,
-                pasynManager->strStatus(status), (int)status);
-      if (status) return status;
-      if ((tmp_version == 2015.02) ||
-          (tmp_version == 2015.020020) ||
-          ( iTmpVer == 0x44fbe0a4)) {
-        version = tmp_version;
-      } else {
-        ctrlLocal.adsport++;
-      }
-      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                "%sadsport=%u version=%f\n",
-                modNamEMC, ctrlLocal.adsport, version);
-    }
   }
+  status = getPlcMemoryUint(ctrlLocal.indexerOffset, &iTmpVer, sizeof(iTmpVer));
+  if (status) return status;
+
+  if (iTmpVer == 0x44fbe0a4) {
+    version = 2015.02;
+  }
+  asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+            "%sadsport=%u version=%f\n",
+            modNamEMC, ctrlLocal.adsport, version);
+
   if (!version) status = asynDisabled;
   if (status) goto endPollIndexer;
 

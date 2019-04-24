@@ -212,14 +212,17 @@ EthercatMCController::EthercatMCController(const char *portName,
                        &ams_netid_port.netID[3],
                        &ams_netid_port.netID[4],
                        &ams_netid_port.netID[5]);
-        printf("%s:%d %s nvals=%d amsNetIdRemote=%u.%u.%u.%u.%u.%u\n",
+        printf("%s:%d %s amsNetIdRemote=%u.%u.%u.%u.%u.%u:%u\n",
                __FILE__, __LINE__,
-               modulName, nvals,
+               modulName,
                ams_netid_port.netID[0], ams_netid_port.netID[1],
                ams_netid_port.netID[2], ams_netid_port.netID[3],
-               ams_netid_port.netID[4], ams_netid_port.netID[5]);
+               ams_netid_port.netID[4], ams_netid_port.netID[5],
+               ctrlLocal.adsport);
         if (nvals == 6) {
           hasRemoteAmsNetId = 1;
+          ams_netid_port.port_low  = (uint8_t)ctrlLocal.adsport;
+          ams_netid_port.port_high = (uint8_t)(ctrlLocal.adsport >> 8);
           memcpy(&ctrlLocal.remote, &ams_netid_port, sizeof(ctrlLocal.remote));
         }
       } else if (!strncmp(pThisOption, amsNetIdLocal_str,
@@ -235,14 +238,17 @@ EthercatMCController::EthercatMCController(const char *portName,
                        &ams_netid_port.netID[3],
                        &ams_netid_port.netID[4],
                        &ams_netid_port.netID[5]);
-        printf("%s:%d %s nvals=%d amsNetIdLocal=%u.%u.%u.%u.%u.%u\n",
+        printf("%s:%d %s amsNetIdLocal=%u.%u.%u.%u.%u.%u:%u\n",
                __FILE__, __LINE__,
-               modulName, nvals,
+               modulName,
                ams_netid_port.netID[0], ams_netid_port.netID[1],
                ams_netid_port.netID[2], ams_netid_port.netID[3],
-               ams_netid_port.netID[4], ams_netid_port.netID[5]);
+               ams_netid_port.netID[4], ams_netid_port.netID[5],
+               ctrlLocal.adsport);
         if (nvals == 6) {
           hasLocalAmsNetId = 1;
+          ams_netid_port.port_low  = (uint8_t)ctrlLocal.adsport;
+          ams_netid_port.port_high = (uint8_t)(ctrlLocal.adsport >> 8);
           memcpy(&ctrlLocal.local, &ams_netid_port, sizeof(ctrlLocal.local));
         }
       }
