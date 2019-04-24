@@ -203,7 +203,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
 
   asynStatus status;
   uint32_t ams_payload_len = sizeof(ads_read_req.ams_hdr) -
-                             sizeof(ads_read_req.ams_hdr.ams_tcp_hdr);
+                             sizeof(ads_read_req.ams_hdr.ams_tcp_hdr) + 12;
   size_t nwrite = 0;
   size_t nread = 0;
   int eomReason = 0;
@@ -252,6 +252,13 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                                               (const char*)&ads_read_req, sizeof(ads_read_req),
                                               (char*)p_read_buf, read_buf_len,
                                               &nwrite, &nread, &eomReason);
+
+  asynPrint(pasynUser, ASYN_TRACE_INFO,
+            "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u status=%d\n",
+            modNamEMC,  (unsigned)nread,
+            (unsigned) read_buf_len,
+            eomReason,
+            (unsigned)lenInPlc, (int)status);
 
   if (!status)
   {
@@ -306,13 +313,6 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
               ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),
               ams_lenght, ams_errorCode, ams_invokeID,
               ads_result, ads_length);
-
-    asynPrint(pasynUser, ASYN_TRACE_INFO,
-              "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
-              modNamEMC,  (unsigned)nread,
-              (unsigned) read_buf_len,
-              eomReason,
-              (unsigned)lenInPlc);
 
     if (!status && !ads_result) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
@@ -390,6 +390,8 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
     uint8_t *dst_ptr = (uint8_t*)p_write_buf;
     dst_ptr += sizeof(ADS_Write_req_type);
     memcpy(dst_ptr, data, lenInPlc);
+    EthercatMChexdump(pasynUser, tracelevel, "WR",
+                      data, lenInPlc);
   }
 
   asynPrint(pasynUser, tracelevel,
@@ -397,8 +399,6 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
             modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc
             );
   EthercatMCamsdump(pasynUser, tracelevel, "WRMO", &ads_write_req_p->ams_hdr);
-  EthercatMChexdump(pasynUser, tracelevel, "WR",
-                    p_write_buf, write_buf_len);
 
   status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
                                               (const char*)p_write_buf, write_buf_len,
