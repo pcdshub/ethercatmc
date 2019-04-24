@@ -103,6 +103,8 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                        pnwrite, pnread, peomReason);
   if ((status == asynTimeout) ||
       (!status && !*pnread && (*peomReason & ASYN_EOM_END))) {
+    EthercatMChexdump(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER, "OUT",
+                      outdata, outlen);
     int eomReason = *peomReason;
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%s calling disconnect_C nread=%lu eomReason=%x (%s%s%s) status=%d\n",
@@ -205,10 +207,23 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
     ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
     ams_hdr_type *ams_hdr_p = (ams_hdr_type*)ADS_Read_rep_p;
     uint16_t cmdId = ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high << 8);
-    uint32_t ams_length = ams_hdr_p->ams_tcp_hdr.length_0 +
+    uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
       (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
       (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
       (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
+    uint32_t ams_lenght = ams_hdr_p->length_0 +
+      (ams_hdr_p->length_1 << 8) +
+      (ams_hdr_p->length_2 << 16) +
+      (ams_hdr_p->length_3 << 24);
+    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +
+      (ams_hdr_p->errorCode_1 << 8) +
+      (ams_hdr_p->errorCode_2 << 16) +
+      (ams_hdr_p->errorCode_3 << 24);
+    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +
+      (ams_hdr_p->invokeID_1 << 8) +
+      (ams_hdr_p->invokeID_2 << 16) +
+      (ams_hdr_p->invokeID_3 << 24);
+
     uint32_t ads_result = ADS_Read_rep_p->response.result_0 +
       (ADS_Read_rep_p->response.result_1 << 8) +
       (ADS_Read_rep_p->response.result_2 << 16) +
@@ -218,53 +233,28 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
       (ADS_Read_rep_p->response.length_2 << 16) +
       (ADS_Read_rep_p->response.length_3 << 24);
 
-    asynPrint(pasynUser, tracelevel,
-              "nread=%lu AMS tcp_hdr.res0=%x tcp_hdr.res1=%x ams_length=%u\n",
-              (unsigned long)nread,
-              ams_hdr_p->ams_tcp_hdr.res0,
-              ams_hdr_p->ams_tcp_hdr.res1,
-              ams_length);
 
-    asynPrint(pasynUser, tracelevel,
-              "ams_hdr target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
-              ams_hdr_p->target.netID[0],
-              ams_hdr_p->target.netID[1],
-              ams_hdr_p->target.netID[2],
-              ams_hdr_p->target.netID[3],
-              ams_hdr_p->target.netID[4],
-              ams_hdr_p->target.netID[5],
-              ams_hdr_p->target.port_low +
-              ams_hdr_p->target.port_high * 256,
-              ams_hdr_p->source.netID[0],
-              ams_hdr_p->source.netID[1],
-              ams_hdr_p->source.netID[2],
-              ams_hdr_p->source.netID[3],
-              ams_hdr_p->source.netID[4],
-              ams_hdr_p->source.netID[5],
-              ams_hdr_p->source.port_low +
-              ams_hdr_p->source.port_high * 256
-              );
-    asynPrint(pasynUser, tracelevel,
-              "ams_hdr cmd=%u flags=%u len=%u err=%u id=%u ads_result=0x%x ads_length=%u\n",
-              cmdId,
-              ams_hdr_p->stateFlags_low +
-              (ams_hdr_p->stateFlags_high << 8),
-              ams_hdr_p->length_0 +
-              (ams_hdr_p->length_1 << 8) +
-              (ams_hdr_p->length_2 << 16) +
-              (ams_hdr_p->length_3 << 24),
-              ams_hdr_p->errorCode_0 +
-              (ams_hdr_p->errorCode_1 << 8) +
-              (ams_hdr_p->errorCode_2 << 16) +
-              (ams_hdr_p->errorCode_3 << 24),
-              ams_hdr_p->invokeID_0 +
-              (ams_hdr_p->invokeID_1 << 8) +
-              (ams_hdr_p->invokeID_2 << 16) +
-              (ams_hdr_p->invokeID_3 << 24),
-              ads_result, ads_length
-              );
     EthercatMChexdump(pasynUser, tracelevel, "IN",
                       p_read_buf, nread);
+
+    asynPrint(pasynUser, tracelevel,
+              "nread=%lu ams_tcp_hdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
+              (unsigned long)nread, ams_tcp_hdr_len,
+              ams_hdr_p->target.netID[0], ams_hdr_p->target.netID[1],
+              ams_hdr_p->target.netID[2], ams_hdr_p->target.netID[3],
+              ams_hdr_p->target.netID[4], ams_hdr_p->target.netID[5],
+              ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8),
+              ams_hdr_p->source.netID[0],  ams_hdr_p->source.netID[1],
+              ams_hdr_p->source.netID[2],  ams_hdr_p->source.netID[3],
+              ams_hdr_p->source.netID[4],  ams_hdr_p->source.netID[5],
+              ams_hdr_p->source.port_low + (ams_hdr_p->source.port_high << 8)
+              );
+    asynPrint(pasynUser, tracelevel,
+              "ams_hdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u ads_result=0x%x ads_length=%u\n",
+              cmdId,
+              ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),
+              ams_lenght, ams_errorCode, ams_invokeID,
+              ads_result, ads_length);
 
     asynPrint(pasynUser, ASYN_TRACE_INFO,
               "%sYYYYpasynOctetSyncIO->writeRead nread=%u, size_t(ams_rep)=%u eomReason=0x%x lenInPlc=%u\n",
@@ -358,62 +348,44 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
   {
     ams_hdr_type *ams_hdr_p = (ams_hdr_type*)&ADS_Write_rep;
     uint16_t cmdId = ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high << 8);
-    uint32_t ams_length = ams_hdr_p->ams_tcp_hdr.length_0 +
+    uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
       (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
       (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
       (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
+    uint32_t ams_lenght = ams_hdr_p->length_0 +
+      (ams_hdr_p->length_1 << 8) +
+      (ams_hdr_p->length_2 << 16) +
+      (ams_hdr_p->length_3 << 24);
+    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +
+      (ams_hdr_p->errorCode_1 << 8) +
+      (ams_hdr_p->errorCode_2 << 16) +
+      (ams_hdr_p->errorCode_3 << 24);
+    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +
+      (ams_hdr_p->invokeID_1 << 8) +
+      (ams_hdr_p->invokeID_2 << 16) +
+      (ams_hdr_p->invokeID_3 << 24);
+    uint32_t ads_result = ADS_Write_rep.response.result_0 +
+      (ADS_Write_rep.response.result_1 << 8) +
+      (ADS_Write_rep.response.result_2 << 16) +
+      (ADS_Write_rep.response.result_3 << 24);
 
     asynPrint(pasynUser, tracelevel,
-              "nwrite=%lu AMS tcp_hdr.res0=%x tcp_hdr.res1=%x ams_length=%u\n",
-              (unsigned long)nwrite,
-              ams_hdr_p->ams_tcp_hdr.res0,
-              ams_hdr_p->ams_tcp_hdr.res1,
-              ams_length);
-
-    asynPrint(pasynUser, tracelevel,
-              "ams_hdr target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
-              ams_hdr_p->target.netID[0],
-              ams_hdr_p->target.netID[1],
-              ams_hdr_p->target.netID[2],
-              ams_hdr_p->target.netID[3],
-              ams_hdr_p->target.netID[4],
-              ams_hdr_p->target.netID[5],
-              ams_hdr_p->target.port_low +
-              ams_hdr_p->target.port_high * 256,
-              ams_hdr_p->source.netID[0],
-              ams_hdr_p->source.netID[1],
-              ams_hdr_p->source.netID[2],
-              ams_hdr_p->source.netID[3],
-              ams_hdr_p->source.netID[4],
-              ams_hdr_p->source.netID[5],
-              ams_hdr_p->source.port_low +
-              ams_hdr_p->source.port_high * 256
+              "nwrite=%lu ams_tcp_hdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
+              (unsigned long)nwrite, ams_tcp_hdr_len,
+              ams_hdr_p->target.netID[0], ams_hdr_p->target.netID[1],
+              ams_hdr_p->target.netID[2], ams_hdr_p->target.netID[3],
+              ams_hdr_p->target.netID[4], ams_hdr_p->target.netID[5],
+              ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8),
+              ams_hdr_p->source.netID[0], ams_hdr_p->source.netID[1],
+              ams_hdr_p->source.netID[2], ams_hdr_p->source.netID[3],
+              ams_hdr_p->source.netID[4], ams_hdr_p->source.netID[5],
+              ams_hdr_p->source.port_low + (ams_hdr_p->source.port_high << 8)
               );
     asynPrint(pasynUser, tracelevel,
-              "ams_hdr cmd=%u flags=%u len=%u err=%u id=%u\n",
+              "ams_hdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u ads_result=0x%x\n",
               cmdId,
-              ams_hdr_p->stateFlags_low +
-              (ams_hdr_p->stateFlags_high << 8),
-              ams_hdr_p->length_0 +
-              (ams_hdr_p->length_1 << 8) +
-              (ams_hdr_p->length_2 << 16) +
-              (ams_hdr_p->length_3 << 24),
-              ams_hdr_p->errorCode_0 +
-              (ams_hdr_p->errorCode_1 << 8) +
-              (ams_hdr_p->errorCode_2 << 16) +
-              (ams_hdr_p->errorCode_3 << 24),
-              ams_hdr_p->invokeID_0 +
-              (ams_hdr_p->invokeID_1 << 8) +
-              (ams_hdr_p->invokeID_2 << 16) +
-              (ams_hdr_p->invokeID_3 << 24)
-              );
-    asynPrint(pasynUser, tracelevel,
-              "ads_write_rep result=0x%x\n",
-              ADS_Write_rep.response.result_0 +
-              (ADS_Write_rep.response.result_1 << 8) +
-              (ADS_Write_rep.response.result_2 << 16) +
-              (ADS_Write_rep.response.result_3 << 24)
-              );
+              ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),
+              ams_lenght, ams_errorCode, ams_invokeID, ads_result);
   }
 
   asynPrint(pasynUser, ASYN_TRACE_INFO,
