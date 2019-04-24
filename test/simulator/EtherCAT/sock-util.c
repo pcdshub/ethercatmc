@@ -414,18 +414,19 @@ void socket_loop_with_select(void)
                   close_and_remove_client_con_i(i);
                   LOGINFO(" EOF i=%d fd=%d\n", i, fd);
                 }
-              }
-              len_used = client_cons[i].len_used + read_res;
-              client_cons[i].len_used = len_used;
-              LOGINFO7("%s/%s:%d buf[0]=0x%x buf[1]=0x%x\n",
-                       __FILE__, __FUNCTION__, __LINE__,
-                       client_cons[i].buffer[0],
-                       client_cons[i].buffer[1]);
-
-              if (client_cons[i].is_ADS) {
-                handle_data_on_ADS_socket(i, fd, read_res, len_used);
               } else {
-                handle_data_on_ASC_socket(i, fd, read_res, len_used);
+                len_used = client_cons[i].len_used + read_res;
+                client_cons[i].len_used = len_used;
+                LOGINFO7("%s/%s:%d buf[0]=0x%x buf[1]=0x%x\n",
+                         __FILE__, __FUNCTION__, __LINE__,
+                         client_cons[i].buffer[0],
+                         client_cons[i].buffer[1]);
+
+                if (client_cons[i].is_ADS) {
+                  handle_data_on_ADS_socket(i, fd, read_res, len_used);
+                } else {
+                  handle_data_on_ASC_socket(i, fd, read_res, len_used);
+                }
               }
             }
           }
