@@ -50,44 +50,43 @@ void EthercatMChexdump(asynUser *pasynUser, int tracelevel, const char *help_txt
 }
 
 
-extern "C"
-void EthercatMCamsdump(asynUser *pasynUser, int tracelevel, const char *help_txt,
-                       const ams_hdr_type *ams_hdr_p)
-{
-  uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
-    (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
-    (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
-    (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
-    uint32_t ams_lenght = ams_hdr_p->length_0 +
-      (ams_hdr_p->length_1 << 8) +
-      (ams_hdr_p->length_2 << 16) +
-      (ams_hdr_p->length_3 << 24);
-    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +
-      (ams_hdr_p->errorCode_1 << 8) +
-      (ams_hdr_p->errorCode_2 << 16) +
-      (ams_hdr_p->errorCode_3 << 24);
-    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +
-      (ams_hdr_p->invokeID_1 << 8) +
-      (ams_hdr_p->invokeID_2 << 16) +
-      (ams_hdr_p->invokeID_3 << 24);
-  asynPrint(pasynUser, tracelevel,
-            "ams_tcp_hdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",
-            ams_tcp_hdr_len,
-            ams_hdr_p->target.netID[0], ams_hdr_p->target.netID[1],
-            ams_hdr_p->target.netID[2], ams_hdr_p->target.netID[3],
-            ams_hdr_p->target.netID[4], ams_hdr_p->target.netID[5],
-            ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8),
-            ams_hdr_p->source.netID[0],  ams_hdr_p->source.netID[1],
-            ams_hdr_p->source.netID[2],  ams_hdr_p->source.netID[3],
-            ams_hdr_p->source.netID[4],  ams_hdr_p->source.netID[5],
-            ams_hdr_p->source.port_low + (ams_hdr_p->source.port_high << 8)
-            );
-  asynPrint(pasynUser, tracelevel,
-            "ams_hdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u\n",
-            ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high <<8),
-            ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),
-            ams_lenght, ams_errorCode, ams_invokeID);
-}
+#define EthercatMCamsdump(pasynUser, tracelevel, help_txt, ams_headdr_p)\
+{\
+  const ams_hdr_type *ams_hdr_p = (const ams_hdr_type *)(ams_headdr_p);\
+  uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +\
+    (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +\
+    (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +\
+    (ams_hdr_p->ams_tcp_hdr.length_3 <<24);\
+    uint32_t ams_lenght = ams_hdr_p->length_0 +\
+      (ams_hdr_p->length_1 << 8) +\
+      (ams_hdr_p->length_2 << 16) +\
+      (ams_hdr_p->length_3 << 24);\
+    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +\
+      (ams_hdr_p->errorCode_1 << 8) +\
+      (ams_hdr_p->errorCode_2 << 16) +\
+      (ams_hdr_p->errorCode_3 << 24);\
+    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +\
+      (ams_hdr_p->invokeID_1 << 8) +\
+      (ams_hdr_p->invokeID_2 << 16) +\
+      (ams_hdr_p->invokeID_3 << 24);\
+  asynPrint(pasynUser, tracelevel,\
+            "ams_tcp_hdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d source=%d.%d.%d.%d.%d.%d:%d\n",\
+            ams_tcp_hdr_len,\
+            ams_hdr_p->target.netID[0], ams_hdr_p->target.netID[1],\
+            ams_hdr_p->target.netID[2], ams_hdr_p->target.netID[3],\
+            ams_hdr_p->target.netID[4], ams_hdr_p->target.netID[5],\
+            ams_hdr_p->target.port_low + (ams_hdr_p->target.port_high << 8),\
+            ams_hdr_p->source.netID[0],  ams_hdr_p->source.netID[1],\
+            ams_hdr_p->source.netID[2],  ams_hdr_p->source.netID[3],\
+            ams_hdr_p->source.netID[4],  ams_hdr_p->source.netID[5],\
+            ams_hdr_p->source.port_low + (ams_hdr_p->source.port_high << 8)\
+            );\
+  asynPrint(pasynUser, tracelevel,\
+            "ams_hdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u\n",\
+            ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high <<8),\
+            ams_hdr_p->stateFlags_low + (ams_hdr_p->stateFlags_high << 8),\
+            ams_lenght, ams_errorCode, ams_invokeID);\
+}\
 
 
 extern "C"
