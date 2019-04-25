@@ -905,17 +905,48 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     double fAbsMax = 0;
     status = readDeviceIndexer(devNum, infoType0);
     if (!status) {
-      unsigned iFlagsLow = -1;
-      unsigned iFlagsHigh = -1;
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  1*2, &iTypCode, 2);
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  2*2, &iSize, 2);
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  3*2, &iOffset, 2);
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  4*2, &iUnit, 2);
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  5*2, &iFlagsLow, 2);
-      getPlcMemoryUint(ctrlLocal.indexerOffset +  6*2, &iFlagsHigh, 2);
-      getPlcMemoryDouble(ctrlLocal.indexerOffset  +  7*2, &fAbsMin, 4);
-      getPlcMemoryDouble(ctrlLocal.indexerOffset  +  9*2, &fAbsMax, 4);
-      iAllFlags = iFlagsLow + (iFlagsHigh << 16);
+      if (ctrlLocal.useADSbinary) {
+        struct {
+          uint8_t   typCode_0;
+          uint8_t   typCode_1;
+          uint8_t   size_0;
+          uint8_t   size_1;
+          uint8_t   offset_0;
+          uint8_t   offset_1;
+          uint8_t   unit_0;
+          uint8_t   unit_1;
+          uint8_t   flags_0;
+          uint8_t   flags_1;
+          uint8_t   flags_2;
+          uint8_t   flags_3;
+          float     absMin;
+          float     absMax;
+        } infoType0_data;
+        status = getPlcMemoryViaADS(indexGroup, ctrlLocal.indexerOffset +  1*2,
+                                    &infoType0_data, sizeof(infoType0_data));
+        if (!status) {
+          iTypCode  = infoType0_data.typCode_0 + (infoType0_data.typCode_1 << 8);
+          iSize     = infoType0_data.size_0 + (infoType0_data.size_1 << 8);
+          iOffset   = infoType0_data.offset_0 + (infoType0_data.offset_1 << 8);
+          iUnit     = infoType0_data.unit_0 + (infoType0_data.unit_1 << 8);
+          iAllFlags = infoType0_data.flags_0 + (infoType0_data.flags_1 << 8) +
+                      (infoType0_data.flags_2 << 16) + (infoType0_data.flags_3 << 24);
+          fAbsMin   = (double)infoType0_data.absMin;
+          fAbsMax   = (double)infoType0_data.absMax;
+        }
+      } else {
+        unsigned iFlagsLow = -1;
+        unsigned iFlagsHigh = -1;
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  1*2, &iTypCode, 2);
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  2*2, &iSize, 2);
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  3*2, &iOffset, 2);
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  4*2, &iUnit, 2);
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  5*2, &iFlagsLow, 2);
+        getPlcMemoryUint(ctrlLocal.indexerOffset +  6*2, &iFlagsHigh, 2);
+        getPlcMemoryDouble(ctrlLocal.indexerOffset  +  7*2, &fAbsMin, 4);
+        getPlcMemoryDouble(ctrlLocal.indexerOffset  +  9*2, &fAbsMax, 4);
+        iAllFlags = iFlagsLow + (iFlagsHigh << 16);
+      }
     }
     status = readDeviceIndexer(devNum, infoType4);
     if (!status) {
