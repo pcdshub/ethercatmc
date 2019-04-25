@@ -111,7 +111,7 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
     uint8_t raw[4];
     unsigned ret;
     if (lenInPlc == 2) {
-      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
+      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, lenInPlc);
       ret = (unsigned)raw[0] + (raw[1] << 8);
       *value = ret;
       return status;
@@ -352,11 +352,13 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned devNum,
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
   }
-  asynPrint(pasynUserController_,
-            ASYN_TRACE_INFO,
-            "%sout=%s in=%s (%x) counter=%u\n",
-            modNamEMC, outString_, inString_, atoi(inString_),
-            counter);
+  if (!ctrlLocal.useADSbinary) {
+    asynPrint(pasynUserController_,
+              ASYN_TRACE_INFO,
+              "%sout=%s in=%s (%x) counter=%u\n",
+              modNamEMC, outString_, inString_, atoi(inString_),
+              counter);
+  }
   return asynDisabled;
 }
 
