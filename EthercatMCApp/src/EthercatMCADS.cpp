@@ -286,9 +286,8 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
     }
   }
   return status;
-
-
 }
+
 asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                                                     unsigned indexOffset,
                                                     void *data,
@@ -330,28 +329,12 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
                              invokeID, ADS_READ,
                              (char*)p_read_buf, read_buf_len,
                              &nread);
+  asynPrint(pasynUser, tracelevel,
+            "%s RDMEM indexGroup=0x%x indexOffset=%u lenInPlc=%u status=%d\n",
+            modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc, (int)status);
   if (!status)
   {
     ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
-    ams_hdr_type *ams_hdr_p = (ams_hdr_type*)ADS_Read_rep_p;
-    uint16_t cmdId = ams_hdr_p->cmdID_low + (ams_hdr_p->cmdID_high << 8);
-    uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
-      (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
-      (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
-      (ams_hdr_p->ams_tcp_hdr.length_3 <<24);
-    uint32_t ams_lenght = ams_hdr_p->length_0 +
-      (ams_hdr_p->length_1 << 8) +
-      (ams_hdr_p->length_2 << 16) +
-      (ams_hdr_p->length_3 << 24);
-    uint32_t ams_errorCode = ams_hdr_p->errorCode_0 +
-      (ams_hdr_p->errorCode_1 << 8) +
-      (ams_hdr_p->errorCode_2 << 16) +
-      (ams_hdr_p->errorCode_3 << 24);
-    uint32_t ams_invokeID = ams_hdr_p->invokeID_0 +
-      (ams_hdr_p->invokeID_1 << 8) +
-      (ams_hdr_p->invokeID_2 << 16) +
-      (ams_hdr_p->invokeID_3 << 24);
-
     uint32_t ads_result = ADS_Read_rep_p->response.result_0 +
       (ADS_Read_rep_p->response.result_1 << 8) +
       (ADS_Read_rep_p->response.result_2 << 16) +
@@ -361,10 +344,18 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
       (ADS_Read_rep_p->response.length_2 << 16) +
       (ADS_Read_rep_p->response.length_3 << 24);
 
-    asynPrint(pasynUser, tracelevel,
-              "%s RDMEM indexGroup=0x%x indexOffset=%u lenInPlc=%u status=%d ads_result=%u\n",
-              modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc, (int)status, ads_result);
-    if (!status && !ads_result) {
+    if (ads_result) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%sads_result=0x%x\n", modNamEMC, ads_result);
+      status = asynError;
+    }
+    if (ads_length != lenInPlc) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%slenInPlc=%lu ads_length=%u\n", modNamEMC,
+                  (unsigned long)lenInPlc,ads_length);
+        status = asynError;
+    }
+    if (!status) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
       src_ptr += sizeof(ADS_Read_rep_type);
       memcpy(data, src_ptr, ads_length);
