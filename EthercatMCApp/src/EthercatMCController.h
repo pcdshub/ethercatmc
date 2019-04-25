@@ -142,6 +142,12 @@ public:
   protected:
   void handleStatusChange(asynStatus status);
   /* memory bytes via ADS */
+  asynStatus writeWriteReadAds(asynUser *pasynUser,
+                               ams_hdr_type *ams_hdr_p, size_t outlen,
+                               uint32_t invokeID,
+                               uint32_t ads_cmdID,
+                               void *indata, size_t inlen,
+                               size_t *pnread);
   asynStatus getPlcMemoryViaADS(unsigned indexGroup,
                                 unsigned indexOffset,
                                 void *data, size_t lenInPlc);
