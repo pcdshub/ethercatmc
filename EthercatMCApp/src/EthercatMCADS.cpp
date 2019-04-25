@@ -191,7 +191,7 @@ restore_Eos:
 }
 
 asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
-                                                   ams_hdr_type *ams_hdr_p, size_t outlen,
+                                                   ams_hdr_type *ams_req_hdr_p, size_t outlen,
                                                    uint32_t invokeID,
                                                    uint32_t ads_cmdID,
                                                    void *indata, size_t inlen,
@@ -199,40 +199,93 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
 {
   size_t nwrite = 0;
   int eomReason = 0;
-  uint32_t ams_payload_len = outlen - sizeof(ams_hdr_p->ams_tcp_hdr);
-  uint32_t ads_len = outlen - sizeof(*ams_hdr_p);
+  asynStatus status;
+  uint32_t ams_payload_len = outlen - sizeof(ams_req_hdr_p->ams_tcp_hdr);
+  uint32_t ads_len = outlen - sizeof(*ams_req_hdr_p);
   *pnread = 0;
 
   asynPrint(pasynUser, ASYN_TRACE_INFO,
             "%swriteWriteReadAds outlen=%u ams_payload_len=0x%x ads_len=0x%x\n",
             modNamEMC,(unsigned)outlen,
             ams_payload_len, ads_len);
-  ams_hdr_p->ams_tcp_hdr.length_0 = (uint8_t)ams_payload_len;
-  ams_hdr_p->ams_tcp_hdr.length_1 = (uint8_t)(ams_payload_len >> 8);
-  ams_hdr_p->ams_tcp_hdr.length_2 = (uint8_t)(ams_payload_len >> 16);
-  ams_hdr_p->ams_tcp_hdr.length_3 = (uint8_t)(ams_payload_len >> 24);
-  memcpy(&ams_hdr_p->target,
-         &ctrlLocal.remote,  sizeof(ams_hdr_p->target));
-  memcpy(&ams_hdr_p->source,
-         &ctrlLocal.local, sizeof(ams_hdr_p->source));
-  ams_hdr_p->cmdID_low  = (uint8_t)ads_cmdID;
-  ams_hdr_p->cmdID_high = (uint8_t)(ads_cmdID >> 8);
-  ams_hdr_p->stateFlags_low = 0x4; /* Command */
-  ams_hdr_p->length_0 = (uint8_t)ads_len;
-  ams_hdr_p->length_1 = (uint8_t)(ads_len >> 8);
-  ams_hdr_p->length_2 = (uint8_t)(ads_len >> 16);
-  ams_hdr_p->length_3 = (uint8_t)(ads_len >> 24);
+  ams_req_hdr_p->ams_tcp_hdr.length_0 = (uint8_t)ams_payload_len;
+  ams_req_hdr_p->ams_tcp_hdr.length_1 = (uint8_t)(ams_payload_len >> 8);
+  ams_req_hdr_p->ams_tcp_hdr.length_2 = (uint8_t)(ams_payload_len >> 16);
+  ams_req_hdr_p->ams_tcp_hdr.length_3 = (uint8_t)(ams_payload_len >> 24);
+  memcpy(&ams_req_hdr_p->target,
+         &ctrlLocal.remote,  sizeof(ams_req_hdr_p->target));
+  memcpy(&ams_req_hdr_p->source,
+         &ctrlLocal.local, sizeof(ams_req_hdr_p->source));
+  ams_req_hdr_p->cmdID_low  = (uint8_t)ads_cmdID;
+  ams_req_hdr_p->cmdID_high = (uint8_t)(ads_cmdID >> 8);
+  ams_req_hdr_p->stateFlags_low = 0x4; /* Command */
+  ams_req_hdr_p->length_0 = (uint8_t)ads_len;
+  ams_req_hdr_p->length_1 = (uint8_t)(ads_len >> 8);
+  ams_req_hdr_p->length_2 = (uint8_t)(ads_len >> 16);
+  ams_req_hdr_p->length_3 = (uint8_t)(ads_len >> 24);
 
-  ams_hdr_p->invokeID_0 = (uint8_t)invokeID;
-  ams_hdr_p->invokeID_1 = (uint8_t)(invokeID >> 8);
-  ams_hdr_p->invokeID_2 = (uint8_t)(invokeID >> 16);
-  ams_hdr_p->invokeID_3 = (uint8_t)(invokeID >> 24);
+  ams_req_hdr_p->invokeID_0 = (uint8_t)invokeID;
+  ams_req_hdr_p->invokeID_1 = (uint8_t)(invokeID >> 8);
+  ams_req_hdr_p->invokeID_2 = (uint8_t)(invokeID >> 16);
+  ams_req_hdr_p->invokeID_3 = (uint8_t)(invokeID >> 24);
 
-  return writeReadBinaryOnErrorDisconnect_C(pasynUser,
-                                            (const char *)ams_hdr_p, outlen,
-                                            (char *)indata, inlen,
-                                            &nwrite, pnread,
-                                            &eomReason);
+  status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
+                                              (const char *)ams_req_hdr_p, outlen,
+                                              (char *)indata, inlen,
+                                              &nwrite, pnread,
+                                              &eomReason);
+  if (!status) {
+    size_t nread = *pnread;
+    ams_hdr_type *ams_rep_hdr_p = (ams_hdr_type*)indata;
+    uint32_t ams_tcp_hdr_len = ams_rep_hdr_p->ams_tcp_hdr.length_0 +
+      (ams_rep_hdr_p->ams_tcp_hdr.length_1 << 8) +
+      (ams_rep_hdr_p->ams_tcp_hdr.length_2 << 16) +
+      (ams_rep_hdr_p->ams_tcp_hdr.length_3 <<24);
+    if (ams_tcp_hdr_len  != (nread - sizeof(ams_rep_hdr_p->ams_tcp_hdr))) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%s nread=%u ams_tcp_hdr_len=%u\n", modNamEMC,
+                (unsigned)nread, ams_tcp_hdr_len);
+      status = asynError;
+    }
+    if (!status) {
+      uint32_t ads_rep_len = ams_rep_hdr_p->length_0 +
+        (ams_rep_hdr_p->length_1 << 8) +
+        (ams_rep_hdr_p->length_2 << 16) +
+        (ams_rep_hdr_p->length_3 << 24);
+      if (ads_rep_len != (nread - sizeof(ams_hdr_type))) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%s nread=%u ads_rep_len=%u\n", modNamEMC,
+                  (unsigned)nread, ads_rep_len);
+        status = asynError;
+      }
+    }
+    if (!status) {
+      uint32_t ams_errorCode = ams_rep_hdr_p->errorCode_0 +
+        (ams_rep_hdr_p->errorCode_1 << 8) +
+        (ams_rep_hdr_p->errorCode_2 << 16) +
+        (ams_rep_hdr_p->errorCode_3 << 24);
+      if (ams_errorCode) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%s nread=%u ams_errorCode=0x%x\n", modNamEMC,
+                  (unsigned)nread, ams_errorCode);
+        status = asynError;
+      }
+    }
+    if (!status) {
+      uint32_t rep_invokeID = ams_rep_hdr_p->invokeID_0 +
+        (ams_rep_hdr_p->invokeID_1 << 8) +
+        (ams_rep_hdr_p->invokeID_2 << 16) +
+        (ams_rep_hdr_p->invokeID_3 << 24);
+
+      if (invokeID != rep_invokeID) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%s invokeID=0x%x rep_invokeID=0x%x\n", modNamEMC,
+                  invokeID, rep_invokeID);
+        status = asynError;
+      }
+    }
+  }
+  return status;
 
 
 }
