@@ -144,7 +144,9 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
   if ((status == asynTimeout) ||
       (!status && !*pnread && (*peomReason & ASYN_EOM_END))) {
     int eomReason = *peomReason;
-    EthercatMChexdump(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER, "OUT",
+    int tracelevel = ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+    EthercatMCamsdump(pasynUser, tracelevel, "OUT", outdata);
+    EthercatMChexdump(pasynUser, tracelevel, "OUT",
                       outdata, outlen);
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%s calling disconnect_C outlen=%lu nwrite=%lu nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%d\n",
@@ -296,10 +298,6 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
   memset(p_read_buf, 0, read_buf_len);
   invokeID++;
 
-  memcpy(&ads_read_req.ams_hdr.target,
-         &ctrlLocal.remote,  sizeof(ads_read_req.ams_hdr.target));
-  memcpy(&ads_read_req.ams_hdr.source,
-         &ctrlLocal.local, sizeof(ads_read_req.ams_hdr.source));
   ads_read_req.indexGroup_0 = (uint8_t)indexGroup;
   ads_read_req.indexGroup_1 = (uint8_t)(indexGroup >> 8);
   ads_read_req.indexGroup_2 = (uint8_t)(indexGroup >> 16);
@@ -377,10 +375,6 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
   memset(&ADS_Write_rep, 0, sizeof(ADS_Write_rep));
   invokeID++;
 
-  memcpy(&ads_write_req_p->ams_hdr.target,
-         &ctrlLocal.remote,  sizeof(ads_write_req_p->ams_hdr.target));
-  memcpy(&ads_write_req_p->ams_hdr.source,
-         &ctrlLocal.local, sizeof(ads_write_req_p->ams_hdr.source));
   ads_write_req_p->indexGroup_0 = (uint8_t)indexGroup;
   ads_write_req_p->indexGroup_1 = (uint8_t)(indexGroup >> 8);
   ads_write_req_p->indexGroup_2 = (uint8_t)(indexGroup >> 16);
