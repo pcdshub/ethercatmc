@@ -872,6 +872,13 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   unsigned infoType7 = 7;
   int      axisNo = 0;
 
+
+  {
+    uint8_t resss[0x338];
+    getSymbolInfoViaADS("Main.M1.nMotionAxisID",
+                        &resss, sizeof(resss));
+  }
+
   memset(&descVersAuthors, 0, sizeof(descVersAuthors));
   if (!ctrlLocal.adsport) {
     ctrlLocal.adsport = 851;

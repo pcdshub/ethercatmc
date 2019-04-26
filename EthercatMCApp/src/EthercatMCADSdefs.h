@@ -100,8 +100,7 @@ typedef struct {
   uint8_t wr_len_1;
   uint8_t wr_len_2;
   uint8_t wr_len_3;
-  uint8_t data[256];
-} ADS_ReadWrite_req_type;
+} ads_read_write_req_type;
 
 typedef struct {
   ams_hdr_type ams_hdr;
@@ -134,15 +133,17 @@ typedef struct {
 
 typedef struct {
   ams_hdr_type ams_hdr;
-  uint8_t result_0;
-  uint8_t result_1;
-  uint8_t result_2;
-  uint8_t result_3;
-  uint8_t length_0;
-  uint8_t length_1;
-  uint8_t length_2;
-  uint8_t length_3;
-} ADS_ReadWrite_rep_type;
+  struct {
+    uint8_t result_0;
+    uint8_t result_1;
+    uint8_t result_2;
+    uint8_t result_3;
+    uint8_t length_0;
+    uint8_t length_1;
+    uint8_t length_2;
+    uint8_t length_3;
+  } response;
+} ads_read_write_rep_type;
 
 
 typedef struct {

@@ -144,23 +144,36 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
   if ((status == asynTimeout) ||
       (!status && !*pnread && (*peomReason & ASYN_EOM_END))) {
     int eomReason = *peomReason;
+    size_t nread = *pnread;
     int tracelevel = ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
     EthercatMCamsdump(pasynUser, tracelevel, "OUT", outdata);
     EthercatMChexdump(pasynUser, tracelevel, "OUT",
                       outdata, outlen);
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s calling disconnect_C outlen=%lu nwrite=%lu nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%d\n",
-              modNamEMC,
-              (unsigned long)outlen,
-              (unsigned long)*pnwrite, (unsigned long)*pnread,
-              DEFAULT_CONTROLLER_TIMEOUT,
-              eomReason,
-              eomReason & ASYN_EOM_CNT ? "CNT" : "",
-              eomReason & ASYN_EOM_EOS ? "EOS" : "",
-              eomReason & ASYN_EOM_END ? "END" : "",
-              status);
-    disconnect_C(pasynUser);
-    status = asynError; /* TimeOut -> Error */
+    if (nread) {
+      EthercatMCamsdump(pasynUser, tracelevel, "IN ", indata);
+      EthercatMChexdump(pasynUser, tracelevel, "IN ",
+                        indata, nread);
+      if (nread > sizeof(ams_hdr_type)) {
+        size_t ams_hdr_len = sizeof(ams_hdr_type);
+        const uint8_t *raw_data = (const uint8_t *)indata;
+        EthercatMChexdump(pasynUser, tracelevel, "INADS",
+                          &raw_data[ams_hdr_len], nread - ams_hdr_len);
+      }
+    } else {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%s calling disconnect_C outlen=%lu nwrite=%lu nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%d\n",
+                modNamEMC,
+                (unsigned long)outlen,
+                (unsigned long)*pnwrite, (unsigned long)*pnread,
+                DEFAULT_CONTROLLER_TIMEOUT,
+                eomReason,
+                eomReason & ASYN_EOM_CNT ? "CNT" : "",
+                eomReason & ASYN_EOM_EOS ? "EOS" : "",
+                eomReason & ASYN_EOM_END ? "END" : "",
+                status);
+      disconnect_C(pasynUser);
+      status = asynError; /* TimeOut -> Error */
+    }
   }
 
 restore_Eos:
@@ -418,5 +431,95 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
       status = asynError;
     }
   }
+  return status;
+}
+
+
+asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
+                                                     void *data,
+                                                     size_t lenInPlc)
+{
+  int tracelevel      = ASYN_TRACE_INFO;
+  asynUser *pasynUser = pasynUserController_;
+  unsigned indexGroup = 0xF009;
+  unsigned indexOffset = 0;
+  size_t   symbolNameLen = strlen(symbolName);
+
+  size_t write_buf_len = sizeof(ads_read_write_req_type) + symbolNameLen;
+  size_t read_buf_len  = sizeof(ads_read_write_rep_type) + lenInPlc;
+  void *p_read_buf = malloc(read_buf_len);
+  ads_read_write_req_type *ads_read_write_req_p =
+    (ads_read_write_req_type*)malloc(write_buf_len);
+
+  asynStatus status;
+  size_t nread = 0;
+
+  memset(ads_read_write_req_p, 0, write_buf_len);
+  memset(p_read_buf, 0, read_buf_len);
+  invokeID++;
+
+  ads_read_write_req_p->indexGroup_0 = (uint8_t)indexGroup;
+  ads_read_write_req_p->indexGroup_1 = (uint8_t)(indexGroup >> 8);
+  ads_read_write_req_p->indexGroup_2 = (uint8_t)(indexGroup >> 16);
+  ads_read_write_req_p->indexGroup_3 = (uint8_t)(indexGroup >> 24);
+  ads_read_write_req_p->indexOffset_0 = (uint8_t)indexOffset;
+  ads_read_write_req_p->indexOffset_1 = (uint8_t)(indexOffset >> 8);
+  ads_read_write_req_p->indexOffset_2 = (uint8_t)(indexOffset >> 16);
+  ads_read_write_req_p->indexOffset_3 = (uint8_t)(indexOffset >> 24);
+  ads_read_write_req_p->rd_len_0 = (uint8_t)lenInPlc;
+  ads_read_write_req_p->rd_len_1 = (uint8_t)(lenInPlc >> 8);
+  ads_read_write_req_p->rd_len_2 = (uint8_t)(lenInPlc >> 16);
+  ads_read_write_req_p->rd_len_3 = (uint8_t)(lenInPlc >> 24);
+  ads_read_write_req_p->wr_len_0 = (uint8_t)symbolNameLen;
+  ads_read_write_req_p->wr_len_1 = (uint8_t)(symbolNameLen >> 8);
+  ads_read_write_req_p->wr_len_2 = (uint8_t)(symbolNameLen >> 16);
+  ads_read_write_req_p->wr_len_3 = (uint8_t)(symbolNameLen >> 24);
+
+  /* copy the symbol name */
+  {
+    uint8_t *dst_ptr = (uint8_t*)ads_read_write_req_p;
+    dst_ptr += sizeof(ads_read_write_req_type);
+    memcpy(dst_ptr, symbolName, symbolNameLen);
+    EthercatMChexdump(pasynUser, tracelevel, "LOOKS",
+                      symbolName, symbolNameLen);
+  }
+  status = writeWriteReadAds(pasynUser,
+                             (ams_hdr_type *)ads_read_write_req_p, write_buf_len,
+                             invokeID, ADS_READ_WRITE,
+                             (char*)p_read_buf, read_buf_len,
+                             &nread);
+  if (!status)
+  {
+    ads_read_write_rep_type *ads_read_write_rep_p = (ads_read_write_rep_type*) p_read_buf;
+    uint32_t ads_result = ads_read_write_rep_p->response.result_0 +
+      (ads_read_write_rep_p->response.result_1 << 8) +
+      (ads_read_write_rep_p->response.result_2 << 16) +
+      (ads_read_write_rep_p->response.result_3 << 24);
+    uint32_t ads_length = ads_read_write_rep_p->response.length_0 +
+      (ads_read_write_rep_p->response.length_1 << 8) +
+      (ads_read_write_rep_p->response.length_2 << 16) +
+      (ads_read_write_rep_p->response.length_3 << 24);
+
+    if (ads_result) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%sads_result=0x%x\n", modNamEMC, ads_result);
+      status = asynError;
+    }
+    if (ads_length != lenInPlc) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%slenInPlc=%lu ads_length=%u\n", modNamEMC,
+                  (unsigned long)lenInPlc,ads_length);
+        status = asynError;
+    }
+    if (!status) {
+      uint8_t *src_ptr = (uint8_t*) p_read_buf;
+      src_ptr += sizeof(ads_read_write_rep_type);
+      memcpy(data, src_ptr, ads_length);
+      EthercatMChexdump(pasynUser, tracelevel, "LOOKS",
+                        src_ptr, ads_length);
+    }
+  }
+  free(ads_read_write_req_p);
+  free(p_read_buf);
   return status;
 }
