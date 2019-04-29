@@ -137,10 +137,24 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
               pasynManager->strStatus(status), (int)status);
     goto restore_Eos;
   }
-  status = pasynOctetSyncIO->writeRead(pasynUser, outdata, outlen,
-                                       indata, inlen,
-                                       DEFAULT_CONTROLLER_TIMEOUT,
-                                       pnwrite, pnread, peomReason);
+  status = pasynOctetSyncIO->write(pasynUser, outdata, outlen,
+                                   DEFAULT_CONTROLLER_TIMEOUT,
+                                   pnwrite);
+  if (*pnwrite != outlen) {
+    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+              "%s outlen=%lu nwrite=%lu timeout=%f status=%d\n",
+              modNamEMC,
+              (unsigned long)outlen,
+              (unsigned long)*pnwrite,
+              DEFAULT_CONTROLLER_TIMEOUT,
+              status);
+    status = asynError; /* TimeOut -> Error */
+    return status;
+  }
+
+  status = pasynOctetSyncIO->read(pasynUser, indata, inlen,
+                                  DEFAULT_CONTROLLER_TIMEOUT,
+                                  pnread, peomReason);
   if ((status == asynTimeout) ||
       (!status && !*pnread && (*peomReason & ASYN_EOM_END))) {
     int eomReason = *peomReason;
@@ -161,10 +175,9 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
       }
     } else {
       asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%s calling disconnect_C outlen=%lu nwrite=%lu nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%d\n",
+                "%s calling disconnect_C nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%d\n",
                 modNamEMC,
-                (unsigned long)outlen,
-                (unsigned long)*pnwrite, (unsigned long)*pnread,
+                (unsigned long)*pnread,
                 DEFAULT_CONTROLLER_TIMEOUT,
                 eomReason,
                 eomReason & ASYN_EOM_CNT ? "CNT" : "",
