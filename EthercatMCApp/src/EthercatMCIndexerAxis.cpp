@@ -24,8 +24,6 @@
 #endif
 
 
-static unsigned indexGroup = 0x4020;
-
 typedef enum {
   idxStatusCodeRESET    = 0,
   idxStatusCodeIDLE     = 1,
@@ -235,7 +233,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative, double min
     } posCmd;
     posCmd.position = (float)position;
     posCmd.cmdReason = (uint16_t)cmdReason;
-    return pC_->setPlcMemoryViaADS(indexGroup, drvlocal.iOffset + 4,
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + 4,
                                    &posCmd, sizeof(posCmd));
   } else {
     return asynError;
@@ -349,10 +347,8 @@ asynStatus EthercatMCIndexerAxis::stop(double acceleration )
  * \param[out] moving A flag that is set indicating that the axis is moving (true) or done (false). */
 asynStatus EthercatMCIndexerAxis::poll(bool *moving)
 {
-  static unsigned indexGroup = 0x4020;
   asynStatus status = asynSuccess;
   if (drvlocal.iTypCode && drvlocal.iOffset) {
-    int nvals;
     unsigned traceMask = ASYN_TRACE_INFO;
     double targetPosition = 0.0;
     double actPosition = 0.0;
@@ -382,7 +378,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         uint16_t  paramCtrl;
         float     paramValue;
       } posStatusParam;
-      status = pC_->getPlcMemoryViaADS(indexGroup, drvlocal.iOffset,
+      status = pC_->getPlcMemoryViaADS(drvlocal.iOffset,
                                        &posStatusParam,
                                        sizeof(posStatusParam));
       if (status) {

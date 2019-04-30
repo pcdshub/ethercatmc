@@ -148,11 +148,9 @@ public:
                                uint32_t ads_cmdID,
                                void *indata, size_t inlen,
                                size_t *pnread);
-  asynStatus getPlcMemoryViaADS(unsigned indexGroup,
-                                unsigned indexOffset,
+  asynStatus getPlcMemoryViaADS(unsigned indexOffset,
                                 void *data, size_t lenInPlc);
-  asynStatus setPlcMemoryViaADS(unsigned indexGroup,
-                                unsigned indexOffset,
+  asynStatus setPlcMemoryViaADS(unsigned indexOffset,
                                 const void *data, size_t lenInPlc);
   asynStatus getSymbolInfoViaADS(const char *symbolName,
                                  void *data,

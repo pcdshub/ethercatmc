@@ -363,11 +363,11 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
   return status;
 }
 
-asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
-                                                    unsigned indexOffset,
+asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
                                                     void *data,
                                                     size_t lenInPlc)
 {
+  static unsigned indexGroup = 0x4020;
   int tracelevel = ASYN_TRACE_INFO;
   asynUser *pasynUser = pasynUserController_;
   ads_read_req_type ads_read_req;
@@ -438,11 +438,11 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexGroup,
   return status;
 }
 
-asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexGroup,
-                                                    unsigned indexOffset,
+asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexOffset,
                                                     const void *data,
                                                     size_t lenInPlc)
 {
+  static unsigned indexGroup = 0x4020;
   int tracelevel = ASYN_TRACE_INFO;
   asynUser *pasynUser = pasynUserController_;
   ADS_Write_rep_type ADS_Write_rep;

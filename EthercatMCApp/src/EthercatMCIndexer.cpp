@@ -14,10 +14,6 @@
 
 #include <epicsThread.h>
 
-static unsigned indexGroup = 0x4020;
-
-#define MAX_ADSPORT 853
-
 #ifndef ASYN_TRACE_INFO
 #define ASYN_TRACE_INFO      0x0040
 #endif
@@ -107,12 +103,12 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
   uint8_t raw[4];
   unsigned ret;
   if (lenInPlc == 2) {
-    status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, lenInPlc);
+    status = getPlcMemoryViaADS(indexOffset, raw, lenInPlc);
     ret = (unsigned)raw[0] + (raw[1] << 8);
     *value = ret;
     return status;
   } else if (lenInPlc == 4) {
-    status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
+    status = getPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
     ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
     *value = ret;
     return status;
@@ -126,7 +122,7 @@ asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
                                                     size_t len)
 {
   memset(value, 0, len);
-  return getPlcMemoryViaADS(indexGroup, indexOffset, value, len);
+  return getPlcMemoryViaADS(indexOffset, value, len);
 }
 
 asynStatus EthercatMCController::setPlcMemoryInteger(unsigned indexOffset,
@@ -137,14 +133,14 @@ asynStatus EthercatMCController::setPlcMemoryInteger(unsigned indexOffset,
     uint8_t raw[2];
     raw[0] = (uint8_t)value;
     raw[1] = (uint8_t)(value >> 8);
-    return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
+    return setPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
   } else if (lenInPlc == 4) {
     uint8_t raw[4];
     raw[0] = (uint8_t)value;
     raw[1] = (uint8_t)(value >> 8);
     raw[2] = (uint8_t)(value >> 16);
     raw[3] = (uint8_t)(value >> 24);
-    return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
+    return setPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
   } else {
     return asynError;
   }
@@ -162,11 +158,11 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   memset(value, 0, lenInPlc);
   if (lenInPlc == 4) {
     float res;
-    status = getPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    status = getPlcMemoryViaADS(indexOffset, &res, sizeof(res));
     *value = (double)res;
     return status;
   } else if (lenInPlc == 8) {
-    return getPlcMemoryViaADS(indexGroup, indexOffset, value, lenInPlc);
+    return getPlcMemoryViaADS(indexOffset, value, lenInPlc);
   }
   return asynError;
 }
@@ -177,10 +173,10 @@ asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
 {
   if (lenInPlc == 4) {
     float res = (float)value;
-    return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    return setPlcMemoryViaADS(indexOffset, &res, sizeof(res));
   } else if (lenInPlc == 8) {
     double res = value;
-    return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    return setPlcMemoryViaADS(indexOffset, &res, sizeof(res));
   }
   return asynError;
 }
@@ -299,7 +295,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
           uint16_t  paramCtrl;
           uint32_t  paramValue;
         } paramIf;
-        status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+        status = getPlcMemoryViaADS(paramIfOffset,
                                     &paramIf,
                                     sizeof(paramIf));
         cmdSubParamIndex = paramIf.paramCtrl;
@@ -309,7 +305,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
           uint16_t  paramCtrl;
           float     paramValue;
         } paramIf;
-        status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+        status = getPlcMemoryViaADS(paramIfOffset,
                                     &paramIf,
                                     sizeof(paramIf));
         cmdSubParamIndex = paramIf.paramCtrl;
@@ -734,7 +730,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
         float     absMin;
         float     absMax;
       } infoType0_data;
-      status = getPlcMemoryViaADS(indexGroup, ctrlLocal.indexerOffset +  1*2,
+      status = getPlcMemoryViaADS(ctrlLocal.indexerOffset +  1*2,
                                   &infoType0_data, sizeof(infoType0_data));
       if (!status) {
         iTypCode  = infoType0_data.typCode_0 + (infoType0_data.typCode_1 << 8);
