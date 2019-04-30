@@ -207,8 +207,9 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
                                     &nread, &eomReason);
 
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s IN part 2 toread=0x%x %u nread=%lu status=%d\n",
+              "%s IN part 2 inlen-part_1_len=%lu toread=0x%x %u nread=%lu status=%d\n",
               modNamEMC,
+              (unsigned long)inlen - (unsigned long)part_1_len,
               toread, toread,
               (unsigned long)nread,
               status);
@@ -401,8 +402,8 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
                              (char*)p_read_buf, read_buf_len,
                              &nread);
   asynPrint(pasynUser, tracelevel,
-            "%s RDMEM indexGroup=0x%x indexOffset=%u lenInPlc=%u status=%d\n",
-            modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc, (int)status);
+            "%s RDMEM indexOffset=%u lenInPlc=%u status=%d\n",
+            modNamEMC, indexOffset, (unsigned)lenInPlc, (int)status);
   if (!status)
   {
     ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
@@ -473,8 +474,8 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexOffset,
   ads_write_req_p->length_3 = (uint8_t)(lenInPlc >> 24);
 
   asynPrint(pasynUser, tracelevel,
-            "%s WR indexGroup=0x%x indexOffset=%u lenInPlc=%u\n",
-            modNamEMC, indexGroup, indexOffset, (unsigned)lenInPlc
+            "%s WR indexOffset=%u lenInPlc=%u\n",
+            modNamEMC, indexOffset, (unsigned)lenInPlc
             );
   /* copy the payload */
   {
