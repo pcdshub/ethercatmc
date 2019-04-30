@@ -1,5 +1,5 @@
 /*
-  FILENAME... EthercatMCHelper.cpp
+  FILENAME... EthercatMCIndexer.cpp
 */
 
 #include <stdio.h>
@@ -103,140 +103,51 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
                                                   size_t lenInPlc)
 {
 
-  int traceMask = 0;
-  int nvals;
-  int iRes;
   asynStatus status;
-  if (ctrlLocal.useADSbinary) {
-    uint8_t raw[4];
-    unsigned ret;
-    if (lenInPlc == 2) {
-      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, lenInPlc);
-      ret = (unsigned)raw[0] + (raw[1] << 8);
-      *value = ret;
-      return status;
-    } else if (lenInPlc == 4) {
-      status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
-      ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
-      *value = ret;
-      return status;
-    } else {
-      return asynError;
-    }
-  }
+  uint8_t raw[4];
+  unsigned ret;
   if (lenInPlc == 2) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
+    status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, lenInPlc);
+    ret = (unsigned)raw[0] + (raw[1] << 8);
+    *value = ret;
+    return status;
   } else if (lenInPlc == 4) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,19?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
-  } else if (lenInPlc == 8) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,8,21?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
+    status = getPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
+    ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
+    *value = ret;
+    return status;
   } else {
     return asynError;
   }
-  status = writeReadControllerPrint(traceMask);
-  if (status) return asynError;
-  nvals = sscanf(inString_, "%u", &iRes);
-  if (nvals == 1) {
-    *value = iRes;
-    asynPrint(pasynUserController_, traceMask,
-              "%sout=%s in=%s iRes=0x%x\n",
-              modNamEMC, outString_, inString_, iRes);
-    return asynSuccess;
-  }
-
-  asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-            "%snvals=%d command=\"%s\" response=\"%s\"\n",
-            modNamEMC, nvals, outString_, inString_);
-  return asynDisabled;
 }
 
 asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
                                                     char *value,
                                                     size_t len)
 {
-  int traceMask = 0;
-  asynStatus status;
-
-  if (ctrlLocal.useADSbinary) {
-    memset(value, 0, len);
-    return getPlcMemoryViaADS(indexGroup, indexOffset, value, len);
-  }
-  snprintf(outString_, sizeof(outString_),
-           "ADSPORT=%u/.ADR.16#%X,16#%X,%d,30?",
-           ctrlLocal.adsport,
-           indexGroup, indexOffset, (int)len);
-  status = writeReadControllerPrint(traceMask);
-  if (status) {
-    asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%scommand=\"%s\" response=\"%s\"\n",
-              modNamEMC, outString_, inString_);
-    return asynError;
-  }
-
-  memcpy(value, inString_, len);
-  return asynSuccess;
+  memset(value, 0, len);
+  return getPlcMemoryViaADS(indexGroup, indexOffset, value, len);
 }
 
 asynStatus EthercatMCController::setPlcMemoryInteger(unsigned indexOffset,
                                                      int value,
                                                      size_t lenInPlc)
 {
-  int traceMask = 0;
-  asynStatus status;
-
-  if (ctrlLocal.useADSbinary) {
-    if (lenInPlc == 2) {
-      uint8_t raw[2];
-      raw[0] = (uint8_t)value;
-      raw[1] = (uint8_t)(value >> 8);
-      return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
-    } else if (lenInPlc == 4) {
-      uint8_t raw[4];
-      raw[0] = (uint8_t)value;
-      raw[1] = (uint8_t)(value >> 8);
-      raw[2] = (uint8_t)(value >> 16);
-      raw[3] = (uint8_t)(value >> 24);
-      return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
-    } else {
-      return asynError;
-    }
-  }
-
   if (lenInPlc == 2) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,2,2=%d",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset, value);
+    uint8_t raw[2];
+    raw[0] = (uint8_t)value;
+    raw[1] = (uint8_t)(value >> 8);
+    return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
   } else if (lenInPlc == 4) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,3=%d",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset, value);
-  } else if (lenInPlc == 8) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,8,20=%d",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset, value);
+    uint8_t raw[4];
+    raw[0] = (uint8_t)value;
+    raw[1] = (uint8_t)(value >> 8);
+    raw[2] = (uint8_t)(value >> 16);
+    raw[3] = (uint8_t)(value >> 24);
+    return setPlcMemoryViaADS(indexGroup, indexOffset, raw, sizeof(raw));
   } else {
     return asynError;
   }
-  status = writeReadOnErrorDisconnect();
-  if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-  asynPrint(pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, outString_, inString_,
-            pasynManager->strStatus(status), (int)status);
-  if (status) return status;
-  return checkACK(outString_, strlen(outString_), inString_);
 }
 
 
@@ -244,87 +155,34 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
                                                     double *value,
                                                     size_t lenInPlc)
 {
-  int traceMask = 0;
-  int nvals;
-  double fRes;
   asynStatus status;
 
 
-  if (ctrlLocal.useADSbinary) {
-    /* This works on little endian boxes only */
-    memset(value, 0, lenInPlc);
-    if (lenInPlc == 4) {
-      float res;
-      status = getPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
-      *value = (double)res;
-      return status;
-    } else if (lenInPlc == 8) {
-      return getPlcMemoryViaADS(indexGroup, indexOffset, value, lenInPlc);
-    }
-    return asynError;
-  }
-
+  /* This works on little endian boxes only */
+  memset(value, 0, lenInPlc);
   if (lenInPlc == 4) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
+    float res;
+    status = getPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
+    *value = (double)res;
+    return status;
   } else if (lenInPlc == 8) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset);
-  } else {
-    return asynError;
+    return getPlcMemoryViaADS(indexGroup, indexOffset, value, lenInPlc);
   }
-  status = writeReadControllerPrint(traceMask);
-  if (status) return status;
-
-  nvals = sscanf(inString_, "%lf", &fRes);
-  if (nvals == 1) {
-    *value = fRes;
-    return asynSuccess;
-  }
-
-  asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-            "%snvals=%d command=\"%s\" response=\"%s\"\n",
-            modNamEMC, nvals, outString_, inString_);
-  return asynDisabled;
+  return asynError;
 }
 
 asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
                                                     double value,
                                                     size_t lenInPlc)
 {
-  asynStatus status;
-
-  if (ctrlLocal.useADSbinary) {
-    if (lenInPlc == 4) {
-      float res = (float)value;
-      return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
-    } else if (lenInPlc == 8) {
-      double res = value;
-      return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
-    }
-    return asynError;
-  }
-
   if (lenInPlc == 4) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,4,4=%f",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset, value);
+    float res = (float)value;
+    return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
   } else if (lenInPlc == 8) {
-    snprintf(outString_, sizeof(outString_),
-             "ADSPORT=%u/.ADR.16#%X,16#%X,8,5=%f",
-             ctrlLocal.adsport,
-             indexGroup, indexOffset, value);
-  } else {
-    return asynError;
+    double res = value;
+    return setPlcMemoryViaADS(indexGroup, indexOffset, &res, sizeof(res));
   }
-  status = writeReadOnErrorDisconnect();
-  if (status) return status;
-  return checkACK(outString_, strlen(outString_), inString_);
+  return asynError;
 }
 
 
@@ -351,13 +209,6 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned devNum,
     if (value == valueAcked) return asynSuccess;
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
-  }
-  if (!ctrlLocal.useADSbinary) {
-    asynPrint(pasynUserController_,
-              ASYN_TRACE_INFO,
-              "%sout=%s in=%s (%x) counter=%u\n",
-              modNamEMC, outString_, inString_, atoi(inString_),
-              counter);
   }
   return asynDisabled;
 }
@@ -440,72 +291,32 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
   while (counter < 5) {
     unsigned cmdSubParamIndex = 0;
     double fValue;
-    if (ctrlLocal.useADSbinary) {
-      if (lenInPlcPara == 4) {
-        if (paramIndex < 30) {
-          /* parameters below 30 are unsigned integers in the PLC
-             Read them as integers from PLC, and parse into a double */
-          struct {
-            uint16_t  paramCtrl;
-            uint32_t  paramValue;
-          } paramIf;
-          status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
-                                      &paramIf,
-                                      sizeof(paramIf));
-          cmdSubParamIndex = paramIf.paramCtrl;
-          fValue           = (double)paramIf.paramValue;
-        } else {
-          struct {
-            uint16_t  paramCtrl;
-            float     paramValue;
-          } paramIf;
-          status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
-                                      &paramIf,
-                                      sizeof(paramIf));
-          cmdSubParamIndex = paramIf.paramCtrl;
-          fValue           = (double)paramIf.paramValue;
-        }
+    if (lenInPlcPara == 4) {
+      if (paramIndex < 30) {
+        /* parameters below 30 are unsigned integers in the PLC
+           Read them as integers from PLC, and parse into a double */
+        struct {
+          uint16_t  paramCtrl;
+          uint32_t  paramValue;
+        } paramIf;
+        status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+                                    &paramIf,
+                                    sizeof(paramIf));
+        cmdSubParamIndex = paramIf.paramCtrl;
+        fValue           = (double)paramIf.paramValue;
       } else {
-        return asynError;
+        struct {
+          uint16_t  paramCtrl;
+          float     paramValue;
+        } paramIf;
+        status = getPlcMemoryViaADS(indexGroup, paramIfOffset,
+                                    &paramIf,
+                                    sizeof(paramIf));
+        cmdSubParamIndex = paramIf.paramCtrl;
+        fValue           = (double)paramIf.paramValue;
       }
-      if (status) return status;
     } else {
-      int nvals;
-      if (lenInPlcPara == 4) {
-        if (paramIndex < 30) {
-          /* parameters below 30 are unsigned integers in the PLC
-             Read them as integers from PLC, and parse into a double */
-          snprintf(outString_, sizeof(outString_),
-                   "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,19?",
-                   ctrlLocal.adsport, indexGroup, paramIfOffset,
-                   ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
-        } else {
-          snprintf(outString_, sizeof(outString_),
-                   "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,4,4?",
-                   ctrlLocal.adsport, indexGroup, paramIfOffset,
-                   ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
-        }
-      } else if (lenInPlcPara == 8) {
-        snprintf(outString_, sizeof(outString_),
-                 "ADSPORT=%u/.ADR.16#%X,16#%X,2,18?;ADSPORT=%u/.ADR.16#%X,16#%X,8,5?",
-                 ctrlLocal.adsport, indexGroup, paramIfOffset,
-                 ctrlLocal.adsport, indexGroup, paramIfOffset + lenInPlcCmd);
-      } else {
-        asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                  "%snlenInPlcPara=%u\n",
-                  modNamEMC, lenInPlcPara);
-        return asynError;
-      }
-      status = writeReadOnErrorDisconnect();
-      if (status) return status;
-      nvals = sscanf(inString_, "%u;%lf", &cmdSubParamIndex, &fValue);
-      if (nvals != 2) {
-        traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
-        asynPrint(pasynUserController_, traceMask,
-                  "%sout=%s in=%s\n",
-                  modNamEMC, outString_, inString_);
-        return asynError;
-      }
+      return asynError;
     }
 
     if (cmdSubParamIndex == cmdAcked) {
@@ -544,11 +355,6 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
     epicsThreadSleep(.1 * (counter<<1));
     counter++;
   }
-  asynPrint(pasynUserController_,
-            ASYN_TRACE_INFO,
-            "%sout=%s in=%s (%x) counter=%u\n",
-            modNamEMC, outString_, inString_, atoi(inString_),
-            counter);
   return asynDisabled;
 }
 
@@ -912,47 +718,33 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     double fAbsMax = 0;
     status = readDeviceIndexer(devNum, infoType0);
     if (!status) {
-      if (ctrlLocal.useADSbinary) {
-        struct {
-          uint8_t   typCode_0;
-          uint8_t   typCode_1;
-          uint8_t   size_0;
-          uint8_t   size_1;
-          uint8_t   offset_0;
-          uint8_t   offset_1;
-          uint8_t   unit_0;
-          uint8_t   unit_1;
-          uint8_t   flags_0;
-          uint8_t   flags_1;
-          uint8_t   flags_2;
-          uint8_t   flags_3;
-          float     absMin;
-          float     absMax;
-        } infoType0_data;
-        status = getPlcMemoryViaADS(indexGroup, ctrlLocal.indexerOffset +  1*2,
-                                    &infoType0_data, sizeof(infoType0_data));
-        if (!status) {
-          iTypCode  = infoType0_data.typCode_0 + (infoType0_data.typCode_1 << 8);
-          iSize     = infoType0_data.size_0 + (infoType0_data.size_1 << 8);
-          iOffset   = infoType0_data.offset_0 + (infoType0_data.offset_1 << 8);
-          iUnit     = infoType0_data.unit_0 + (infoType0_data.unit_1 << 8);
-          iAllFlags = infoType0_data.flags_0 + (infoType0_data.flags_1 << 8) +
-                      (infoType0_data.flags_2 << 16) + (infoType0_data.flags_3 << 24);
-          fAbsMin   = (double)infoType0_data.absMin;
-          fAbsMax   = (double)infoType0_data.absMax;
-        }
-      } else {
-        unsigned iFlagsLow = -1;
-        unsigned iFlagsHigh = -1;
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  1*2, &iTypCode, 2);
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  2*2, &iSize, 2);
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  3*2, &iOffset, 2);
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  4*2, &iUnit, 2);
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  5*2, &iFlagsLow, 2);
-        getPlcMemoryUint(ctrlLocal.indexerOffset +  6*2, &iFlagsHigh, 2);
-        getPlcMemoryDouble(ctrlLocal.indexerOffset  +  7*2, &fAbsMin, 4);
-        getPlcMemoryDouble(ctrlLocal.indexerOffset  +  9*2, &fAbsMax, 4);
-        iAllFlags = iFlagsLow + (iFlagsHigh << 16);
+      struct {
+        uint8_t   typCode_0;
+        uint8_t   typCode_1;
+        uint8_t   size_0;
+        uint8_t   size_1;
+        uint8_t   offset_0;
+        uint8_t   offset_1;
+        uint8_t   unit_0;
+        uint8_t   unit_1;
+        uint8_t   flags_0;
+        uint8_t   flags_1;
+        uint8_t   flags_2;
+        uint8_t   flags_3;
+        float     absMin;
+        float     absMax;
+      } infoType0_data;
+      status = getPlcMemoryViaADS(indexGroup, ctrlLocal.indexerOffset +  1*2,
+                                  &infoType0_data, sizeof(infoType0_data));
+      if (!status) {
+        iTypCode  = infoType0_data.typCode_0 + (infoType0_data.typCode_1 << 8);
+        iSize     = infoType0_data.size_0 + (infoType0_data.size_1 << 8);
+        iOffset   = infoType0_data.offset_0 + (infoType0_data.offset_1 << 8);
+        iUnit     = infoType0_data.unit_0 + (infoType0_data.unit_1 << 8);
+        iAllFlags = infoType0_data.flags_0 + (infoType0_data.flags_1 << 8) +
+          (infoType0_data.flags_2 << 16) + (infoType0_data.flags_3 << 24);
+        fAbsMin   = (double)infoType0_data.absMin;
+        fAbsMax   = (double)infoType0_data.absMax;
       }
     }
     status = readDeviceIndexer(devNum, infoType4);
