@@ -573,21 +573,20 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
 
     if (ads_result) {
       asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                "%sads_result=0x%x\n", modNamEMC, ads_result);
+                "%sERROR ads_result=0x%x\n", modNamEMC, ads_result);
       status = asynError;
-    }
-    if (ads_length != lenInPlc) {
-        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                  "%slenInPlc=%lu ads_length=%u\n", modNamEMC,
-                  (unsigned long)lenInPlc,ads_length);
-        status = asynError;
     }
     if (!status) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
       src_ptr += sizeof(ads_read_write_rep_type);
-      memcpy(data, src_ptr, ads_length);
-      EthercatMChexdump(pasynUser, tracelevel, "LOOKS",
+      asynPrint(pasynUser, tracelevel,
+                "%s ads_result=0x%x ads_length=0x%x\n",
+                modNamEMC, ads_result, ads_length);
+      EthercatMChexdump(pasynUser, tracelevel, "IN ADS",
                         src_ptr, ads_length);
+      if (!status) {
+        memcpy(data, src_ptr, ads_length);
+      }
     }
   }
   free(ads_read_write_req_p);
