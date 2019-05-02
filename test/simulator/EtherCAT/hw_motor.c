@@ -275,6 +275,15 @@ double getMotorVelocity(int axis_no)
   return velocity;
 }
 
+int isMotorHoming(int axis_no)
+{
+  AXIS_CHECK_RETURN_ZERO(axis_no);
+  if (motor_axis[axis_no].moving.velo.HomeVelocity) {
+    return 1;
+  }
+  return 0;
+}
+
 int isMotorMoving(int axis_no)
 {
   AXIS_CHECK_RETURN_ZERO(axis_no);
@@ -327,9 +336,11 @@ double getLowSoftLimitPos(int axis_no)
   double value = 0;
   AXIS_CHECK_RETURN_ZERO(axis_no);
   value = motor_axis[axis_no].lowSoftLimitPos;
+#if 0
   fprintf(stdlog,
           "%s/%s:%d axis_no=%d value=%g\n",
           __FILE__, __FUNCTION__, __LINE__, axis_no, value);
+#endif
   return value;
 }
 
@@ -373,9 +384,11 @@ double getHighSoftLimitPos(int axis_no)
   double value = 0;
   AXIS_CHECK_RETURN_ZERO(axis_no);
   value = motor_axis[axis_no].highSoftLimitPos;
+#if 0
   fprintf(stdlog,
           "%s/%s:%d axis_no=%d value=%g\n",
           __FILE__, __FUNCTION__, __LINE__, axis_no, value);
+#endif
   return value;
 }
 
@@ -419,9 +432,11 @@ double getMRES_23(int axis_no)
   double value = 0;
   AXIS_CHECK_RETURN_ZERO(axis_no);
   value = motor_axis[axis_no].MRES_23;
+#if 0
   fprintf(stdlog,
           "%s/%s:%d axis_no=%d value=%g\n",
           __FILE__, __FUNCTION__, __LINE__, axis_no, value);
+#endif
   return value;
 }
 
@@ -453,11 +468,13 @@ int setMRES_23(int axis_no, double value)
 double getMRES_24(int axis_no)
 {
   double value = 0;
+  AXIS_CHECK_RETURN_ZERO(axis_no);
+  value = motor_axis[axis_no].MRES_24;
+#if 0
   fprintf(stdlog,
           "%s/%s:%d axis_no=%d value=%g\n",
           __FILE__, __FUNCTION__, __LINE__, axis_no, value);
-  AXIS_CHECK_RETURN_ZERO(axis_no);
-  value = motor_axis[axis_no].MRES_24;
+#endif
   return value;
 }
 
