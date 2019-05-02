@@ -518,7 +518,7 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
                                                      void *data,
                                                      size_t lenInPlc)
 {
-  int tracelevel = deftracelevel;
+  int tracelevel = deftracelevel | ASYN_TRACE_INFO;
   asynUser *pasynUser = pasynUserController_;
   unsigned indexGroup = 0xF009;
   unsigned indexOffset = 0;
@@ -586,6 +586,11 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
       status = asynError;
     }
     if (!status) {
+      adsGgetSymbolInfoByName_rep_type *adsGgetSymbolInfoByName_rep_p;
+      adsGgetSymbolInfoByName_rep_p = (adsGgetSymbolInfoByName_rep_type *)p_read_buf;
+      (void)adsGgetSymbolInfoByName_rep_p;
+    }
+    if (!status) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
       src_ptr += sizeof(ads_read_write_rep_type);
       asynPrint(pasynUser, tracelevel,
@@ -593,9 +598,7 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
                 modNamEMC, ads_result, ads_length);
       EthercatMChexdump(pasynUser, tracelevel, "IN ADS",
                         src_ptr, ads_length);
-      if (!status) {
-        memcpy(data, src_ptr, ads_length);
-      }
+      memcpy(data, src_ptr, ads_length);
     }
   }
   free(ads_read_write_req_p);

@@ -734,7 +734,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   int      axisNo = 0;
 
 
-  if (0)
+  if (1)
   {
     uint8_t resss[0x338];
     getSymbolInfoViaADS("Main.M1.nMotionAxisID",

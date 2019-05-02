@@ -156,4 +156,19 @@ typedef struct {
   } response;
 } ADS_Write_rep_type;
 
+
+typedef struct {
+  ads_read_write_rep_type ads_read_write_rep;
+  struct {
+    uint8_t entryLen[4];
+    uint8_t indexGroup[4];
+    uint8_t indexOffset[4];
+    uint8_t size[4];
+    uint8_t dataType[4];
+    uint8_t flags[4];
+    uint8_t nameLength[2];
+    uint8_t typeLength[2];
+    uint8_t commentLength[2];
+  } symbol_info;
+} adsGgetSymbolInfoByName_rep_type;
 #endif
