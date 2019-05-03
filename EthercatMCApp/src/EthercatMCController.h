@@ -143,7 +143,7 @@ public:
   void handleStatusChange(asynStatus status);
   /* memory bytes via ADS */
   asynStatus writeWriteReadAds(asynUser *pasynUser,
-                               AmsHdrType *ams_hdr_p, size_t outlen,
+                               AmsHdrType *amsHdr_p, size_t outlen,
                                uint32_t invokeID,
                                uint32_t ads_cmdID,
                                void *indata, size_t inlen,

@@ -26,7 +26,7 @@ typedef struct AmsNetidAndPortType {
 
 
 typedef struct {
-  AmsTcpHdrType ams_tcp_hdr;
+  AmsTcpHdrType amsTcpHdr;
   AmsNetidAndPortType target;
   AmsNetidAndPortType source;
   uint8_t cmdID_low;
@@ -45,7 +45,7 @@ typedef struct {
 } AmsHdrType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -58,7 +58,7 @@ typedef struct {
 } AdsReadReqType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -71,7 +71,7 @@ typedef struct {
 } AdsWriteReqType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -91,7 +91,7 @@ typedef struct {
 } AdsReadWriteReqType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -106,7 +106,7 @@ typedef struct {
 } AdsReadDeviceInfoRepType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -117,7 +117,7 @@ typedef struct {
 } AdsReadRepType;
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -129,7 +129,7 @@ typedef struct {
 
 
 typedef struct {
-  AmsHdrType ams_hdr;
+  AmsHdrType amsHdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -140,7 +140,7 @@ typedef struct {
 
 
 typedef struct {
-  AdsReadWriteRepType ads_read_write_rep;
+  AdsReadWriteRepType adsReadWriteRep;
   struct {
     uint8_t entryLen[4];
     uint8_t indexGroup[4];
