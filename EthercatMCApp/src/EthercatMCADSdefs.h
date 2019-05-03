@@ -34,14 +34,8 @@ typedef struct {
   uint8_t stateFlags_low;
   uint8_t stateFlags_high;
   uint8_t net_len[4];
-  uint8_t errorCode_0;
-  uint8_t errorCode_1;
-  uint8_t errorCode_2;
-  uint8_t errorCode_3;
-  uint8_t invokeID_0;
-  uint8_t invokeID_1;
-  uint8_t invokeID_2;
-  uint8_t invokeID_3;
+  uint8_t net_errCode[4];
+  uint8_t net_invokeID[4];
 } AmsHdrType;
 
 typedef struct {
@@ -62,23 +56,14 @@ typedef struct {
   AmsHdrType amsHdr;
   uint8_t net_idxGrp[4];
   uint8_t net_idxOff[4];
-  uint8_t rd_len_0;
-  uint8_t rd_len_1;
-  uint8_t rd_len_2;
-  uint8_t rd_len_3;
-  uint8_t wr_len_0;
-  uint8_t wr_len_1;
-  uint8_t wr_len_2;
-  uint8_t wr_len_3;
+  uint8_t net_rd_len[4];
+  uint8_t net_wr_len[4];
 } AdsReadWriteReqType;
 
 typedef struct {
   AmsHdrType amsHdr;
   struct {
-    uint8_t result_0;
-    uint8_t result_1;
-    uint8_t result_2;
-    uint8_t result_3;
+    uint8_t net_res[4];
     uint8_t major;
     uint8_t minor;
     uint8_t versionBuild_low;
@@ -90,10 +75,7 @@ typedef struct {
 typedef struct {
   AmsHdrType amsHdr;
   struct {
-    uint8_t result_0;
-    uint8_t result_1;
-    uint8_t result_2;
-    uint8_t result_3;
+    uint8_t net_res[4];
     uint8_t net_len[4];
   } response;
 } AdsReadRepType;
@@ -101,10 +83,7 @@ typedef struct {
 typedef struct {
   AmsHdrType amsHdr;
   struct {
-    uint8_t result_0;
-    uint8_t result_1;
-    uint8_t result_2;
-    uint8_t result_3;
+    uint8_t net_res[4];
     uint8_t net_len[4];
   } response;
 } AdsReadWriteRepType;
@@ -113,10 +92,7 @@ typedef struct {
 typedef struct {
   AmsHdrType amsHdr;
   struct {
-    uint8_t result_0;
-    uint8_t result_1;
-    uint8_t result_2;
-    uint8_t result_3;
+    uint8_t net_res[4];
   } response;
 } AdsWriteRepType;
 
