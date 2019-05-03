@@ -46,40 +46,22 @@ typedef struct {
 
 typedef struct {
   AmsHdrType amsHdr;
-  uint8_t indexGroup_0;
-  uint8_t indexGroup_1;
-  uint8_t indexGroup_2;
-  uint8_t indexGroup_3;
-  uint8_t indexOffset_0;
-  uint8_t indexOffset_1;
-  uint8_t indexOffset_2;
-  uint8_t indexOffset_3;
+  uint8_t net_idxGrp[4];
+  uint8_t net_idxOff[4];
   uint8_t net_len[4];
 } AdsReadReqType;
 
 typedef struct {
   AmsHdrType amsHdr;
-  uint8_t indexGroup_0;
-  uint8_t indexGroup_1;
-  uint8_t indexGroup_2;
-  uint8_t indexGroup_3;
-  uint8_t indexOffset_0;
-  uint8_t indexOffset_1;
-  uint8_t indexOffset_2;
-  uint8_t indexOffset_3;
+  uint8_t net_idxGrp[4];
+  uint8_t net_idxOff[4];
   uint8_t net_len[4];
 } AdsWriteReqType;
 
 typedef struct {
   AmsHdrType amsHdr;
-  uint8_t indexGroup_0;
-  uint8_t indexGroup_1;
-  uint8_t indexGroup_2;
-  uint8_t indexGroup_3;
-  uint8_t indexOffset_0;
-  uint8_t indexOffset_1;
-  uint8_t indexOffset_2;
-  uint8_t indexOffset_3;
+  uint8_t net_idxGrp[4];
+  uint8_t net_idxOff[4];
   uint8_t rd_len_0;
   uint8_t rd_len_1;
   uint8_t rd_len_2;

@@ -389,14 +389,14 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
   memset(p_read_buf, 0, read_buf_len);
   invokeID++;
 
-  ads_read_req.indexGroup_0 = (uint8_t)indexGroup;
-  ads_read_req.indexGroup_1 = (uint8_t)(indexGroup >> 8);
-  ads_read_req.indexGroup_2 = (uint8_t)(indexGroup >> 16);
-  ads_read_req.indexGroup_3 = (uint8_t)(indexGroup >> 24);
-  ads_read_req.indexOffset_0 = (uint8_t)indexOffset;
-  ads_read_req.indexOffset_1 = (uint8_t)(indexOffset >> 8);
-  ads_read_req.indexOffset_2 = (uint8_t)(indexOffset >> 16);
-  ads_read_req.indexOffset_3 = (uint8_t)(indexOffset >> 24);
+  ads_read_req.net_idxGrp[0] = (uint8_t)indexGroup;
+  ads_read_req.net_idxGrp[1] = (uint8_t)(indexGroup >> 8);
+  ads_read_req.net_idxGrp[2] = (uint8_t)(indexGroup >> 16);
+  ads_read_req.net_idxGrp[3] = (uint8_t)(indexGroup >> 24);
+  ads_read_req.net_idxOff[0] = (uint8_t)indexOffset;
+  ads_read_req.net_idxOff[1] = (uint8_t)(indexOffset >> 8);
+  ads_read_req.net_idxOff[2] = (uint8_t)(indexOffset >> 16);
+  ads_read_req.net_idxOff[3] = (uint8_t)(indexOffset >> 24);
   ads_read_req.net_len[0] = (uint8_t)lenInPlc;
   ads_read_req.net_len[1] = (uint8_t)(lenInPlc >> 8);
   ads_read_req.net_len[2] = (uint8_t)(lenInPlc >> 16);
@@ -467,14 +467,14 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexOffset,
   memset(&ADS_Write_rep, 0, sizeof(ADS_Write_rep));
   invokeID++;
 
-  ads_write_req_p->indexGroup_0 = (uint8_t)indexGroup;
-  ads_write_req_p->indexGroup_1 = (uint8_t)(indexGroup >> 8);
-  ads_write_req_p->indexGroup_2 = (uint8_t)(indexGroup >> 16);
-  ads_write_req_p->indexGroup_3 = (uint8_t)(indexGroup >> 24);
-  ads_write_req_p->indexOffset_0 = (uint8_t)indexOffset;
-  ads_write_req_p->indexOffset_1 = (uint8_t)(indexOffset >> 8);
-  ads_write_req_p->indexOffset_2 = (uint8_t)(indexOffset >> 16);
-  ads_write_req_p->indexOffset_3 = (uint8_t)(indexOffset >> 24);
+  ads_write_req_p->net_idxGrp[0] = (uint8_t)indexGroup;
+  ads_write_req_p->net_idxGrp[1] = (uint8_t)(indexGroup >> 8);
+  ads_write_req_p->net_idxGrp[2] = (uint8_t)(indexGroup >> 16);
+  ads_write_req_p->net_idxGrp[3] = (uint8_t)(indexGroup >> 24);
+  ads_write_req_p->net_idxOff[0] = (uint8_t)indexOffset;
+  ads_write_req_p->net_idxOff[1] = (uint8_t)(indexOffset >> 8);
+  ads_write_req_p->net_idxOff[2] = (uint8_t)(indexOffset >> 16);
+  ads_write_req_p->net_idxOff[3] = (uint8_t)(indexOffset >> 24);
   ads_write_req_p->net_len[0] = (uint8_t)lenInPlc;
   ads_write_req_p->net_len[1] = (uint8_t)(lenInPlc >> 8);
   ads_write_req_p->net_len[2] = (uint8_t)(lenInPlc >> 16);
@@ -537,14 +537,14 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
   memset(p_read_buf, 0, read_buf_len);
   invokeID++;
 
-  ads_read_write_req_p->indexGroup_0 = (uint8_t)indexGroup;
-  ads_read_write_req_p->indexGroup_1 = (uint8_t)(indexGroup >> 8);
-  ads_read_write_req_p->indexGroup_2 = (uint8_t)(indexGroup >> 16);
-  ads_read_write_req_p->indexGroup_3 = (uint8_t)(indexGroup >> 24);
-  ads_read_write_req_p->indexOffset_0 = (uint8_t)indexOffset;
-  ads_read_write_req_p->indexOffset_1 = (uint8_t)(indexOffset >> 8);
-  ads_read_write_req_p->indexOffset_2 = (uint8_t)(indexOffset >> 16);
-  ads_read_write_req_p->indexOffset_3 = (uint8_t)(indexOffset >> 24);
+  ads_read_write_req_p->net_idxGrp[0] = (uint8_t)indexGroup;
+  ads_read_write_req_p->net_idxGrp[1] = (uint8_t)(indexGroup >> 8);
+  ads_read_write_req_p->net_idxGrp[2] = (uint8_t)(indexGroup >> 16);
+  ads_read_write_req_p->net_idxGrp[3] = (uint8_t)(indexGroup >> 24);
+  ads_read_write_req_p->net_idxOff[0] = (uint8_t)indexOffset;
+  ads_read_write_req_p->net_idxOff[1] = (uint8_t)(indexOffset >> 8);
+  ads_read_write_req_p->net_idxOff[2] = (uint8_t)(indexOffset >> 16);
+  ads_read_write_req_p->net_idxOff[3] = (uint8_t)(indexOffset >> 24);
   ads_read_write_req_p->rd_len_0 = (uint8_t)lenInPlc;
   ads_read_write_req_p->rd_len_1 = (uint8_t)(lenInPlc >> 8);
   ads_read_write_req_p->rd_len_2 = (uint8_t)(lenInPlc >> 16);
