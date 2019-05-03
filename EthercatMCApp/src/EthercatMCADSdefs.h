@@ -18,20 +18,20 @@ typedef struct {
   uint8_t length_1;
   uint8_t length_2;
   uint8_t length_3;
-} ams_tcp_hdr_type;
+} AmsTcpHdrType;
 
-typedef struct ams_netid_port_type {
+typedef struct AmsNetidAndPortType {
   uint8_t netID[6];
   uint8_t port_low;
   uint8_t port_high;
-} ams_netid_port_type;
+} AmsNetidAndPortType;
 
 
 
 typedef struct {
-  ams_tcp_hdr_type ams_tcp_hdr;
-  ams_netid_port_type target;
-  ams_netid_port_type source;
+  AmsTcpHdrType ams_tcp_hdr;
+  AmsNetidAndPortType target;
+  AmsNetidAndPortType source;
   uint8_t cmdID_low;
   uint8_t cmdID_high;
   uint8_t stateFlags_low;
@@ -48,10 +48,10 @@ typedef struct {
   uint8_t invokeID_1;
   uint8_t invokeID_2;
   uint8_t invokeID_3;
-} ams_hdr_type;
+} AmsHdrType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -64,10 +64,10 @@ typedef struct {
   uint8_t length_1;
   uint8_t length_2;
   uint8_t length_3;
-} ads_read_req_type;
+} AdsReadReqType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -80,10 +80,10 @@ typedef struct {
   uint8_t length_1;
   uint8_t length_2;
   uint8_t length_3;
-} ADS_Write_req_type;
+} AdsWriteReqType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   uint8_t indexGroup_0;
   uint8_t indexGroup_1;
   uint8_t indexGroup_2;
@@ -100,10 +100,10 @@ typedef struct {
   uint8_t wr_len_1;
   uint8_t wr_len_2;
   uint8_t wr_len_3;
-} ads_read_write_req_type;
+} AdsReadWriteReqType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -115,10 +115,10 @@ typedef struct {
     uint8_t versionBuild_high;
     char    deviceName[16];
   } response;
-} ADS_Read_Device_Info_rep_type;
+} AdsReadDeviceInfoRepType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -129,10 +129,10 @@ typedef struct {
     uint8_t length_2;
     uint8_t length_3;
   } response;
-} ADS_Read_rep_type;
+} AdsReadRepType;
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
@@ -143,22 +143,22 @@ typedef struct {
     uint8_t length_2;
     uint8_t length_3;
   } response;
-} ads_read_write_rep_type;
+} AdsReadWriteRepType;
 
 
 typedef struct {
-  ams_hdr_type ams_hdr;
+  AmsHdrType ams_hdr;
   struct {
     uint8_t result_0;
     uint8_t result_1;
     uint8_t result_2;
     uint8_t result_3;
   } response;
-} ADS_Write_rep_type;
+} AdsWriteRepType;
 
 
 typedef struct {
-  ads_read_write_rep_type ads_read_write_rep;
+  AdsReadWriteRepType ads_read_write_rep;
   struct {
     uint8_t entryLen[4];
     uint8_t indexGroup[4];
@@ -170,5 +170,5 @@ typedef struct {
     uint8_t typeLength[2];
     uint8_t commentLength[2];
   } symbol_info;
-} adsGgetSymbolInfoByName_rep_type;
+} AdsGetSymbolInfoByNameRepType;
 #endif

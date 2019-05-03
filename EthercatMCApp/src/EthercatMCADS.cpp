@@ -59,7 +59,7 @@ static int deftracelevel = ASYN_TRACE_DEBUG;
 
 #define EthercatMCamsdump(pasynUser, tracelevel, help_txt, ams_headdr_p)\
 {\
-  const ams_hdr_type *ams_hdr_p = (const ams_hdr_type *)(ams_headdr_p);\
+  const AmsHdrType *ams_hdr_p = (const AmsHdrType *)(ams_headdr_p);\
   uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +\
     (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +\
     (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +\
@@ -113,7 +113,7 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
   int old_OutputEosLen = 0;
   int eomReason;
   size_t nread;
-  uint32_t part_1_len = sizeof(ams_tcp_hdr_type);
+  uint32_t part_1_len = sizeof(AmsTcpHdrType);
   asynStatus status;
   status = pasynOctetSyncIO->getInputEos(pasynUser,
                                          &old_InputEos[0],
@@ -195,7 +195,7 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
   }
   if (!status) {
     /* The length to read is inside the AMS/TCP header */
-    const ams_hdr_type *ams_hdr_p = (const ams_hdr_type *)indata;
+    const AmsHdrType *ams_hdr_p = (const AmsHdrType *)indata;
     uint32_t ams_tcp_hdr_len = ams_hdr_p->ams_tcp_hdr.length_0 +
       (ams_hdr_p->ams_tcp_hdr.length_1 << 8) +
       (ams_hdr_p->ams_tcp_hdr.length_2 << 16) +
@@ -275,7 +275,7 @@ restore_Eos:
 }
 
 asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
-                                                   ams_hdr_type *ams_req_hdr_p,
+                                                   AmsHdrType *ams_req_hdr_p,
                                                    size_t outlen,
                                                    uint32_t invokeID,
                                                    uint32_t ads_cmdID,
@@ -318,7 +318,7 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
                                               &eomReason);
   if (!status) {
     size_t nread = *pnread;
-    ams_hdr_type *ams_rep_hdr_p = (ams_hdr_type*)indata;
+    AmsHdrType *ams_rep_hdr_p = (AmsHdrType*)indata;
     uint32_t ams_tcp_hdr_len = ams_rep_hdr_p->ams_tcp_hdr.length_0 +
       (ams_rep_hdr_p->ams_tcp_hdr.length_1 << 8) +
       (ams_rep_hdr_p->ams_tcp_hdr.length_2 << 16) +
@@ -334,7 +334,7 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
         (ams_rep_hdr_p->length_1 << 8) +
         (ams_rep_hdr_p->length_2 << 16) +
         (ams_rep_hdr_p->length_3 << 24);
-      if (ads_rep_len != (nread - sizeof(ams_hdr_type))) {
+      if (ads_rep_len != (nread - sizeof(AmsHdrType))) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                   "%s warning ?? nread=%u ads_rep_len=%u\n", modNamEMC,
                   (unsigned)nread, ads_rep_len);
@@ -377,9 +377,9 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
   static unsigned indexGroup = 0x4020;
   int tracelevel = deftracelevel;
   asynUser *pasynUser = pasynUserController_;
-  ads_read_req_type ads_read_req;
+  AdsReadReqType ads_read_req;
 
-  size_t read_buf_len = sizeof(ADS_Read_rep_type) + lenInPlc;
+  size_t read_buf_len = sizeof(AdsReadRepType) + lenInPlc;
   void *p_read_buf = malloc(read_buf_len);
 
   asynStatus status;
@@ -403,7 +403,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
   ads_read_req.length_3 = (uint8_t)(lenInPlc >> 24);
 
   status = writeWriteReadAds(pasynUser,
-                             (ams_hdr_type *)&ads_read_req,
+                             (AmsHdrType *)&ads_read_req,
                              sizeof(ads_read_req),
                              invokeID, ADS_READ,
                              (char*)p_read_buf, read_buf_len,
@@ -413,7 +413,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
             modNamEMC, indexOffset, (unsigned)lenInPlc, (int)status);
   if (!status)
   {
-    ADS_Read_rep_type *ADS_Read_rep_p = (ADS_Read_rep_type*) p_read_buf;
+    AdsReadRepType *ADS_Read_rep_p = (AdsReadRepType*) p_read_buf;
     uint32_t ads_result = ADS_Read_rep_p->response.result_0 +
       (ADS_Read_rep_p->response.result_1 << 8) +
       (ADS_Read_rep_p->response.result_2 << 16) +
@@ -436,7 +436,7 @@ asynStatus EthercatMCController::getPlcMemoryViaADS(unsigned indexOffset,
     }
     if (!status) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
-      src_ptr += sizeof(ADS_Read_rep_type);
+      src_ptr += sizeof(AdsReadRepType);
       memcpy(data, src_ptr, ads_length);
       EthercatMChexdump(pasynUser, tracelevel, "RDMEM",
                         src_ptr, ads_length);
@@ -453,15 +453,15 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexOffset,
   static unsigned indexGroup = 0x4020;
   int tracelevel = deftracelevel;
   asynUser *pasynUser = pasynUserController_;
-  ADS_Write_rep_type ADS_Write_rep;
-  ADS_Write_req_type *ads_write_req_p;
+  AdsWriteRepType ADS_Write_rep;
+  AdsWriteReqType *ads_write_req_p;
 
-  size_t write_buf_len = sizeof(ADS_Write_req_type) + lenInPlc;
+  size_t write_buf_len = sizeof(AdsWriteReqType) + lenInPlc;
   void *p_write_buf = malloc(write_buf_len);
 
   asynStatus status;
   size_t nread = 0;
-  ads_write_req_p = (ADS_Write_req_type *)p_write_buf;
+  ads_write_req_p = (AdsWriteReqType *)p_write_buf;
 
   memset(p_write_buf, 0, write_buf_len);
   memset(&ADS_Write_rep, 0, sizeof(ADS_Write_rep));
@@ -487,13 +487,13 @@ asynStatus EthercatMCController::setPlcMemoryViaADS(unsigned indexOffset,
   /* copy the payload */
   {
     uint8_t *dst_ptr = (uint8_t*)p_write_buf;
-    dst_ptr += sizeof(ADS_Write_req_type);
+    dst_ptr += sizeof(AdsWriteReqType);
     memcpy(dst_ptr, data, lenInPlc);
     EthercatMChexdump(pasynUser, tracelevel, "WRMEM",
                       data, lenInPlc);
   }
   status = writeWriteReadAds(pasynUser,
-                             (ams_hdr_type *)p_write_buf, write_buf_len,
+                             (AmsHdrType *)p_write_buf, write_buf_len,
                              invokeID, ADS_WRITE,
                              &ADS_Write_rep, sizeof(ADS_Write_rep),
                              &nread);
@@ -524,11 +524,11 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
   unsigned indexOffset = 0;
   size_t   symbolNameLen = strlen(symbolName);
 
-  size_t write_buf_len = sizeof(ads_read_write_req_type) + symbolNameLen;
-  size_t read_buf_len  = sizeof(ads_read_write_rep_type) + lenInPlc;
+  size_t write_buf_len = sizeof(AdsReadWriteReqType) + symbolNameLen;
+  size_t read_buf_len  = sizeof(AdsReadWriteRepType) + lenInPlc;
   void *p_read_buf = malloc(read_buf_len);
-  ads_read_write_req_type *ads_read_write_req_p =
-    (ads_read_write_req_type*)malloc(write_buf_len);
+  AdsReadWriteReqType *ads_read_write_req_p =
+    (AdsReadWriteReqType*)malloc(write_buf_len);
 
   asynStatus status;
   size_t nread = 0;
@@ -557,20 +557,20 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
   /* copy the symbol name */
   {
     uint8_t *dst_ptr = (uint8_t*)ads_read_write_req_p;
-    dst_ptr += sizeof(ads_read_write_req_type);
+    dst_ptr += sizeof(AdsReadWriteReqType);
     memcpy(dst_ptr, symbolName, symbolNameLen);
     EthercatMChexdump(pasynUser, tracelevel, "LOOKS",
                       symbolName, symbolNameLen);
   }
   status = writeWriteReadAds(pasynUser,
-                             (ams_hdr_type *)ads_read_write_req_p,
+                             (AmsHdrType *)ads_read_write_req_p,
                              write_buf_len,
                              invokeID, ADS_READ_WRITE,
                              (char*)p_read_buf, read_buf_len,
                              &nread);
   if (!status)
   {
-    ads_read_write_rep_type *ads_read_write_rep_p = (ads_read_write_rep_type*) p_read_buf;
+    AdsReadWriteRepType *ads_read_write_rep_p = (AdsReadWriteRepType*) p_read_buf;
     uint32_t ads_result = ads_read_write_rep_p->response.result_0 +
       (ads_read_write_rep_p->response.result_1 << 8) +
       (ads_read_write_rep_p->response.result_2 << 16) +
@@ -586,13 +586,13 @@ asynStatus EthercatMCController::getSymbolInfoViaADS(const char *symbolName,
       status = asynError;
     }
     if (!status) {
-      adsGgetSymbolInfoByName_rep_type *adsGgetSymbolInfoByName_rep_p;
-      adsGgetSymbolInfoByName_rep_p = (adsGgetSymbolInfoByName_rep_type *)p_read_buf;
+      AdsGetSymbolInfoByNameRepType *adsGgetSymbolInfoByName_rep_p;
+      adsGgetSymbolInfoByName_rep_p = (AdsGetSymbolInfoByNameRepType *)p_read_buf;
       (void)adsGgetSymbolInfoByName_rep_p;
     }
     if (!status) {
       uint8_t *src_ptr = (uint8_t*) p_read_buf;
-      src_ptr += sizeof(ads_read_write_rep_type);
+      src_ptr += sizeof(AdsReadWriteRepType);
       asynPrint(pasynUser, tracelevel,
                 "%s ads_result=0x%x ads_length=0x%x\n",
                 modNamEMC, ads_result, ads_length);

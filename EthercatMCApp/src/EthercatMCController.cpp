@@ -207,7 +207,7 @@ EthercatMCController::EthercatMCController(const char *portName,
         }
       } else if (!strncmp(pThisOption, amsNetIdRemote_str,
                           strlen(amsNetIdRemote_str))) {
-        ams_netid_port_type ams_netid_port;
+        AmsNetidAndPortType ams_netid_port;
         int nvals;
         memset(&ams_netid_port, 0, sizeof(ams_netid_port));
         pThisOption += strlen(amsNetIdRemote_str);
@@ -233,7 +233,7 @@ EthercatMCController::EthercatMCController(const char *portName,
         }
       } else if (!strncmp(pThisOption, amsNetIdLocal_str,
                           strlen(amsNetIdLocal_str))) {
-        ams_netid_port_type ams_netid_port;
+        AmsNetidAndPortType ams_netid_port;
         int nvals;
         memset(&ams_netid_port, 0, sizeof(ams_netid_port));
         pThisOption += strlen(amsNetIdLocal_str);

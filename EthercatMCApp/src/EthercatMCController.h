@@ -143,7 +143,7 @@ public:
   void handleStatusChange(asynStatus status);
   /* memory bytes via ADS */
   asynStatus writeWriteReadAds(asynUser *pasynUser,
-                               ams_hdr_type *ams_hdr_p, size_t outlen,
+                               AmsHdrType *ams_hdr_p, size_t outlen,
                                uint32_t invokeID,
                                uint32_t ads_cmdID,
                                void *indata, size_t inlen,
@@ -202,8 +202,8 @@ public:
     unsigned int isConnected;
     unsigned int initialPollDone;
     unsigned int indexerOffset;
-    ams_netid_port_type remote;
-    ams_netid_port_type local;
+    AmsNetidAndPortType remote;
+    AmsNetidAndPortType local;
     unsigned adsport;
     int useADSbinary;
     struct {
