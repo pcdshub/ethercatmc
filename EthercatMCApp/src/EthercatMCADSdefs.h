@@ -14,10 +14,7 @@
 typedef struct {
   uint8_t res0;
   uint8_t res1;
-  uint8_t length_0;
-  uint8_t length_1;
-  uint8_t length_2;
-  uint8_t length_3;
+  uint8_t net_len[4];
 } AmsTcpHdrType;
 
 typedef struct AmsNetidAndPortType {
@@ -36,10 +33,7 @@ typedef struct {
   uint8_t cmdID_high;
   uint8_t stateFlags_low;
   uint8_t stateFlags_high;
-  uint8_t length_0;
-  uint8_t length_1;
-  uint8_t length_2;
-  uint8_t length_3;
+  uint8_t net_len[4];
   uint8_t errorCode_0;
   uint8_t errorCode_1;
   uint8_t errorCode_2;
@@ -60,10 +54,7 @@ typedef struct {
   uint8_t indexOffset_1;
   uint8_t indexOffset_2;
   uint8_t indexOffset_3;
-  uint8_t length_0;
-  uint8_t length_1;
-  uint8_t length_2;
-  uint8_t length_3;
+  uint8_t net_len[4];
 } AdsReadReqType;
 
 typedef struct {
@@ -76,10 +67,7 @@ typedef struct {
   uint8_t indexOffset_1;
   uint8_t indexOffset_2;
   uint8_t indexOffset_3;
-  uint8_t length_0;
-  uint8_t length_1;
-  uint8_t length_2;
-  uint8_t length_3;
+  uint8_t net_len[4];
 } AdsWriteReqType;
 
 typedef struct {
@@ -124,10 +112,7 @@ typedef struct {
     uint8_t result_1;
     uint8_t result_2;
     uint8_t result_3;
-    uint8_t length_0;
-    uint8_t length_1;
-    uint8_t length_2;
-    uint8_t length_3;
+    uint8_t net_len[4];
   } response;
 } AdsReadRepType;
 
@@ -138,10 +123,7 @@ typedef struct {
     uint8_t result_1;
     uint8_t result_2;
     uint8_t result_3;
-    uint8_t length_0;
-    uint8_t length_1;
-    uint8_t length_2;
-    uint8_t length_3;
+    uint8_t net_len[4];
   } response;
 } AdsReadWriteRepType;
 
