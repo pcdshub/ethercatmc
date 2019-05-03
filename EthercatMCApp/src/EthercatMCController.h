@@ -73,6 +73,10 @@ FILENAME...   EthercatMCController.h
 extern const char *modNamEMC;
 
 extern "C" {
+  unsigned   netToUint(void *data, size_t lenInPlc);
+  double     netToDouble(void *data, size_t lenInPlc);
+  void       doubleToNet(const double value, void *data, size_t lenInPlc);
+  void       uintToNet(const unsigned value, void *data, size_t lenInPlc);
   int EthercatMCCreateAxis(const char *EthercatMCName, int axisNo,
                            int axisFlags, const char *axisOptionsStr);
 
@@ -174,17 +178,14 @@ public:
   asynStatus initialPollIndexer(void);
   asynStatus writeReadControllerPrint(int traceMask);
   asynStatus writeReadACK(int traceMask);
-  uint32_t   getUint32FromWire(void *data, size_t lenInPlc);
   asynStatus getPlcMemoryUint(unsigned indexOffset,
                               unsigned *value, size_t lenInPlc);
   asynStatus getPlcMemoryString(unsigned indexOffset,
                                 char *value, size_t len);
   asynStatus setPlcMemoryInteger(unsigned indexOffset,
                                  int value, size_t lenInPlc);
-  double     getDoubleFromWire(void *data, size_t lenInPlc);
   asynStatus getPlcMemoryDouble(unsigned indexOffset,
                                 double *value, size_t lenInPlc);
-  void setDoubleToWire(const double value, void *data, size_t lenInPlc);
   asynStatus setPlcMemoryDouble(unsigned indexOffset,
                                 double value, size_t lenInPlc);
 

@@ -185,21 +185,20 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
 {
   asynStatus status = asynSuccess;
   unsigned traceMask = ASYN_TRACE_INFO;
-    /* param devices look like this
-       0x0 Actual value,   32 bit float
-       0x4 Setpoint        32 bit float
-       0x8 CmdStatusReason 16 bit integer/bitwise
-       0xA ParamCmd        16 bit integer/bitwise
-       0xE ParamValue      32 bit float or integer
-    */
-  unsigned cmdReason = idxStatusCodeSTART  << 12;
-  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
   asynPrint(pC_->pasynUserController_, traceMask,
             "%smove (%d) position=%f relative=%d minVelocity=%f maxVelocity=%f"
             " acceleration=%f\n",
             "EthercatMCIndexerAxis", axisNo_,
             position, relative, minVelocity, maxVelocity, acceleration);
   if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
+    /* param devices 5008 look like this
+       0x0 Actual value,   32 bit float
+       0x4 Setpoint        32 bit float
+       0x8 CmdStatusReason 16 bit integer/bitwise
+       0xA ParamCmd        16 bit integer/bitwise
+       0xE ParamValue      32 bit float or integer
+    */
+    unsigned paramIfOffset = drvlocal.iOffset + 0xA;
     if (maxVelocity > 0.0) {
       double oldValue;
       pC_->getDoubleParam(axisNo_, pC_->EthercatMCVel_RB_, &oldValue);
@@ -238,13 +237,13 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
       position = position - actPosition;
     }
     {
+      unsigned cmdReason = idxStatusCodeSTART  << 12;
       struct {
 	uint8_t  posRaw[4];
 	uint8_t  cmdReason[2];
       } posCmd;
-      pC_->setDoubleToWire(position, &posCmd.posRaw, sizeof(posCmd.posRaw));
-      posCmd.cmdReason[0] = (uint8_t)cmdReason;
-      posCmd.cmdReason[1] = (uint8_t)(cmdReason >> 8);
+      doubleToNet(position, &posCmd.posRaw, sizeof(posCmd.posRaw));
+      uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
       return pC_->setPlcMemoryViaADS(drvlocal.iOffset + 4,
 				     &posCmd, sizeof(posCmd));
     }
@@ -403,16 +402,16 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       if (status) {
         return status;
       }
-      actPosition = pC_->getDoubleFromWire(&readback.actPos,
-                                           sizeof(readback.actPos));
-      targetPosition = pC_->getDoubleFromWire(&readback.targtPos,
-                                              sizeof(readback.targtPos));
-      statusReasonAux = pC_->getUint32FromWire(&readback.statReasAux,
-                                               sizeof(readback.statReasAux ));
-      paramCtrl = pC_->getUint32FromWire(&readback.paramCtrl,
-                                         sizeof(readback.paramCtrl));
-      paramValue = pC_->getDoubleFromWire(&readback.paramValue,
-                                          sizeof(readback.paramValue));
+      actPosition = netToDouble(&readback.actPos,
+                                sizeof(readback.actPos));
+      targetPosition = netToDouble(&readback.targtPos,
+                                   sizeof(readback.targtPos));
+      statusReasonAux = netToUint(&readback.statReasAux,
+                                    sizeof(readback.statReasAux ));
+      paramCtrl = netToUint(&readback.paramCtrl,
+                              sizeof(readback.paramCtrl));
+      paramValue = netToDouble(&readback.paramValue,
+                               sizeof(readback.paramValue));
     } else {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
                 "%spoll(%d) iTypCode=0x%x\n",

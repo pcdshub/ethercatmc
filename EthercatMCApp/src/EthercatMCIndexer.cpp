@@ -87,30 +87,6 @@ extern "C" {
   }
 };
 
-uint32_t EthercatMCController::getUint32FromWire(void *data, size_t lenInPlc)
-{
-  static int tracelevel = 0;
-  const uint8_t *src = (const uint8_t*)data;
-  if (lenInPlc == 2) {
-    uint32_t uRes;
-    uRes = (uint32_t)src[0] + ((uint32_t)src[1] << 8);
-    asynPrint(pasynUserController_, tracelevel,
-              "%sgetDoubleFromWire src[0]=0x%x src[1]=0x%x uRes=0x%x\n",
-              modNamEMC, src[0], src[1], uRes);
-    return uRes;
-  } else  if (lenInPlc == 4) {
-    uint32_t uRes;
-    uRes = (uint32_t)src[0] + ((uint32_t)src[1] << 8) +
-           ((uint32_t)src[2] << 16) + ((uint32_t)src[3] << 24);
-    asynPrint(pasynUserController_, tracelevel,
-              "%sgetDoubleFromWire src=0x%x 0x%x =0x%x 0x%x uRes=0x%x\n",
-              modNamEMC, src[0], src[1], src[2], src[3], uRes);
-    return uRes;
-  } else {
-    return 0.0;
-  }
-}
-
 asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
                                                   unsigned *value,
                                                   size_t lenInPlc)
@@ -164,52 +140,6 @@ asynStatus EthercatMCController::setPlcMemoryInteger(unsigned indexOffset,
 }
 
 
-double EthercatMCController::getDoubleFromWire(void *data, size_t lenInPlc)
-{
-  static int tracelevel = 0;
-  const uint8_t *src = (const uint8_t*)data;
-  if (lenInPlc == 4) {
-    union {
-      volatile uint32_t uRes;
-      volatile float    fRes;
-    } dst;
-
-    dst.uRes = (uint32_t)src[0] + ((uint32_t)src[1] << 8) +
-               ((uint32_t)src[2] << 16) + ((uint32_t)src[3] << 24);
-    asynPrint(pasynUserController_, tracelevel,
-              "%sgetDoubleFromWire src=0x%x 0x%x 0x%x 0x%x uRes=0x%x fRes=%f\n",
-              modNamEMC, src[0], src[1], src[2], src[3],
-	      dst.uRes, (double)dst.fRes);
-    return (double)dst.fRes;
-  } else {
-    return 0.0;
-  }
-}
-
-void EthercatMCController::setDoubleToWire(const double value,
-                                           void *data, size_t lenInPlc)
-{
-  static int tracelevel = 0;
-  uint8_t *dst = (uint8_t*)data;
-  if (lenInPlc == 4) {
-    union {
-      volatile uint32_t uRes;
-      volatile float    fRes;
-    } src;
-    src.fRes = (float)value;
-    dst[0] = (uint8_t)src.uRes;
-    dst[1] = (uint8_t)(src.uRes >> 8);
-    dst[2] = (uint8_t)(src.uRes >> 16);
-    dst[3] = (uint8_t)(src.uRes >> 24);
-    asynPrint(pasynUserController_, tracelevel,
-              "%ssetDoubleToWire value=%f src.fRes=%f src.uRes=0x%x dst=0x%x 0x%x  0x%x 0x%x\n",
-              modNamEMC, value, (double)src.fRes, src.uRes,
-	      dst[0], dst[1], dst[2], dst[3]);
-  } else {
-    memset(data, 0, lenInPlc);
-  }
-}
-
 asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
                                                     double *value,
                                                     size_t lenInPlc)
@@ -220,7 +150,7 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   if (lenInPlc == 4) {
     uint8_t raw[4];
     status = getPlcMemoryViaADS(indexOffset, &raw, sizeof(raw));
-    *value = getDoubleFromWire(&raw, sizeof(raw));
+    *value = netToDouble(&raw, sizeof(raw));
     return status;
     //} else if (lenInPlc == 8) {
     //return getPlcMemoryViaADS(indexOffset, value, lenInPlc);
@@ -234,7 +164,7 @@ asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
 {
   if (lenInPlc == 4) {
     uint8_t raw[4];
-    setDoubleToWire(value, &raw, sizeof(raw));
+    doubleToNet(value, &raw, sizeof(raw));
     return setPlcMemoryViaADS(indexOffset, &raw, sizeof(raw));
     //} else if (lenInPlc == 8) {
     //double res = value;
@@ -362,15 +292,15 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
 		  pasynManager->strStatus(status), (int)status);
 	return status;
       }
-      cmdSubParamIndex = getUint32FromWire(&paramIf.paramCtrl,
+      cmdSubParamIndex = netToUint(&paramIf.paramCtrl,
 					   sizeof(paramIf.paramCtrl));
       if (paramIndex < 30) {
         /* parameters below 30 are unsigned integers in the PLC
            Read them as integers from PLC, and parse into a double */
-	fValue           = (double)getUint32FromWire(&paramIf.paramValue,
+	fValue           = (double)netToUint(&paramIf.paramValue,
 						     sizeof(paramIf.paramValue));
       } else {
-	fValue           = getDoubleFromWire(&paramIf.paramValue,
+	fValue           = netToDouble(&paramIf.paramValue,
 					     sizeof(paramIf.paramValue));
       }
       if (cmdSubParamIndex == cmdAcked) {
@@ -800,9 +730,9 @@ asynStatus EthercatMCController::initialPollIndexer(void)
         iUnit     = infoType0_data.unit_0 + (infoType0_data.unit_1 << 8);
         iAllFlags = infoType0_data.flags_0 + (infoType0_data.flags_1 << 8) +
           (infoType0_data.flags_2 << 16) + (infoType0_data.flags_3 << 24);
-        fAbsMin   = getDoubleFromWire(&infoType0_data.absMin,
+        fAbsMin   = netToDouble(&infoType0_data.absMin,
                                       sizeof(infoType0_data.absMin));
-        fAbsMax   = getDoubleFromWire(&infoType0_data.absMax,
+        fAbsMax   = netToDouble(&infoType0_data.absMax,
                                       sizeof(infoType0_data.absMax));
       }
     }
