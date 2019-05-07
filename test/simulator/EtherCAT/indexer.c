@@ -122,15 +122,6 @@ typedef struct {
 } indexerDeviceAbsStraction_type;
 
 
-/*
- * The param interface structure
- * Obs: this struct is "un-aligned" in memory
- */
-typedef struct {
-  uint16_t  paramCtrl;
-  float     paramValue;
-} indexerParam5008interface_type;
-
 /* The paramDevice structure.
    floating point values are 4 bytes long,
    the whole structure uses 16 bytes, 8 words */
@@ -190,7 +181,6 @@ static union {
 } idxData;
 
 static int initDone = 0;
-static unsigned offsetMotor1ParamInterface;
 
 /* values commanded to the motor */
 static cmd_Motor_cmd_type cmd_Motor_cmd[MAX_AXES];
@@ -206,12 +196,9 @@ static void init(void)
     (unsigned)((void*)&idxData.memoryStruct.indexer_ack - (void*)&idxData);
   idxData.memoryStruct.offset = offsetIndexer;
 
-  offsetMotor1ParamInterface =
-    (unsigned)((void*)&idxData.memoryStruct.motors[1].paramCtrl - (void*)&idxData);
-
-  LOGINFO3("%s/%s:%d offsetIndexer=%u offsetMotor1ParamInterface=%u\n",
+  LOGINFO3("%s/%s:%d offsetIndexer=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
-           offsetIndexer, offsetMotor1ParamInterface);
+           offsetIndexer);
   initDone = 1;
 }
 
@@ -401,7 +388,7 @@ indexerMotorParamWrite(unsigned motor_axis_no,
 }
 
 static void
-indexerMotorParamInterface(unsigned motor_axis_no, unsigned offset)
+indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
 {
   unsigned uValue = idxData.memoryWords[offset / 2];
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
@@ -759,7 +746,7 @@ void indexerHandlePLCcycle(void)
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].paramCtrl -
                             (void*)&idxData);
-        indexerMotorParamInterface(devNum, offset);
+        indexerMotorParamInterface5008(devNum, offset);
       }
       break;
     case TYPECODE_INDEXER:
