@@ -235,9 +235,8 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
     epicsThreadSleep(.1 * (counter<<1));
   }
   asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-            "%sout=%s in=%s cmdSubParamIndex=0x%04x counter=%d\n",
-            modNamEMC, outString_, inString_, cmdSubParamIndex,
-            counter);
+            "%sindexOffset=%u cmdSubParamIndex=0x%04x counter=%d\n",
+            modNamEMC, indexOffset, cmdSubParamIndex, counter);
   return asynDisabled;
 }
 
@@ -329,8 +328,8 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
       }
       if (status && (counter > 1)) {
 	asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
-		  "%scmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
-		  modNamEMC, cmdSubParamIndex,
+		  "%sparamIfOffset=%u cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+		  modNamEMC, paramIfOffset, cmdSubParamIndex,
 		  counter,
 		  pasynManager->strStatus(status), (int)status);
       }
