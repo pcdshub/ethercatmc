@@ -80,6 +80,33 @@ typedef enum {
 #define PARAM_IDX_FUN_REFERENCE               133
 #define PARAM_IDX_FUN_MOVE_VELOCITY           142
 
+/*  Which parameters are available */
+#define PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32            (1 << (1))
+#define PARAM_AVAIL_0_15_MICROSTEPS_UINT32             (1 << (2))
+
+#define PARAM_AVAIL_16_31_ABS_MIN_FLOAT32              (1 << (30-16))
+#define PARAM_AVAIL_16_31_ABS_MAX_FLOAT32              (1 << (31-16))
+
+#define PARAM_AVAIL_32_47_USR_MIN_FLOAT32              (1 << (32-32))
+#define PARAM_AVAIL_32_47_USR_MAX_FLOAT32              (1 << (33-32))
+#define PARAM_AVAIL_32_47_WRN_MIN_FLOAT32              (1 << (34-32))
+#define PARAM_AVAIL_32_47_WRN_MAX_FLOAT32              (1 << (35-32))
+
+#define PARAM_AVAIL_48_63_FOLLOWING_ERR_WIN_FLOAT32    (1 << (55-48))
+#define PARAM_AVAIL_48_63_HYTERESIS_FLOAT32            (1 << (56-48))
+#define PARAM_AVAIL_48_63_REFSPEED_FLOAT32             (1 << (58-48))
+#define PARAM_AVAIL_48_63_VBAS_FLOAT32                 (1 << (59-48))
+#define PARAM_AVAIL_48_63_SPEED_FLOAT32                (1 << (60-48))
+#define PARAM_AVAIL_48_63_ACCEL_FLOAT32                (1 << (61-48))
+#define PARAM_AVAIL_48_63_IDLE_CURRENT_FLOAT32         (1 << (62-48))
+
+#define PARAM_AVAIL_64_79_MOVE_CURRENT_FLOAT32         (1 << (64-64))
+#define PARAM_AVAIL_64_79_MICROSTEPS_FLOAT32           (1 << (67-64))
+#define PARAM_AVAIL_64_79_STEPS_PER_UNIT_FLOAT32       (1 << (68-64))
+#define PARAM_AVAIL_64_79_HOME_POSITION_FLOAT32        (1 << (69-64))
+
+#define PARAM_AVAIL_128_143_FUN_REFERENCE              (1 << (132-128))
+#define PARAM_AVAIL_128_143_FUN_MOVE_VELOCITY          (1 << (142-128))
 
 
 
@@ -114,7 +141,7 @@ typedef struct {
   uint16_t  typeCode;
   uint16_t  size;
   uint16_t  unitCode;
-  uint16_t  parameters[16]; /* counting 0..15 */
+  uint16_t  paramAvail[16]; /* counting 0..15 */
   char      devName[34];
   char      auxName[8][34];
   float     absMin;
@@ -146,7 +173,22 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
   },
   { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
     UNITCODE_MM,
-    {0,0,0,0x1000,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,
+     0,
+     0,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0},
     "SimAxis1",
     { "", "", "", "", "", "homing", "@home", "homed" },
     5.0, 175.0
@@ -156,6 +198,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
 
 typedef struct
 {
+  double fHysteresis;
   double fVelocity;
   double fAcceleration;
 } cmd_Motor_cmd_type;
@@ -243,6 +286,7 @@ static void init_axis(int axis_no)
     //cmd_Motor_cmd[axis_no].inTargetPositionMonitorEnabled = 1;
     setMRES_23(axis_no, UREV);
     setMRES_24(axis_no, SREV);
+    cmd_Motor_cmd[axis_no].fHysteresis = 0.1;
     cmd_Motor_cmd[axis_no].fVelocity = 1;
     cmd_Motor_cmd[axis_no].fAcceleration = 1;
 
@@ -340,6 +384,9 @@ indexerMotorParamRead(unsigned motor_axis_no,
   init_axis((int)motor_axis_no);
 
   switch(paramIndex) {
+  case PARAM_IDX_HYTERESIS_FLOAT32:
+    *fRet = cmd_Motor_cmd[motor_axis_no].fHysteresis;
+    return ret;
   case PARAM_IDX_SPEED_FLOAT32:
     *fRet = cmd_Motor_cmd[motor_axis_no].fVelocity;
     return ret;
@@ -405,6 +452,7 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
     if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
       float fFloat = (float)fRet;
       switch(paramIndex) {
+      case PARAM_IDX_HYTERESIS_FLOAT32:
       case PARAM_IDX_SPEED_FLOAT32:
       case PARAM_IDX_ACCEL_FLOAT32:
         memcpy(&idxData.memoryWords[(offset/2) + 1],
@@ -549,7 +597,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
       return 0;
     case 15:
       memcpy(&idxData.memoryStruct.indexer.infoType15,
-              indexerDeviceAbsStraction[devNum].parameters,
+              indexerDeviceAbsStraction[devNum].paramAvail,
               sizeof(idxData.memoryStruct.indexer.infoType15));
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
