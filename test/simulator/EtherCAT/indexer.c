@@ -22,6 +22,10 @@
 /* Well known unit codes */
 #define UNITCODE_NONE                    0
 #define UNITCODE_MM                 0xfd04
+#define UNITCODE_DEGREE             0x000C
+
+/* 3 devices: the indexer +  2 motors */
+#define  NUM_DEVICES       3
 
 typedef enum {
   idxStatusCodeRESET    = 0,
@@ -161,7 +165,7 @@ typedef struct {
 } indexerDevice5008interface_type;
 
 
-indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
+indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
 {
   /* device 0, the indexer itself */
   { TYPECODE_INDEXER, SIZE_INDEXER,
@@ -192,6 +196,28 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[2] =
     "SimAxis1",
     { "", "", "", "", "", "homing", "@home", "homed" },
     5.0, 175.0
+  },
+  { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
+    UNITCODE_DEGREE,
+    {0, //PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
+     0,
+     0,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0},
+    "RotAxis2",
+    { "", "", "", "", "", "homing", "@home", "homed" },
+    -180.0, +180.0
   }
 };
 
@@ -441,6 +467,10 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
   unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
   uint16_t ret = (uint16_t)uValue;
+  LOGINFO3("%s/%s:%d motor_axis_no=%u offset=%u uValue=0x%x\n",
+           __FILE__, __FUNCTION__, __LINE__,
+           motor_axis_no, offset, uValue);
+
   if (paramCommand == PARAM_IF_CMD_DOREAD) {
     double fRet;
     /* do the read */
@@ -509,14 +539,14 @@ static int indexerHandleIndexerCmd(unsigned offset,
 {
   unsigned devNum = uValue & 0xFF;
   unsigned infoType = (uValue >> 8) & 0x7F;
-  LOGINFO3("%s/%s:%d offset=%u len_in_PLC=%u uValue=%u devNum=%u infoType=%u\n",
+  unsigned maxDevNum = NUM_DEVICES - 1;
+  LOGINFO3("%s/%s:%d offset=%u len_in_PLC=%u uValue=0x%x devNum=%u maxDevNum=%u infoType=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
            offset, len_in_PLC,
-           uValue, devNum, infoType);
+           uValue, devNum, maxDevNum, infoType);
   memset(&idxData.memoryStruct.indexer, 0, sizeof(idxData.memoryStruct.indexer));
   idxData.memoryStruct.indexer_ack = uValue;
-  if (devNum >= (sizeof(indexerDeviceAbsStraction)/
-                 sizeof(indexerDeviceAbsStraction[0]))) {
+  if (devNum >= NUM_DEVICES) {
     idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
     return 0;
   }
@@ -555,10 +585,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
         /* Offset to the first motor */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum] - (void*)&idxData);
-        if (devNum > 1) {
-          /* TODO: Support other interface types */
-          offset += sizeof(indexerDevice5008interface_type);
-        }
+        /* TODO: Support other interface types */
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
       }
@@ -773,8 +800,11 @@ void indexerHandlePLCcycle(void)
 {
   unsigned devNum = 0;
   init();
-  while (devNum < (sizeof(indexerDeviceAbsStraction)/
-                   sizeof(indexerDeviceAbsStraction[0]))) {
+  while (devNum < NUM_DEVICES) {
+    LOGINFO3("%s/%s:%d devNum=%u typeCode=0x%x\n",
+             __FILE__, __FUNCTION__, __LINE__,
+             devNum, indexerDeviceAbsStraction[devNum].typeCode);
+
     switch (indexerDeviceAbsStraction[devNum].typeCode) {
     case TYPECODE_PARAMDEVICE_5008:
       {
@@ -794,6 +824,9 @@ void indexerHandlePLCcycle(void)
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].paramCtrl -
                             (void*)&idxData);
+        LOGINFO3("%s/%s:%d devNum=%u offset=%u\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 devNum, offset);
         indexerMotorParamInterface5008(devNum, offset);
       }
       break;
