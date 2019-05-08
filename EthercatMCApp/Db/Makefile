@@ -16,6 +16,7 @@ include $(TOP)/configure/CONFIG
 # Create and install (or just install)
 # databases, templates, substitutions like this
 DB += EthercatMC.template
+DB += EthercatMCads.template
 DB += EthercatMCdebug.template
 DB += EthercatMChome.template
 DB += EthercatMCreadback.template
