@@ -1,0 +1,9 @@
+record(ai,"$(PREFIX)$(MOTOR_NAME)-RBV-PLC"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(ASYN_PORT),0,1)ADSPORT=852/Main.M$(AXIS_NO).fActPosition?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+}
+
