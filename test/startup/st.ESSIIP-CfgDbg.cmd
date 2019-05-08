@@ -3,10 +3,10 @@ require EthercatMC,USER
 epicsEnvSet("ECM_NUMAXES",   "1")
 epicsEnvSet("MOTOR_PORT",    "$(SM_MOTOR_PORT=MCU1)")
 
-epicsEnvSet("IPADDR",        "$(SM_IPADDR=127.0.0.1)")
-epicsEnvSet("IPPORT",        "$(SM_IPPORT=5000)")
+epicsEnvSet("IPADDR",        "$(SM_IPADDR=172.30.242.17)")
+epicsEnvSet("IPPORT",        "$(SM_IPPORT=200)")
 epicsEnvSet("ASYN_PORT",     "$(SM_ASYN_PORT=MC_CPU1)")
-epicsEnvSet("PREFIX",        "$(SM_PREFIX=IOC:)")
+epicsEnvSet("PREFIX",        "$(SM_PREFIX=LabS-ESSIIP:MC-MCU-01:)")
 epicsEnvSet("MOTOR_NAME",    "$(SM_MOTOR_NAME=m1)")
 epicsEnvSet("AXIS_NO",       "$(SM_AXIS_NO=1)")
 epicsEnvSet("DESC",          "$(SM_DESC=Lower=Right)")
