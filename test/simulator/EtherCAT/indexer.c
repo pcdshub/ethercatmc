@@ -180,7 +180,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     {0,
      0,
      0,
-     PARAM_AVAIL_48_63_SPEED_FLOAT32,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_HYTERESIS_FLOAT32,
      0,
      0,
      0,
@@ -202,7 +202,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     {0, //PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
      0,
      0,
-     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32 | PARAM_AVAIL_48_63_HYTERESIS_FLOAT32,
      0,
      0,
      0,
@@ -232,7 +232,6 @@ typedef struct
 
 static union {
   uint8_t  memoryBytes[1024];
-  uint16_t memoryWords[512];
   struct {
     float    magic;
     uint16_t offset;
@@ -321,7 +320,6 @@ static void init_axis(int axis_no)
   }
 }
 
-#if 0
 static unsigned netToUint(void *data, size_t lenInPlc)
 {
   const uint8_t *src = (const uint8_t*)data;
@@ -338,7 +336,6 @@ static unsigned netToUint(void *data, size_t lenInPlc)
   }
   return 0;
 }
-#endif
 
 static double netToDouble(void *data, size_t lenInPlc)
 {
@@ -398,7 +395,6 @@ static void doubleToNet(const double value, void *data, size_t lenInPlc)
   }
 }
 
-#if 0
 static void uintToNet(const unsigned value, void *data, size_t lenInPlc)
 {
   uint8_t *dst = (uint8_t*)data;
@@ -415,7 +411,6 @@ static void uintToNet(const unsigned value, void *data, size_t lenInPlc)
     dst[3] = (uint8_t)(value >> 24);
   }
 }
-#endif
 
 static void
 indexerMotorStatusRead5008(unsigned motor_axis_no,
@@ -559,7 +554,7 @@ indexerMotorParamWrite(unsigned motor_axis_no,
 static void
 indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
 {
-  unsigned uValue = idxData.memoryWords[offset / 2];
+  unsigned uValue = netToUint(&idxData.memoryBytes[offset], 2);
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
   unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
   uint16_t ret = (uint16_t)uValue;
@@ -575,19 +570,19 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
                                 paramIndex,
                                 &fRet);
     /* put DONE (or ERROR) into the process image */
-    idxData.memoryWords[offset / 2] = ret;
+    uintToNet(ret, &idxData.memoryBytes[offset], 2);
     if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
       switch(paramIndex) {
       case PARAM_IDX_HYTERESIS_FLOAT32:
       case PARAM_IDX_SPEED_FLOAT32:
       case PARAM_IDX_ACCEL_FLOAT32:
-        doubleToNet(fRet, &idxData.memoryWords[(offset/2) + 1], lenInPlc);
+        doubleToNet(fRet, &idxData.memoryBytes[offset + 2], lenInPlc);
         break;
       }
     }
   } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
     double fValue;
-    fValue =  netToDouble(&idxData.memoryWords[(offset/2) + 1], lenInPlc);
+    fValue =  netToDouble(&idxData.memoryBytes[offset + 2], lenInPlc);
     ret = PARAM_IF_CMD_ERR_NO_IDX;
     switch(paramIndex) {
     case PARAM_IDX_SPEED_FLOAT32:
@@ -617,7 +612,7 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
       break;
     }
     /* put DONE (or ERROR) into the process image */
-    idxData.memoryWords[offset / 2] = ret;
+    uintToNet(ret, &idxData.memoryBytes[offset], 2);
   }
   LOGINFO6("%s/%s:%d indexerMotorParamRead motor_axis_no=%u paramIndex=%u uValue=%x ret=%x\n",
            __FILE__, __FUNCTION__, __LINE__,
@@ -747,9 +742,8 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
     return __LINE__;
   if (offset & 0x1) /* Must be even */
     return __LINE__;
-  if (lenInPlc == 2) {
-    ret = idxData.memoryWords[offset / 2];
-    *uValue = ret;
+  ret = netToUint(&idxData.memoryBytes[offset], lenInPlc);
+  *uValue = ret;
     /*
     LOGINFO3("%s/%s:%d adsport=%u offset=%u lenInPlc=%u mot1=%u ret=%u (0x%x)\n",
              __FILE__, __FUNCTION__, __LINE__,
@@ -759,14 +753,7 @@ int indexerHandleADS_ADR_getUInt(unsigned adsport,
              offsetMotor1StatusReasonAux,
              ret, ret);
     */
-    return 0;
-  } else if (lenInPlc == 4) {
-    ret = idxData.memoryWords[offset / 2] +
-      (idxData.memoryWords[(offset / 2) + 1] <<16);
-    *uValue = ret;
-    return 0;
-  }
-  return __LINE__;
+  return 0;
 }
 
 int indexerHandleADS_ADR_putUInt(unsigned adsport,
@@ -784,7 +771,7 @@ int indexerHandleADS_ADR_putUInt(unsigned adsport,
   if (offset == offsetIndexer) {
     return indexerHandleIndexerCmd(offset, lenInPlc, uValue);
   } else if (offset < (sizeof(idxData) / sizeof(uint16_t))) {
-    idxData.memoryWords[offset / 2] = uValue;
+    uintToNet(uValue, &idxData.memoryBytes[offset], lenInPlc);
     return 0;
   }
   LOGERR("%s/%s:%d adsport=%u offset=%u lenInPlc=%u uValue=%u (%x)sizeof=%lu\n",

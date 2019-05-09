@@ -212,8 +212,8 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
     status = getPlcMemoryUint(indexOffset, &cmdSubParamIndex, 2);
     asynPrint(pasynUserController_,
               status ? traceMask | ASYN_TRACE_INFO : traceMask,
-              "%sout=%s in=%s cmdSubParamIndex=0x%04x status=%s (%d)\n",
-              modNamEMC, outString_, inString_, cmdSubParamIndex,
+              "%scmdSubParamIndex=0x%04x status=%s (%d)\n",
+              modNamEMC, cmdSubParamIndex,
               pasynManager->strStatus(status), (int)status);
     if (status) return status;
     switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
@@ -225,8 +225,8 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
         return asynSuccess;
       case PARAM_IF_CMD_BUSY:
         asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                  "%sout=%s in=%s (%x) BUSY\n",
-                  modNamEMC, outString_, inString_, atoi(inString_));
+                  "%sBUSY\n",
+                  modNamEMC);
         return asynDisabled;
       default:
         ; /* Read, write continue looping */
@@ -369,16 +369,16 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     status = setPlcMemoryDouble(paramIfOffset + 2, value, lenInPlcPara);
   if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, outString_, inString_,
+            "%sstatus=%s (%d)\n",
+            modNamEMC,
             pasynManager->strStatus(status), (int)status);
   if (status) return status;
 
   status = setPlcMemoryInteger(paramIfOffset, cmd, lenInPlcCmd);
   if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
-            "%sout=%s in=%s (%x) status=%s (%d)\n",
-            modNamEMC, outString_, inString_, atoi(inString_),
+            "%sstatus=%s (%d)\n",
+            modNamEMC,
             pasynManager->strStatus(status), (int)status);
   if (status) return status;
   while (counter < 5) {
@@ -414,8 +414,8 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     if (status) {
       traceMask |= ASYN_TRACE_INFO;
       asynPrint(pasynUserController_, traceMask,
-                "%sout=%s in=%s cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
-                modNamEMC, outString_, inString_, cmdSubParamIndex,
+                "%scmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+                modNamEMC, cmdSubParamIndex,
                 counter,
                 pasynManager->strStatus(status), (int)status);
       return status;
@@ -425,9 +425,8 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   }
   asynPrint(pasynUserController_,
             traceMask | ASYN_TRACE_INFO,
-            "%sout=%s in=%s (%x) counter=%u\n",
-            modNamEMC, outString_, inString_, atoi(inString_),
-            counter);
+            "%scounter=%u\n",
+            modNamEMC, counter);
   return asynDisabled;
 }
 
