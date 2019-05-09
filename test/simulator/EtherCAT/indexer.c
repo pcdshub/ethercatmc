@@ -199,7 +199,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
   },
   { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
     UNITCODE_DEGREE,
-    {0, //PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
+    {PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
      0,
      0,
      PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32 | PARAM_AVAIL_48_63_HYTERESIS_FLOAT32,
@@ -501,6 +501,12 @@ indexerMotorParamRead(unsigned motor_axis_no,
   init_axis((int)motor_axis_no);
 
   switch(paramIndex) {
+  case PARAM_IDX_OPMODE_AUTO_UINT32:
+    /* We return the value as a double:
+       0.0 means power on (normal)
+       1.0 means power off (special) */
+    *fRet = getAmplifierOn(motor_axis_no) ? 0.0 : 1.0;
+    return ret;
   case PARAM_IDX_HYTERESIS_FLOAT32:
     *fRet = cmd_Motor_cmd[motor_axis_no].fHysteresis;
     return ret;
@@ -537,6 +543,11 @@ indexerMotorParamWrite(unsigned motor_axis_no,
            motor_axis_no, paramIndex, fValue);
 
   switch(paramIndex) {
+  case PARAM_IDX_OPMODE_AUTO_UINT32:
+    /* param = 1 means amplifier off.
+       param = 0 means "on", then ramp up */
+    setAmplifierPercent(motor_axis_no, fValue ? 0 : 97);
+    return ret;
   case PARAM_IDX_SPEED_FLOAT32:
     cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
     return ret;
@@ -573,6 +584,9 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
     uintToNet(ret, &idxData.memoryBytes[offset], 2);
     if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
       switch(paramIndex) {
+      case PARAM_IDX_OPMODE_AUTO_UINT32:
+        uintToNet((unsigned)fRet, &idxData.memoryBytes[offset + 2], lenInPlc);
+        break;
       case PARAM_IDX_HYTERESIS_FLOAT32:
       case PARAM_IDX_SPEED_FLOAT32:
       case PARAM_IDX_ACCEL_FLOAT32:
@@ -585,6 +599,10 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
     fValue =  netToDouble(&idxData.memoryBytes[offset + 2], lenInPlc);
     ret = PARAM_IF_CMD_ERR_NO_IDX;
     switch(paramIndex) {
+    case PARAM_IDX_OPMODE_AUTO_UINT32:
+      /* Comes as an uint via the wire */
+      fValue =  (double)netToUint(&idxData.memoryBytes[offset + 2], lenInPlc);
+      /* fall through */
     case PARAM_IDX_SPEED_FLOAT32:
     case PARAM_IDX_ACCEL_FLOAT32:
       ret = indexerMotorParamWrite(motor_axis_no, paramIndex, fValue);
