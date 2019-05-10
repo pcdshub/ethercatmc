@@ -28,7 +28,9 @@ const static char *const strEthercatMCConfigController = "EthercatMCConfigContro
 const static char *const strEthercatMCConfigOrDie      = "EthercatMCConfigOrDie";
 const static char *const strEthercatMCReadController   = "EthercatMCReadController";
 const static char *const strEthercatMCCreateAxisDef    = "EthercatMCCreateAxis";
-const static char *const strEthercatMCCreateIndexerAxisDef = "EthercatMCCreateIndexerAxis";
+const static char *const strEthercatMCCreateIndexerCtrl= "EthercatMCCreateIndexerCtrl";
+const static char *const strEthercatMCCreateIndexerAxis= "EthercatMCCreateIndexerAxis";
+const static char *const strEthercatMCStartPoller      = "EthercatMCStartPoller";
 const static char *const strCtrlReset = ".ctrl.ErrRst";
 
 const static char *const modulName = "EthercatMCAxis::";
@@ -268,8 +270,9 @@ EthercatMCController::EthercatMCController(const char *portName,
   asynPrint(this->pasynUserSelf, ASYN_TRACE_INFO,
             "%s optionStr=\"%s\"\n",
             modulName, optionStr ? optionStr : "NULL");
-
-  startPoller(movingPollPeriod, idlePollPeriod, 2);
+  if ((movingPollPeriod > 0.0) && (idlePollPeriod > 0.0)) {
+    startPoller(movingPollPeriod, idlePollPeriod, 2);
+  }
 }
 
 
@@ -293,6 +296,29 @@ extern "C" int EthercatMCCreateController(const char *portName,
                            optionStr);
   return(asynSuccess);
 }
+
+/** Writes a string to the controller and reads a response.
+  * Disconnects in case of error
+  */
+extern "C" int EthercatMCStartPoller(const char *portName,
+                                     int movingPollPeriod,
+                                     int idlePollPeriod)
+{
+  EthercatMCController *pC;
+
+  if (!portName)  {
+    printf("%sNULL parameter\n", strEthercatMCStartPoller);
+    return asynError;
+  }
+  pC = (EthercatMCController*) findAsynPortDriver(portName);
+  if (!pC) {
+    printf("%s:%s: Error port %s not found\n",
+           __FILE__, __FUNCTION__, portName);
+    return asynError;
+  }
+  return pC->startPoller(movingPollPeriod/1000., idlePollPeriod/1000.,2);
+}
+
 
 /** Writes a string to the controller and reads a response.
   * Disconnects in case of error
@@ -700,11 +726,25 @@ static const iocshArg *const EthercatMCCreateControllerArgs[] = {&EthercatMCCrea
                                                             &EthercatMCCreateControllerArg1,
                                                             &EthercatMCCreateControllerArg2,
                                                             &EthercatMCCreateControllerArg3,
-                                                            &EthercatMCCreateControllerArg4,
-                                                            &EthercatMCCreateControllerArg5};
-static const iocshFuncDef EthercatMCCreateControllerDef = {strEthercatMCCreateController, 6,
+                                                            &EthercatMCCreateControllerArg4};
+static const iocshFuncDef EthercatMCCreateControllerDef = {strEthercatMCCreateController, 5,
                                                            EthercatMCCreateControllerArgs};
 static void EthercatMCCreateContollerCallFunc(const iocshArgBuf *args)
+{
+  EthercatMCCreateController(args[0].sval, args[1].sval, args[2].ival,
+                             args[3].ival, args[4].ival, NULL);
+}
+static const iocshArg *const EthercatMCCreateIndexerCtrlArgs[] = {&EthercatMCCreateControllerArg0,
+                                                                  &EthercatMCCreateControllerArg1,
+                                                                  &EthercatMCCreateControllerArg2,
+                                                                  &EthercatMCCreateControllerArg3,
+                                                                  &EthercatMCCreateControllerArg4,
+                                                                  &EthercatMCCreateControllerArg5};
+
+static const iocshFuncDef EthercatMCCreateIndexerCtrlDef = {strEthercatMCCreateIndexerCtrl, 6,
+                                                            EthercatMCCreateIndexerCtrlArgs};
+
+static void EthercatMCCreateIndexerCtrlCallFunc(const iocshArgBuf *args)
 {
   EthercatMCCreateController(args[0].sval, args[1].sval, args[2].ival,
                              args[3].ival, args[4].ival, args[5].sval);
@@ -749,26 +789,45 @@ static const iocshArg * const EthercatMCCreateAxisArgs[] = {&EthercatMCCreateAxi
                                                             &EthercatMCCreateAxisArg1,
                                                             &EthercatMCCreateAxisArg2,
                                                             &EthercatMCCreateAxisArg3};
+static const iocshFuncDef EthercatMCCreateAxisDef = {strEthercatMCCreateAxisDef, 4,
+                                                     EthercatMCCreateAxisArgs};
+static void EthercatMCCreateAxisCallFunc(const iocshArgBuf *args)
+{
+  EthercatMCCreateAxis(args[0].sval, args[1].ival, args[2].ival, args[3].sval);
+}
+
 static const
 iocshArg * const EthercatMCCreateIndexerAxisArgs[] = {&EthercatMCCreateAxisArg0,
                                                       &EthercatMCCreateAxisArg1,
                                                       &EthercatMCCreateAxisArg2,
                                                       &EthercatMCCreateAxisArg3};
 
-static const iocshFuncDef EthercatMCCreateAxisDef = {strEthercatMCCreateAxisDef, 4,
-                                                     EthercatMCCreateAxisArgs};
-
-static const iocshFuncDef EthercatMCCreateIndexerAxisDef = {strEthercatMCCreateIndexerAxisDef, 4,
-                                                     EthercatMCCreateIndexerAxisArgs};
-
-static void EthercatMCCreateAxisCallFunc(const iocshArgBuf *args)
-{
-  EthercatMCCreateAxis(args[0].sval, args[1].ival, args[2].ival, args[3].sval);
-}
+static const iocshFuncDef
+EthercatMCCreateIndexerAxisDef = {strEthercatMCCreateIndexerAxis, 4,
+                                  EthercatMCCreateIndexerAxisArgs};
 
 static void EthercatMCCreateIndexerAxisCallFunc(const iocshArgBuf *args)
 {
   EthercatMCCreateIndexerAxis(args[0].sval, args[1].ival, args[2].ival, args[3].sval);
+}
+
+static const iocshArg EthercatMCStartPollerArg0 = {"Controller port name", iocshArgString};
+static const iocshArg EthercatMCStartPollerArg1 = {"Moving poll period (ms)", iocshArgInt};
+static const iocshArg EthercatMCStartPollerArg2 = {"Idle poll period (ms)", iocshArgInt};
+
+
+static const
+iocshArg * const EthercatMCStartPollerArgs[] = {&EthercatMCStartPollerArg0,
+                                                &EthercatMCStartPollerArg1,
+                                                &EthercatMCStartPollerArg2};
+
+static const iocshFuncDef
+EthercatMCStartPollerDef = {strEthercatMCStartPoller, 3,
+                            EthercatMCStartPollerArgs};
+
+static void EthercatMCStartPollerCallFunc(const iocshArgBuf *args)
+{
+  EthercatMCStartPoller(args[0].sval, args[1].ival, args[2].ival);
 }
 
 static void EthercatMCControllerRegister(void)
@@ -778,7 +837,9 @@ static void EthercatMCControllerRegister(void)
   iocshRegister(&EthercatMCConfigControllerDef, EthercatMCConfigContollerCallFunc);
   iocshRegister(&EthercatMCReadControllerDef,   EthercatMCReadContollerCallFunc);
   iocshRegister(&EthercatMCCreateAxisDef,       EthercatMCCreateAxisCallFunc);
+  iocshRegister(&EthercatMCCreateIndexerCtrlDef,EthercatMCCreateIndexerCtrlCallFunc);
   iocshRegister(&EthercatMCCreateIndexerAxisDef,EthercatMCCreateIndexerAxisCallFunc);
+  iocshRegister(&EthercatMCStartPollerDef,      EthercatMCStartPollerCallFunc);
 }
 
 extern "C" {

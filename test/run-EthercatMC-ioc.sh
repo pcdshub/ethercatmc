@@ -192,10 +192,12 @@ EOF
       -e "s%cfgFile=./%cfgFile=./test/startup/%"    \
       -e "s%< %< ${TOP}/iocBoot/ioc${APPXX}/%"    \
       -e "s%require%#require%" \
-      | grep -v '^  *#' >>$stcmddst &&
-    cat >>$stcmddst <<-EOF &&
+     | grep -v '^  *#' >>$stcmddst &&
+		 if ! grep -q "^[^#]*iocInit" $stcmddst; then
+			 cat >>$stcmddst <<-EOF
     iocInit
 EOF
+		 fi
     chmod +x $stcmddst &&
     egrep -v "^ *#" $stcmddst >xx
     echo PWD=$PWD $stcmddst
