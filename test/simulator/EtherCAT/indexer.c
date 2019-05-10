@@ -311,7 +311,10 @@ static void init_axis(int axis_no)
     //cmd_Motor_cmd[axis_no].inTargetPositionMonitorEnabled = 1;
     setMRES_23(axis_no, UREV);
     setMRES_24(axis_no, SREV);
-    cmd_Motor_cmd[axis_no].fHysteresis = 0.1;
+    if (axis_no == 1)
+      cmd_Motor_cmd[axis_no].fHysteresis = 2.0;
+    else
+      cmd_Motor_cmd[axis_no].fHysteresis = 0.1;
     cmd_Motor_cmd[axis_no].fVelocity = 1;
     cmd_Motor_cmd[axis_no].fAcceleration = 1;
 
