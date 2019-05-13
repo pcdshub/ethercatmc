@@ -364,12 +364,14 @@ asynStatus EthercatMCAxis::readMonitoring(int axisID)
             "%s (%d) poslag=%f poslag_tim=%f poslag_en=%d\n",
             modNamEMC, axisNo_, poslag, poslag_tim, poslag_en);
 
+  /* Must set SPDB before setting RDBD.
+     See motorRecord.cc enforceMinRetryDeadband() */
+  setDoubleParam(pC_->EthercatMCCfgSPDB_RB_, rdbd_en ? rdbd / scaleFactor : 0.0);
+
   setDoubleParam(pC_->EthercatMCCfgRDBD_RB_, rdbd);
   setDoubleParam(pC_->EthercatMCCfgRDBD_Tim_RB_, rdbd_tim);
   setIntegerParam(pC_->EthercatMCCfgRDBD_En_RB_, rdbd_en);
-#ifdef motorRDBDROString
-  setDoubleParam(pC_->motorRDBDRO_, rdbd_en ? rdbd / scaleFactor : 0.0);
-#endif
+
   /* Either the monitoring is off or 0.0 by mistake, set an error */
   drvlocal.illegalInTargetWindow = (!rdbd_en || !rdbd);
 

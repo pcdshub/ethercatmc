@@ -472,8 +472,8 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
     setIntegerParam(axisNo, EthercatMCCfgPOSLAG_En_RB_, 1);
     break;
   case PARAM_IDX_HYTERESIS_FLOAT32:
-    pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
     pAxis->setDoubleParam(EthercatMCCfgSPDB_RB_, fValue);
+    pAxis->setDoubleParam(EthercatMCCfgRDBD_RB_, fValue);
     setIntegerParam(axisNo, EthercatMCCfgRDBD_En_RB_, 1);
 #ifdef motorRDBDROString
     pAxis->setDoubleParam(motorRDBDRO_, fValue);
