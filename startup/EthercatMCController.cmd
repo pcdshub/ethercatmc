@@ -23,6 +23,9 @@ epicsEnvSet("NUMAXES", "$(ECM_NUMAXES=8)")
 # Default ADS port
 epicsEnvSet("ADSPORT", "$(ECM_ADSPORT=852)")
 
+# Default OPTIONS 
+epicsEnvSet("ECC_OPTIONS", "$(ECM_OPTIONS=;)")
+
 
 ## One of the 2 needs to be done, either drvAsynIPPortConfigure+Eos
 ## Or
@@ -34,7 +37,7 @@ asynOctetSetInputEos("$(ASYN_PORT)", -1, ";\n")
 
 #adsAsynPortDriverConfigure("$(ASYN_PORT)","$(IPADDR)","$(AMSID)","$(ADSPORT)" ,1000,0,0,50,100,1000,0)
 
-EthercatMCCreateController("$(MOTOR_PORT)", "$(ASYN_PORT)", "$(NUMAXES)", "200", "1000", "$(ECM_OPTIONS)")
+EthercatMCCreateController("$(MOTOR_PORT)", "$(ASYN_PORT)", "$(NUMAXES)", "200", "1000", "$(ECC_OPTIONS)")
 
 #/* traceMask definitions*/
 #define ASYN_TRACE_ERROR     0x0001
