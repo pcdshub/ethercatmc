@@ -191,13 +191,15 @@ extern "C" void uintToNet(const unsigned value, void *data, size_t lenInPlc)
 
 
 
-extern "C"
-asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
-                                              const char *outdata,
-                                              size_t outlen,
-                                              char *indata, size_t inlen,
-                                              size_t *pnwrite, size_t *pnread,
-                                              int *peomReason)
+asynStatus
+EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
+                                                       const char *outdata,
+                                                       size_t outlen,
+                                                       char *indata,
+                                                       size_t inlen,
+                                                       size_t *pnwrite,
+                                                       size_t *pnread,
+                                                       int *peomReason)
 {
   int tracelevel = deftracelevel;
   int errorProblem = 0;
@@ -268,6 +270,8 @@ asynStatus writeReadBinaryOnErrorDisconnect_C(asynUser *pasynUser,
   EthercatMChexdump(pasynUser, tracelevel, "IN ams/tcp ",
                     indata, nread);
   if (nread != part_1_len) {
+    EthercatMCamsdump(pasynUser, tracelevel | ASYN_TRACE_INFO,
+                      "OUT ", outdata);
     if (nread) {
       EthercatMCamsdump(pasynUser, tracelevel, "IN ", indata);
       EthercatMChexdump(pasynUser, tracelevel, "IN ",
@@ -404,12 +408,12 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
   ams_req_hdr_p->net_invokeID[2] = (uint8_t)(invokeID >> 16);
   ams_req_hdr_p->net_invokeID[3] = (uint8_t)(invokeID >> 24);
 
-  status = writeReadBinaryOnErrorDisconnect_C(pasynUser,
-                                              (const char *)ams_req_hdr_p,
-                                              outlen,
-                                              (char *)indata, inlen,
-                                              &nwrite, pnread,
-                                              &eomReason);
+  status = writeReadBinaryOnErrorDisconnect(pasynUser,
+                                            (const char *)ams_req_hdr_p,
+                                            outlen,
+                                            (char *)indata, inlen,
+                                            &nwrite, pnread,
+                                            &eomReason);
   if (!status) {
     size_t nread = *pnread;
     AmsHdrType *ams_rep_hdr_p = (AmsHdrType*)indata;
