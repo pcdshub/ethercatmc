@@ -14,7 +14,6 @@ record(motor,"$(PREFIX)$(MOTOR_NAME)")
 	field(BACC,"$(BACC=0)")
 	field(OUT,"@asyn($(MOTOR_PORT),$(AXIS_NO))")
 	field(MRES,"$(MRES=1)")
-	field(RDBD,"$(RDBD=0)")
 	field(ERES,"$(ERES=0)")
 	field(PREC,"$(PREC=3)")
 	field(EGU,"$(EGU=mm)")
@@ -139,6 +138,14 @@ record(ai,"$(PREFIX)$(MOTOR_NAME)-CfgUREV-RB") {
     field(DTYP, "asynFloat64")
     field(PREC, "$(PREC)")
     field(INP,"@asyn($(MOTOR_PORT),$(AXIS_NO))CfgUREV-RB")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai,"$(PREFIX)$(MOTOR_NAME)-CfgSPDB-RB") {
+    field(DESC, "Set point dead band window")
+    field(DTYP, "asynFloat64")
+    field(PREC, "$(PREC)")
+    field(INP,"@asyn($(MOTOR_PORT),$(AXIS_NO))CfgSPDB-RB")
     field(SCAN, "I/O Intr")
 }
 
