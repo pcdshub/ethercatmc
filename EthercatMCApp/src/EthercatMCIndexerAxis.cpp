@@ -123,8 +123,10 @@ extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName,
                                            int axisFlags,
                                            const char *axisOptionsStr)
 {
-#if 0
   EthercatMCController *pC;
+  /* parameters not used */
+  (void)axisFlags;
+  (void)axisOptionsStr;
 
   pC = (EthercatMCController*) findAsynPortDriver(EthercatMCName);
   if (!pC)
@@ -133,9 +135,8 @@ extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName,
     return asynError;
   }
   pC->lock();
-  new EthercatMCIndexerAxis(pC, axisNo, axisFlags, axisOptionsStr);
+  new EthercatMCIndexerAxis(pC, axisNo);
   pC->unlock();
-#endif
   return asynSuccess;
 }
 
@@ -547,7 +548,7 @@ asynStatus EthercatMCIndexerAxis::setIntegerParam(int function, int value)
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
               "%ssetIntegerParam(%d pC_->motorStatusCommsError_)=%d\n",
               modNamEMC, axisNo_, value);
-    if (value && !drvlocal.dirty.oldStatusDisconnected) {
+    if (value /*  && !drvlocal.dirty.oldStatusDisconnected */) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
                 "%s Communication error(%d)\n", modNamEMC, axisNo_);
       memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));

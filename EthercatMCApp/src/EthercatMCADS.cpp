@@ -288,6 +288,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
               eomReason & ASYN_EOM_END ? "END" : "",
               pasynManager->strStatus(status), status);
     disconnect_C(pasynUser);
+    handleStatusChange(status);
     *peomReason = eomReason;
     status = asynError;
   }
@@ -342,6 +343,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   eomReason & ASYN_EOM_END ? "END" : "",
                   pasynManager->strStatus(status), status);
         disconnect_C(pasynUser);
+        handleStatusChange(status);
         status = asynError; /* TimeOut -> Error */
       }
     } else {

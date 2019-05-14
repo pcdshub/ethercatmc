@@ -549,7 +549,8 @@ asynStatus EthercatMCController::setMCUErrMsg(const char *value)
 void EthercatMCController::handleStatusChange(asynStatus status)
 {
 
-  if (status && ctrlLocal.isConnected) {
+  if ((status && ctrlLocal.isConnected) ||
+      (status == asynTimeout)) {
     /* Connected -> Disconnected */
     int i;
     ctrlLocal.isConnected = 0;
