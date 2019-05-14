@@ -150,8 +150,7 @@ public:
                                               const char *outdata,
                                               size_t outlen,
                                               char *indata, size_t inlen,
-                                              size_t *pnwrite, size_t *pnread,
-                                              int *peomReason);
+                                              size_t *pnread);
   /* memory bytes via ADS */
   asynStatus writeWriteReadAds(asynUser *pasynUser,
                                AmsHdrType *amsHdr_p, size_t outlen,

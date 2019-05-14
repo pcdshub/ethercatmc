@@ -197,9 +197,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                                                        size_t outlen,
                                                        char *indata,
                                                        size_t inlen,
-                                                       size_t *pnwrite,
-                                                       size_t *pnread,
-                                                       int *peomReason)
+                                                       size_t *pnread)
 {
   int tracelevel = deftracelevel;
   int errorProblem = 0;
@@ -208,6 +206,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
   char old_OutputEos[10];
   int old_OutputEosLen = 0;
   int eomReason;
+  size_t nwrite = 0;
   size_t nread;
   uint32_t part_1_len = sizeof(AmsTcpHdrType);
   asynStatus status;
@@ -248,13 +247,13 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
   }
   status = pasynOctetSyncIO->write(pasynUser, outdata, outlen,
                                    DEFAULT_CONTROLLER_TIMEOUT,
-                                   pnwrite);
-  if (*pnwrite != outlen) {
+                                   &nwrite);
+  if (nwrite != outlen) {
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%s outlen=%lu nwrite=%lu timeout=%f status=%d\n",
               modNamEMC,
               (unsigned long)outlen,
-              (unsigned long)*pnwrite,
+              (unsigned long)nwrite,
               DEFAULT_CONTROLLER_TIMEOUT,
               status);
     status = asynError; /* TimeOut -> Error */
@@ -289,7 +288,6 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
               pasynManager->strStatus(status), status);
     disconnect_C(pasynUser);
     handleStatusChange(status);
-    *peomReason = eomReason;
     status = asynError;
   }
   if (!status) {
@@ -310,7 +308,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                                     &nread, &eomReason);
 
     if ((status == asynTimeout) ||
-        (!status && !nread && (*peomReason & ASYN_EOM_END))) {
+        (!status && !nread && (eomReason & ASYN_EOM_END))) {
       errorProblem = 1;
       tracelevel |= ASYN_TRACE_ERROR;
     }
@@ -348,7 +346,6 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
       }
     } else {
       *pnread = nread + part_1_len;
-      *peomReason = eomReason;
     }
   }
 
@@ -382,8 +379,6 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
                                                    void *indata, size_t inlen,
                                                    size_t *pnread)
 {
-  size_t nwrite = 0;
-  int eomReason = 0;
   asynStatus status;
   uint32_t ams_payload_len = outlen - sizeof(ams_req_hdr_p->amsTcpHdr);
   uint32_t ads_len = outlen - sizeof(*ams_req_hdr_p);
@@ -414,8 +409,7 @@ asynStatus EthercatMCController::writeWriteReadAds(asynUser *pasynUser,
                                             (const char *)ams_req_hdr_p,
                                             outlen,
                                             (char *)indata, inlen,
-                                            &nwrite, pnread,
-                                            &eomReason);
+                                            pnread);
   if (!status) {
     size_t nread = *pnread;
     AmsHdrType *ams_rep_hdr_p = (AmsHdrType*)indata;
