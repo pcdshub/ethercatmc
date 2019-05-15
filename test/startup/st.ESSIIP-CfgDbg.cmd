@@ -12,6 +12,7 @@ epicsEnvSet("AXIS_NO",       "$(SM_AXIS_NO=1)")
 epicsEnvSet("DESC",          "$(SM_DESC=Lower=Right)")
 epicsEnvSet("EGU",           "$(SM_EGU=mm)")
 epicsEnvSet("PREC",          "$(SM_PREC=3)")
+epicsEnvSet("ADSPORT",       "851")
 
 # And this reads the input of an incremental encoder terminal
 # on the EtherCAT bus. Works with the simulator.
