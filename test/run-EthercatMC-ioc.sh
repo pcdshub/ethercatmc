@@ -98,7 +98,7 @@ export LOCALAMSNETID
           done
       )
     fi &&
-    if test -d ../motor; then
+    if test -d ../../motor; then
       (cd ../../motor &&
           make install) || {
         echo >&2 make install failed
