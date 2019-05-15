@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 require asyn,4.33
 require calc,3.7.1
-require EthercatMC,2.1.0
+require EthercatMC,motor-28d6f42c6db-ethercatmc-1dcc075a
 
 # -----------------------------------------------------------------------------
 # IOC common settings
@@ -31,23 +31,15 @@ epicsEnvSet("ASYN_PORT",     "$(SM_ASYN_PORT=MC_CPU1)")
 epicsEnvSet("R",             "$(SM_R=m1-)")
 epicsEnvSet("DESC",          "$(SM_DESC=m1)")
 epicsEnvSet("PREC",          "$(SM_PREC=3)")
-epicsEnvSet("VELO",          "$(SM_VELO=24.9)")
-epicsEnvSet("JVEL",          "$(SM_JVEL=10)")
-epicsEnvSet("JAR",           "$(SM_JAR=10.2)")
-epicsEnvSet("ACCL",          "$(SM_ACCL=1)")
-epicsEnvSet("MRES",          "$(SM_MRES=0.001)")
-epicsEnvSet("ERES",          "$(SM_ERES=0.0046875)")
-epicsEnvSet("RDBD",          "$(SM_RDBD=0.1)")
-epicsEnvSet("NTMF",          "$(SM_NTMF=1)")
-epicsEnvSet("DLLM",          "$(SM_DLLM=15)")
+
+#Information that the controller may provide, but doesn't
+epicsEnvSet("DLLM",          "$(SM_DLLM=0)")
 epicsEnvSet("DHLM",          "$(SM_DHLM=165)")
-epicsEnvSet("HOMEPROC",      "$(SM_HOMEPROC=1)")
-epicsEnvSet("HOMEPOS",       "$(SM_HOMEPOS=0)")
-epicsEnvSet("HVELTO",        "$(SM_HVELTO=5)")
-epicsEnvSet("HVELFRM",       "$(SM_HVELFRM=2)")
-epicsEnvSet("HOMEACC",       "$(SM_HOMEACC=20)")
-epicsEnvSet("HOMEDEC",       "$(SM_HOMEDEC=50)")
-epicsEnvSet("AXISCONFIG",    "$(SM_AXISCONFIG="")")
+
+# Initialize the soft limits
+epicsEnvSet("ECAXISFIELDINIT", ",DHLM=$(DHLM),DLLM=$(DLLM)")
+
+epicsEnvSet("AXISCONFIG",    "adsport=852;HomProc=1;HomPos=0.0;encoder=ADSPORT=501/.ADR.16#3040040,16#8000001C,2,2")
 
 
 < /epics/iocs/cmds/labs-utg-mc-mcu-01/m-epics-ethercatmc/startup/EthercatMCAxis.cmd
