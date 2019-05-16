@@ -54,7 +54,6 @@ private:
   EthercatMCController *pC_;
 
   struct {
-    double     scaleFactor;
     const char *externalEncoderStr;
     struct {
       unsigned int oldStatusDisconnected : 1;

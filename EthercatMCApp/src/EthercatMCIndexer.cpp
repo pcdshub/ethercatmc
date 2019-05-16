@@ -100,7 +100,8 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
     ret = (unsigned)raw[0] + (raw[1] << 8);
     *value = ret;
     return status;
-  } else if (lenInPlc == 4) {
+  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
+    /* We only use the low 32 bits */
     status = getPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
     ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
     *value = ret;
@@ -259,7 +260,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
               modNamEMC, paramIndex);
     return asynDisabled;
   }
-  if (lenInPlcPara == 4) {
+  if (lenInPlcPara < 8) {
     status = indexerParamWaitNotBusy(paramIfOffset);
     if (status) return status;
 
@@ -280,10 +281,11 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
       double fValue;
       struct {
 	uint8_t   paramCtrl[2];
-	uint8_t   paramValue[4];
+	uint8_t   paramValue[8];
       } paramIf;
       status = getPlcMemoryViaADS(paramIfOffset,
-				  &paramIf, sizeof(paramIf));
+				  &paramIf,
+                                  sizeof(paramIf.paramCtrl) + lenInPlcPara);
       if (status) {
 	asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
 		  "%sstatus=%s (%d)\n",
@@ -292,15 +294,14 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
 	return status;
       }
       cmdSubParamIndex = netToUint(&paramIf.paramCtrl,
-					   sizeof(paramIf.paramCtrl));
+                                   sizeof(paramIf.paramCtrl));
       if (paramIndex < 30) {
         /* parameters below 30 are unsigned integers in the PLC
            Read them as integers from PLC, and parse into a double */
 	fValue           = (double)netToUint(&paramIf.paramValue,
-						     sizeof(paramIf.paramValue));
+                                             lenInPlcPara);
       } else {
-	fValue           = netToDouble(&paramIf.paramValue,
-					     sizeof(paramIf.paramValue));
+	fValue           = netToDouble(&paramIf.paramValue,lenInPlcPara);
       }
       if (cmdSubParamIndex == cmdAcked) {
 	/* This is good, return */
@@ -343,6 +344,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
 
 asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
                                                    unsigned paramIndex,
+                                                   unsigned lenInPlcPara,
                                                    double value)
 {
   unsigned traceMask = ASYN_TRACE_INFO;
@@ -350,7 +352,6 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   unsigned cmd      = PARAM_IF_CMD_DOWRITE + paramIndex;
   unsigned cmdAcked = PARAM_IF_CMD_DONE    + paramIndex;
   size_t lenInPlcCmd = 2;
-  size_t lenInPlcPara = 4;
   unsigned counter = 0;
 
   if (paramIndex > 0xFF) return asynDisabled;
@@ -522,7 +523,8 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
 asynStatus
 EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
                                                 unsigned devNum,
-                                                unsigned iOffset)
+                                                unsigned iOffset,
+                                                unsigned lenInPlcPara)
 {
   unsigned axisNo = pAxis->axisNo_;
   unsigned infoType15 = 15;
@@ -557,7 +559,6 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
       unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
       if (bitIsSet && (paramIndex < 128)) {
         double fValue = 0;
-        unsigned lenInPlcPara = 4;
         status = indexerParamRead(indexOffset,
                                   paramIndex,
                                   lenInPlcPara,

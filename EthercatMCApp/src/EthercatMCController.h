@@ -172,7 +172,9 @@ public:
                               unsigned paramIndex,
                               double fValue);
   asynStatus indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
-                                       unsigned devNum, unsigned iOffset);
+                                       unsigned devNum,
+                                       unsigned iOffset,
+                                       unsigned lenInPlcPara);
   asynStatus poll(void);
   asynStatus newIndexerAxis(EthercatMCIndexerAxis *pAxis,
                             unsigned devNum,
@@ -200,7 +202,9 @@ public:
                               unsigned paramIndex,
                               unsigned lenInPlcPara,
                               double *value);
-  asynStatus indexerParamWrite(unsigned paramIfOffset, unsigned paramIndex,
+  asynStatus indexerParamWrite(unsigned paramIfOffset,
+                               unsigned paramIndex,
+                               unsigned lenInPlcPara,
                                double value);
 
   struct {
