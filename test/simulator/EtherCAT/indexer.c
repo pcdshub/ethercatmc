@@ -26,8 +26,14 @@
 #define UNITCODE_MM                 0xfd04
 #define UNITCODE_DEGREE             0x000C
 
-/* 3 devices: the indexer +  2 motors */
-#define  NUM_DEVICES       4
+/* axis 0 (not used), axis1, axis2 */
+#define  NUM_MOTORS5008     3
+
+/* axis3 */
+#define  NUM_MOTORS5010     1
+
+/* 4 devices: the indexer +  3 motors */
+#define  NUM_DEVICES        4
 
 typedef enum {
   idxStatusCodeRESET    = 0,
@@ -166,6 +172,16 @@ typedef struct {
   float     paramValue;
 } indexerDevice5008interface_type;
 
+typedef struct {
+  double     actualValue;
+  double     targetValue;
+  uint16_t   statusReasonAux_23_16;
+  uint16_t   aux_15_0;
+  uint16_t   errorID;
+  uint16_t   paramCtrl;
+  double     paramValue;
+} indexerDevice5010interface_type;
+
 
 indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
 {
@@ -269,7 +285,8 @@ static union {
       indexerInfoType15_type infoType15;
       } indexer;
     /* Remember that motor[0] is defined, but never used */
-    indexerDevice5008interface_type motors[MAX_AXES];
+    indexerDevice5008interface_type motors5008[NUM_MOTORS5008];
+    indexerDevice5010interface_type motors5010[NUM_MOTORS5010];
     } memoryStruct;
 } idxData;
 
@@ -591,13 +608,14 @@ indexerMotorParamWrite(unsigned motor_axis_no,
 }
 
 static void
-indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
+indexerMotorParamInterface(unsigned motor_axis_no,
+                           unsigned offset,
+                           unsigned lenInPlcPara)
 {
   unsigned uValue = netToUint(&idxData.memoryBytes[offset], 2);
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
   unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
   uint16_t ret = (uint16_t)uValue;
-  size_t lenInPlc = 4;
   LOGINFO3("%s/%s:%d motor_axis_no=%u offset=%u uValue=0x%x\n",
            __FILE__, __FUNCTION__, __LINE__,
            motor_axis_no, offset, uValue);
@@ -613,23 +631,23 @@ indexerMotorParamInterface5008(unsigned motor_axis_no, unsigned offset)
     if ((ret & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK) == PARAM_IF_CMD_DONE) {
       switch(paramIndex) {
       case PARAM_IDX_OPMODE_AUTO_UINT32:
-        uintToNet((unsigned)fRet, &idxData.memoryBytes[offset + 2], lenInPlc);
+        uintToNet((unsigned)fRet, &idxData.memoryBytes[offset + 2], lenInPlcPara);
         break;
       case PARAM_IDX_HYTERESIS_FLOAT32:
       case PARAM_IDX_SPEED_FLOAT32:
       case PARAM_IDX_ACCEL_FLOAT32:
-        doubleToNet(fRet, &idxData.memoryBytes[offset + 2], lenInPlc);
+        doubleToNet(fRet, &idxData.memoryBytes[offset + 2], lenInPlcPara);
         break;
       }
     }
   } else if (paramCommand == PARAM_IF_CMD_DOWRITE) {
     double fValue;
-    fValue =  netToDouble(&idxData.memoryBytes[offset + 2], lenInPlc);
+    fValue =  netToDouble(&idxData.memoryBytes[offset + 2], lenInPlcPara);
     ret = PARAM_IF_CMD_ERR_NO_IDX;
     switch(paramIndex) {
     case PARAM_IDX_OPMODE_AUTO_UINT32:
       /* Comes as an uint via the wire */
-      fValue =  (double)netToUint(&idxData.memoryBytes[offset + 2], lenInPlc);
+      fValue =  (double)netToUint(&idxData.memoryBytes[offset + 2], lenInPlcPara);
       /* fall through */
     case PARAM_IDX_SPEED_FLOAT32:
     case PARAM_IDX_ACCEL_FLOAT32:
@@ -717,7 +735,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         }
         idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
         /* Offset to the first motor */
-        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum] - (void*)&idxData);
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum] - (void*)&idxData);
         /* TODO: Support other interface types */
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
@@ -929,28 +947,58 @@ void indexerHandlePLCcycle(void)
     case TYPECODE_PARAMDEVICE_5008:
       {
         double fRet;
-        size_t lenInPlc = 4;
+        size_t lenInPlcPara = 4;
         unsigned offset;
-        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].actualValue -
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum].actualValue -
                             (void*)&idxData);
 
         fRet = getMotorPos((int)devNum);
         LOGINFO6("%s/%s:%d devNum=%u offset=%u fRet=%f\n",
                  __FILE__, __FUNCTION__, __LINE__,
                  devNum, offset, (double)fRet);
-        doubleToNet(fRet, &idxData.memoryBytes[offset], lenInPlc);
+        doubleToNet(fRet, &idxData.memoryBytes[offset], lenInPlcPara);
         /* status */
-        indexerMotorStatusRead5008(devNum, &idxData.memoryStruct.motors[devNum]);
+        indexerMotorStatusRead5008(devNum, &idxData.memoryStruct.motors5008[devNum]);
 
         /* param interface */
-        offset = (unsigned)((void*)&idxData.memoryStruct.motors[devNum].paramCtrl -
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum].paramCtrl -
                             (void*)&idxData);
         LOGINFO3("%s/%s:%d devNum=%u offset=%u\n",
                  __FILE__, __FUNCTION__, __LINE__,
                  devNum, offset);
-        indexerMotorParamInterface5008(devNum, offset);
+        indexerMotorParamInterface(devNum, offset, lenInPlcPara);
       }
       break;
+#if 0
+    case TYPECODE_PARAMDEVICE_5010:
+      {
+        double fRet;
+        size_t lenInPlcPara = 8;
+        unsigned offset;
+        unsigned motor5010Num = devNum-NUM_MOTORS5008;
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors5010[motor5010Num].actualValue -
+                            (void*)&idxData);
+
+        fRet = getMotorPos((int)devNum);
+        LOGINFO6("%s/%s:%d devNum=%u motor5010Num=%u offset=%u fRet=%f\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 devNum, motor5010Num, offset, (double)fRet);
+        doubleToNet(fRet, &idxData.memoryBytes[offset], lenInPlcPara);
+        /* status */
+        indexerMotorStatusRead(devNum,
+                               &idxData.memoryStruct.motors5010[motor5010Num],
+                               lenInPlcPara);
+
+        /* param interface */
+        offset = (unsigned)((void*)&idxData.memoryStruct.motors5010[motor5010Num].paramCtrl -
+                            (void*)&idxData);
+        LOGINFO3("%s/%s:%d devNum=%u motor5010Num=%u offset=%u\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 devNum, motor5010Num, offset);
+        indexerMotorParamInterface(devNum, offset, lenInPlcPara);
+      }
+      break;
+#endif
     case TYPECODE_INDEXER:
       {
         uint16_t indexer_ack = idxData.memoryStruct.indexer_ack;
