@@ -16,7 +16,9 @@
 #define TYPECODE_INDEXER               0
 #define SIZE_INDEXER                  38
 #define TYPECODE_PARAMDEVICE_5008 0x5008
-#define SIZE_PARAMDEVICE_5008        0x8
+#define TYPECODE_PARAMDEVICE_5010 0x5010
+#define WORDS_PARAMDEVICE_5008       0x8
+#define WORDS_PARAMDEVICE_5010      0x10
 
 
 /* Well known unit codes */
@@ -25,7 +27,7 @@
 #define UNITCODE_DEGREE             0x000C
 
 /* 3 devices: the indexer +  2 motors */
-#define  NUM_DEVICES       3
+#define  NUM_DEVICES       4
 
 typedef enum {
   idxStatusCodeRESET    = 0,
@@ -175,7 +177,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     { "", "", "", "", "", "", "", "" },
     0.0, 0.0
   },
-  { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
+  { TYPECODE_PARAMDEVICE_5008, WORDS_PARAMDEVICE_5008,
     UNITCODE_MM,
     {0,
      0,
@@ -197,7 +199,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     { "", "", "", "", "", "homing", "@home", "homed" },
     5.0, 175.0
   },
-  { TYPECODE_PARAMDEVICE_5008, SIZE_PARAMDEVICE_5008,
+  { TYPECODE_PARAMDEVICE_5008, WORDS_PARAMDEVICE_5008,
     UNITCODE_DEGREE,
     {PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
      0,
@@ -218,7 +220,30 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     "RotAxis2",
     { "", "", "", "", "", "homing", "@home", "homed" },
     -180.0, +180.0
+  },
+    { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
+      UNITCODE_MM,
+    {PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
+     0,
+     0,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32 | PARAM_AVAIL_48_63_HYTERESIS_FLOAT32,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0},
+    "Axis5010-3",
+    { "", "", "", "", "", "homing", "@home", "homed" },
+    0, +173.0
   }
+
 };
 
 
