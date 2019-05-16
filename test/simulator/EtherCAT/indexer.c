@@ -527,6 +527,83 @@ indexerMotorStatusRead5008(unsigned motor_axis_no,
   pIndexerDevice5008interface->statusReasonAux = ret;
 }
 
+static void
+indexerMotorStatusRead5010(unsigned motor_axis_no,
+                           indexerDevice5010interface_type *pIndexerDevice5010interface)
+{
+  unsigned statusReasonAux_23_16;
+  unsigned aux_15_0 = 0;
+  idxStatusCodeType idxStatusCode;
+  /* The following only works on little endian (?)*/
+  statusReasonAux_23_16 = netToUint(&pIndexerDevice5010interface->statusReasonAux_23_16,
+                                    sizeof(pIndexerDevice5010interface->statusReasonAux_23_16));
+  idxStatusCode = (idxStatusCodeType)(statusReasonAux_23_16 >> 12);
+  /* The following would be run in an own task in a PLC program.
+     For the simulator, we hook the code into the read request
+     RESET, START and STOP are commands from IOC.
+     RESET is even the "wakeup" state.
+  */
+
+  switch (idxStatusCode) {
+  case idxStatusCodeRESET:
+    init_axis((int)motor_axis_no);
+    motorStop(motor_axis_no);
+    set_nErrorId(motor_axis_no, 0);
+    break;
+  case idxStatusCodeSTART:
+    movePosition(motor_axis_no,
+                 netToDouble(&pIndexerDevice5010interface->targetValue,
+                             sizeof(pIndexerDevice5010interface->targetValue)),
+                 0, /* int relative, */
+                 cmd_Motor_cmd[motor_axis_no].fVelocity,
+                 cmd_Motor_cmd[motor_axis_no].fAcceleration);
+    break;
+  case idxStatusCodeSTOP:
+    motorStop(motor_axis_no);
+    break;
+  default:
+    ;
+  }
+
+  /* reason bits */
+  if (getPosLimitSwitch(motor_axis_no))
+    aux_15_0 |= 0x0800;
+  if (getNegLimitSwitch(motor_axis_no))
+    aux_15_0 |= 0x0400;
+  {
+    unsigned auxBitIdx = 0;
+    for (auxBitIdx = 0; auxBitIdx < 7; auxBitIdx++) {
+      if (!strcmp("homing",
+                  (const char*)&indexerDeviceAbsStraction[motor_axis_no].auxName[auxBitIdx])) {
+        if (isMotorHoming(motor_axis_no)) {
+          aux_15_0 |= 1 << auxBitIdx;
+        }
+      }
+    }
+  }
+
+  /* the status bits */
+  if (get_bError(motor_axis_no))
+    idxStatusCode = idxStatusCodeERROR;
+  else if (!getAmplifierOn(motor_axis_no))
+    idxStatusCode = idxStatusCodePOWEROFF;
+  else if (isMotorMoving(motor_axis_no))
+    idxStatusCode = idxStatusCodeBUSY;
+  else if (aux_15_0 & 0x0C00)
+    idxStatusCode = idxStatusCodeWARN;
+  else
+    idxStatusCode = idxStatusCodeIDLE;
+
+  /* TODO: Fill in bits 23..16 */
+  statusReasonAux_23_16 = (idxStatusCode << 12);
+  uintToNet(statusReasonAux_23_16,
+            &pIndexerDevice5010interface->statusReasonAux_23_16,
+            sizeof(pIndexerDevice5010interface->statusReasonAux_23_16));
+  uintToNet(aux_15_0,
+            &pIndexerDevice5010interface->aux_15_0,
+            sizeof(pIndexerDevice5010interface->aux_15_0));
+}
+
 
 /* Reads a parameter.
    All return values are returned as double,
@@ -969,7 +1046,6 @@ void indexerHandlePLCcycle(void)
         indexerMotorParamInterface(devNum, offset, lenInPlcPara);
       }
       break;
-#if 0
     case TYPECODE_PARAMDEVICE_5010:
       {
         double fRet;
@@ -985,9 +1061,8 @@ void indexerHandlePLCcycle(void)
                  devNum, motor5010Num, offset, (double)fRet);
         doubleToNet(fRet, &idxData.memoryBytes[offset], lenInPlcPara);
         /* status */
-        indexerMotorStatusRead(devNum,
-                               &idxData.memoryStruct.motors5010[motor5010Num],
-                               lenInPlcPara);
+        indexerMotorStatusRead5010(devNum,
+                                   &idxData.memoryStruct.motors5010[motor5010Num]);
 
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors5010[motor5010Num].paramCtrl -
@@ -998,7 +1073,6 @@ void indexerHandlePLCcycle(void)
         indexerMotorParamInterface(devNum, offset, lenInPlcPara);
       }
       break;
-#endif
     case TYPECODE_INDEXER:
       {
         uint16_t indexer_ack = idxData.memoryStruct.indexer_ack;
