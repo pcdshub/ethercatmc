@@ -777,6 +777,7 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     switch (iTypCode) {
       case 0x5008:
       case 0x500C:
+      case 0x5010:
         {
           char unitCodeTxt[40];
           EthercatMCIndexerAxis *pAxis;

@@ -287,7 +287,7 @@ asynStatus EthercatMCIndexerAxis::home(double minVelocity, double maxVelocity,
     lenInPlcPara = 4;
   } else {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%spoll(%d) iTypCode=0x%x\n",
+              "%shome(%d) iTypCode=0x%x\n",
               modNamEMC, axisNo_, drvlocal.iTypCode);
     return asynError;
   }
@@ -318,7 +318,7 @@ asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity,
     lenInPlcPara = 4;
   } else {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%spoll(%d) iTypCode=0x%x\n",
+              "%smoveVelocity(%d) iTypCode=0x%x\n",
               modNamEMC, axisNo_, drvlocal.iTypCode);
     return asynError;
   }
