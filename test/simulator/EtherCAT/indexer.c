@@ -172,14 +172,16 @@ typedef struct {
   float     paramValue;
 } indexerDevice5008interface_type;
 
+/* struct as seen on the network = in memory
+ * data must be stored using  uintToNet/doubleToNet
+ * and retrieved netToUint/netToDouble */
 typedef struct {
-  double     actualValue;
-  double     targetValue;
-  uint16_t   statusReasonAux_23_16;
-  uint16_t   aux_15_0;
-  uint16_t   errorID;
-  uint16_t   paramCtrl;
-  double     paramValue;
+  uint8_t   actualValue[8];
+  uint8_t   targetValue[8];
+  uint8_t   statusReasonAux32[4];
+  uint8_t   errorID[2];
+  uint8_t   paramCtrl[2];
+  uint8_t   paramValue[8];
 } indexerDevice5010interface_type;
 
 
@@ -531,18 +533,11 @@ static void
 indexerMotorStatusRead5010(unsigned motor_axis_no,
                            indexerDevice5010interface_type *pIndexerDevice5010interface)
 {
-  unsigned statusReasonAux_23_16;
-  unsigned aux_15_0 = 0;
+  unsigned statusReasonAux32;
   idxStatusCodeType idxStatusCode;
-  /* The following only works on little endian (?)*/
-  statusReasonAux_23_16 = netToUint(&pIndexerDevice5010interface->statusReasonAux_23_16,
-                                    sizeof(pIndexerDevice5010interface->statusReasonAux_23_16));
-  idxStatusCode = (idxStatusCodeType)(statusReasonAux_23_16 >> 12);
-  /* The following would be run in an own task in a PLC program.
-     For the simulator, we hook the code into the read request
-     RESET, START and STOP are commands from IOC.
-     RESET is even the "wakeup" state.
-  */
+  statusReasonAux32 = netToUint(&pIndexerDevice5010interface->statusReasonAux32,
+                                sizeof(pIndexerDevice5010interface->statusReasonAux32));
+  idxStatusCode = (idxStatusCodeType)(statusReasonAux32 >> 28);
 
   switch (idxStatusCode) {
   case idxStatusCodeRESET:
@@ -564,19 +559,21 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
   default:
     ;
   }
-
+  /* Build a new status word, start with 0 and fill in
+     the bits */
+  statusReasonAux32 = 0;
   /* reason bits */
   if (getPosLimitSwitch(motor_axis_no))
-    aux_15_0 |= 0x0800;
+    statusReasonAux32 |= 0x08000000;
   if (getNegLimitSwitch(motor_axis_no))
-    aux_15_0 |= 0x0400;
+    statusReasonAux32 |= 0x04000000;
   {
     unsigned auxBitIdx = 0;
     for (auxBitIdx = 0; auxBitIdx < 7; auxBitIdx++) {
       if (!strcmp("homing",
                   (const char*)&indexerDeviceAbsStraction[motor_axis_no].auxName[auxBitIdx])) {
         if (isMotorHoming(motor_axis_no)) {
-          aux_15_0 |= 1 << auxBitIdx;
+          statusReasonAux32 |= 1 << auxBitIdx;
         }
       }
     }
@@ -589,19 +586,15 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
     idxStatusCode = idxStatusCodePOWEROFF;
   else if (isMotorMoving(motor_axis_no))
     idxStatusCode = idxStatusCodeBUSY;
-  else if (aux_15_0 & 0x0C00)
+  else if (statusReasonAux32 & 0x0C000000)
     idxStatusCode = idxStatusCodeWARN;
   else
     idxStatusCode = idxStatusCodeIDLE;
 
-  /* TODO: Fill in bits 23..16 */
-  statusReasonAux_23_16 = (idxStatusCode << 12);
-  uintToNet(statusReasonAux_23_16,
-            &pIndexerDevice5010interface->statusReasonAux_23_16,
-            sizeof(pIndexerDevice5010interface->statusReasonAux_23_16));
-  uintToNet(aux_15_0,
-            &pIndexerDevice5010interface->aux_15_0,
-            sizeof(pIndexerDevice5010interface->aux_15_0));
+  statusReasonAux32 = (idxStatusCode << 28);
+  uintToNet(statusReasonAux32,
+            &pIndexerDevice5010interface->statusReasonAux32,
+            sizeof(pIndexerDevice5010interface->statusReasonAux32));
 }
 
 
