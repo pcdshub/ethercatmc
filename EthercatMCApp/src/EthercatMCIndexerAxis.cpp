@@ -417,6 +417,8 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       unsigned lenInPlcPara = 0;
       if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
         lenInPlcPara = 4;
+      } else if (drvlocal.iTypCode == 0x5010) {
+        lenInPlcPara = 8;
       } else {
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
                   "%spoll(%d) iTypCode=0x%x\n",
@@ -439,6 +441,31 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         uint8_t   statReasAux[2];
         uint8_t   paramCtrl[2];
         uint8_t   paramValue[4];
+      } readback;
+      status = pC_->getPlcMemoryViaADS(drvlocal.iOffset,
+                                       &readback,
+                                       sizeof(readback));
+      if (status) {
+        return status;
+      }
+      actPosition = netToDouble(&readback.actPos,
+                                sizeof(readback.actPos));
+      targetPosition = netToDouble(&readback.targtPos,
+                                   sizeof(readback.targtPos));
+      statusReasonAux = netToUint(&readback.statReasAux,
+                                    sizeof(readback.statReasAux ));
+      paramCtrl = netToUint(&readback.paramCtrl,
+                              sizeof(readback.paramCtrl));
+      paramValue = netToDouble(&readback.paramValue,
+                               sizeof(readback.paramValue));
+    } else if (drvlocal.iTypCode == 0x5010) {
+      struct {
+        uint8_t   actPos[8];
+        uint8_t   targtPos[8];
+        uint8_t   statReasAux[4];
+        uint8_t   errorIDAux[2];
+        uint8_t   paramCtrl[2];
+        uint8_t   paramValue[8];
       } readback;
       status = pC_->getPlcMemoryViaADS(drvlocal.iOffset,
                                        &readback,
