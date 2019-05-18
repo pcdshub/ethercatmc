@@ -3,6 +3,7 @@
 *BAK.adl
 *~
 .cvsignore
+/RELEASE_SITE
 /db/
 /dbmotor/
 bin/

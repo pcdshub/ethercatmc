@@ -36,6 +36,15 @@ ifneq (,$(findstring /,$(MOTOR)))
   EthercatMC_LIBS += motor
   EthercatMC_LIBS += softMotor
 endif
+ifneq (,$(findstring /,$(SSCAN)))
+  EthercatMC_DBD += sscan.dbd
+  EthercatMC_LIBS += sscan
+endif
+ifneq (,$(findstring /,$(SEQ)))
+# EthercatMC_DBD += cmdButtons.dbd
+# EthercatMC_DBD += devSeqCar.dbd
+# EthercatMC_DBD += seqSoftIoc.dbd
+endif
 
 EthercatMC_DBD += EthercatMcSupport.dbd
 
@@ -51,11 +60,14 @@ EthercatMC_LIBS += axis
 endif
 ifneq (,$(findstring /,$(CALC)))
 EthercatMC_LIBS += calc
-
 endif
 ifneq (,$(findstring /,$(MOTOR)))
 EthercatMC_LIBS += motor
 EthercatMC_LIBS += softMotor
+endif
+ifneq (,$(findstring /,$(SEQ)))
+  EthercatMC_LIBS += seq
+  EthercatMC_LIBS += pv
 endif
 
 ifneq (,$(findstring /,$(TWINCATADS)))

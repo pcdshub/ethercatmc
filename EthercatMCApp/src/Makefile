@@ -30,6 +30,9 @@ endif
 ifneq (,$(findstring /,$(CALC)))
 EthercatMcSupport_LIBS += calc
 endif
+ifneq (,$(findstring /,$(SSCAN)))
+EthercatMcSupport_LIBS += sscan
+endif
 ifneq (,$(findstring /,$(MOTOR)))
 EthercatMcSupport_LIBS += motor
 EthercatMcSupport_LIBS += softMotor
