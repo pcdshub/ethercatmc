@@ -361,7 +361,32 @@ static void init_axis(int axis_no)
       cmd_Motor_cmd[axis_no].fHysteresis = 0.1;
     cmd_Motor_cmd[axis_no].fVelocity = 1;
     cmd_Motor_cmd[axis_no].fAcceleration = 1;
-
+    /* Simulated limit switches, take from indexer table */
+    {
+      int tmp_axis_no = 1;
+      unsigned devNum; /* 0 is the indexer */
+      for (devNum = 1; devNum < NUM_DEVICES; devNum++) {
+        LOGINFO3("%s/%s:%d axis_no=%d tmp_axis_no=%d devNum=%u typeCode=0x%x\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 axis_no, tmp_axis_no, devNum,
+                 indexerDeviceAbsStraction[devNum].typeCode);
+        switch (indexerDeviceAbsStraction[devNum].typeCode) {
+        case 0x5008:
+        case 0x500C:
+        case 0x5010:
+          {
+            if (tmp_axis_no == axis_no) {
+              setHighHardLimitPos(axis_no, indexerDeviceAbsStraction[devNum].absMax);
+              setLowHardLimitPos(axis_no, indexerDeviceAbsStraction[devNum].absMin);
+            }
+            tmp_axis_no++;
+          }
+          break;
+        default:
+          break;
+        }
+      }
+    }
     setAmplifierPercent(axis_no, 1);
     init_done[axis_no] = 1;
   }
@@ -761,7 +786,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
   unsigned devNum = uValue & 0xFF;
   unsigned infoType = (uValue >> 8) & 0x7F;
   unsigned maxDevNum = NUM_DEVICES - 1;
-  LOGINFO3("%s/%s:%d offset=%u lenInPlc=%u uValue=0x%x devNum=%u maxDevNum=%u infoType=%u\n",
+  LOGINFO6("%s/%s:%d offset=%u lenInPlc=%u uValue=0x%x devNum=%u maxDevNum=%u infoType=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
            offset, lenInPlc,
            uValue, devNum, maxDevNum, infoType);
@@ -799,7 +824,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
             flagsLow |= 1;
           }
           flagsLow = flagsLow << 1;
-          LOGINFO3("%s/%s:%d auxIdx=%u flagsLow=0x%x\n",
+          LOGINFO6("%s/%s:%d auxIdx=%u flagsLow=0x%x\n",
                    __FILE__, __FUNCTION__, __LINE__,
                    auxIdx, flagsLow);
         }
@@ -810,7 +835,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
       }
-      LOGINFO3("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%x ack=0x%x\n",
+      LOGINFO6("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%x ack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
                &idxData, &idxData.memoryStruct.indexer,
                (unsigned)((void*)&idxData.memoryStruct.indexer - (void*)&idxData),
