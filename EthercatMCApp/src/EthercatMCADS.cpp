@@ -287,7 +287,6 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
               eomReason & ASYN_EOM_END ? "END" : "",
               pasynManager->strStatus(status), status);
     disconnect_C(pasynUser);
-    handleStatusChange(status);
     status = asynError;
   }
   if (!status) {
@@ -341,13 +340,13 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   eomReason & ASYN_EOM_END ? "END" : "",
                   pasynManager->strStatus(status), status);
         disconnect_C(pasynUser);
-        handleStatusChange(status);
         status = asynError; /* TimeOut -> Error */
       }
     } else {
       *pnread = nread + part_1_len;
     }
   }
+  handleStatusChange(status);
 
 restore_Eos:
   {
