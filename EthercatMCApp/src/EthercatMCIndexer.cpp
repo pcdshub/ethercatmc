@@ -260,7 +260,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
               modNamEMC, paramIndex);
     return asynDisabled;
   }
-  if (lenInPlcPara < 8) {
+  if (lenInPlcPara <= 8) {
     status = indexerParamWaitNotBusy(paramIfOffset);
     if (status) return status;
 
@@ -533,6 +533,11 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
 
   status = readDeviceIndexer(devNum, infoType15);
   if (status) {
+    asynPrint(pasynUserController_,
+              ASYN_TRACE_INFO,
+              "%sindexerReadAxisParameters status=%s (%d)\n",
+              modNamEMC,
+              pasynManager->strStatus(status), (int)status);
     return status;
   }
   for (dataIdx = 0; dataIdx <= 16; dataIdx++) {
@@ -542,6 +547,11 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
 
     status = getPlcMemoryUint(ctrlLocal.indexerOffset + (1 + dataIdx) * 2, &parameters, 2);
     if (status) {
+      asynPrint(pasynUserController_,
+                ASYN_TRACE_INFO,
+                "%sindexerReadAxisParameters status=%s (%d)\n",
+                modNamEMC,
+                pasynManager->strStatus(status), (int)status);
       return status;
     }
       /* dataIdx == 0 has ACK + infoType/devNum
@@ -550,8 +560,24 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
               "%sparameters[%03u..%03u]=0x%04x\n",
               modNamEMC, dataIdx*16 +15,
               dataIdx*16, parameters);
-    unsigned regSize = 2;
-    unsigned indexOffset = iOffset + 5*regSize;
+    /* Where is the parameter interface to this device ?
+       See indexerDevice5008interface_type;,
+       indexerDevice5010interface_type in indexer.c */
+    unsigned paramIfOffset;
+    switch (lenInPlcPara) {
+    case 4:
+      paramIfOffset = iOffset + 10;
+      break;
+    case 8:
+      paramIfOffset = iOffset + 22;
+      break;
+    default:
+      asynPrint(pasynUserController_,
+                ASYN_TRACE_INFO,
+                "%sindexerReadAxisParameters(%d) asynError: lenInPlcPara=%u \n",
+                modNamEMC, axisNo, lenInPlcPara);
+      return asynError;
+    }
     unsigned bitIdx;
 
     for (bitIdx = 0; bitIdx <= 15; bitIdx++) {
@@ -559,11 +585,16 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
       unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
       if (bitIsSet && (paramIndex < 128)) {
         double fValue = 0;
-        status = indexerParamRead(indexOffset,
+        status = indexerParamRead(paramIfOffset,
                                   paramIndex,
                                   lenInPlcPara,
                                   &fValue);
         if (status) {
+          asynPrint(pasynUserController_,
+                    ASYN_TRACE_INFO,
+                    "%sindexerReadAxisParameters paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
+                    modNamEMC, paramIndex, lenInPlcPara,
+                    pasynManager->strStatus(status), (int)status);
           return status;
         }
         asynPrint(pasynUserController_, ASYN_TRACE_INFO,
