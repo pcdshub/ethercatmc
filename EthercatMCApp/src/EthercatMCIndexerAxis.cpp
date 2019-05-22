@@ -643,7 +643,7 @@ asynStatus EthercatMCIndexerAxis::setIntegerParam(int function, int value)
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
               "%ssetIntegerParam(%d pC_->motorStatusCommsError_)=%d\n",
               modNamEMC, axisNo_, value);
-    if (value /*  && !drvlocal.dirty.oldStatusDisconnected */) {
+    if (value  && !drvlocal.dirty.initialPollNeeded ) {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
                 "%s Communication error(%d)\n", modNamEMC, axisNo_);
       memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
