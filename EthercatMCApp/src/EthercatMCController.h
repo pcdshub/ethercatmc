@@ -208,9 +208,9 @@ public:
                                double value);
 
   struct {
+    asynStatus   oldStatus;
     unsigned int local_no_ASYN_;
     unsigned int hasConfigError;
-    unsigned int isConnected;
     unsigned int initialPollDone;
     unsigned int indexerOffset;
     AmsNetidAndPortType remote;

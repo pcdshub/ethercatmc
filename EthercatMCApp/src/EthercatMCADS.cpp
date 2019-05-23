@@ -77,9 +77,9 @@ static int deftracelevel = ASYN_TRACE_DEBUG;
       (amsHdr_p->net_invokeID[2] << 16) +\
       (amsHdr_p->net_invokeID[3] << 24);\
   asynPrint(pasynUser, tracelevel,\
-            "amsTcpHdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d "  \
+            "%samsTcpHdr_len=%u ams target=%d.%d.%d.%d.%d.%d:%d "  \
             "source=%d.%d.%d.%d.%d.%d:%d\n",                       \
-            amsTcpHdr_len,                                       \
+            help_txt, amsTcpHdr_len,                               \
             amsHdr_p->target.netID[0], amsHdr_p->target.netID[1],\
             amsHdr_p->target.netID[2], amsHdr_p->target.netID[3],\
             amsHdr_p->target.netID[4], amsHdr_p->target.netID[5],\
@@ -90,7 +90,8 @@ static int deftracelevel = ASYN_TRACE_DEBUG;
             amsHdr_p->source.port_low + (amsHdr_p->source.port_high << 8)\
             );\
   asynPrint(pasynUser, tracelevel,\
-            "amsHdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u\n",\
+            "%samsHdr cmd=%u flags=%u ams_len=%u ams_err=%u id=%u\n",\
+            help_txt,                                        \
             amsHdr_p->cmdID_low + (amsHdr_p->cmdID_high <<8),\
             amsHdr_p->stateFlags_low + (amsHdr_p->stateFlags_high << 8),\
             ams_lenght, ams_errorCode, ams_invokeID);\
@@ -249,13 +250,16 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                                    DEFAULT_CONTROLLER_TIMEOUT,
                                    &nwrite);
   if (nwrite != outlen) {
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s outlen=%lu nwrite=%lu timeout=%f status=%d\n",
-              modNamEMC,
-              (unsigned long)outlen,
-              (unsigned long)nwrite,
-              DEFAULT_CONTROLLER_TIMEOUT,
-              status);
+    if (!ctrlLocal.oldStatus) {
+      asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%soutlen=%lu nwrite=%lu timeout=%f err=%s status=%s (%d)\n",
+                modNamEMC,
+                (unsigned long)outlen,
+                (unsigned long)nwrite,
+                DEFAULT_CONTROLLER_TIMEOUT,
+                pasynUser->errorMessage,
+                pasynManager->strStatus(status), status);
+    }
     status = asynError; /* TimeOut -> Error */
     return status;
   }
@@ -269,25 +273,36 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
   EthercatMChexdump(pasynUser, tracelevel, "IN ams/tcp ",
                     indata, nread);
   if (nread != part_1_len) {
-    EthercatMCamsdump(pasynUser, tracelevel | ASYN_TRACE_INFO,
-                      "OUT ", outdata);
-    if (nread) {
-      EthercatMCamsdump(pasynUser, tracelevel, "IN ", indata);
-      EthercatMChexdump(pasynUser, tracelevel, "IN ",
-                        indata, nread);
+    if (!ctrlLocal.oldStatus) {
+      /* Do not spam the log:  print only once */
+      EthercatMCamsdump(pasynUser, tracelevel | ASYN_TRACE_INFO,
+                        "OUT ", outdata);
+      if (nread) {
+        EthercatMCamsdump(pasynUser, tracelevel, "IN ", indata);
+        EthercatMChexdump(pasynUser, tracelevel, "IN ",
+                          indata, nread);
+      }
+      if (status == asynTimeout) {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%sIN  nread=%lu timeout=%f status=%s (%d)\n",
+                  modNamEMC,
+                  (unsigned long)*pnread,
+                  DEFAULT_CONTROLLER_TIMEOUT,
+                  pasynManager->strStatus(status), status);
+      } else {
+        asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                  "%sIN  nread=%lu eomReason=%x (%s%s%s) err=%s status=%s (%d)\n",
+                  modNamEMC,
+                  (unsigned long)*pnread,
+                  eomReason,
+                  eomReason & ASYN_EOM_CNT ? "CNT" : "",
+                  eomReason & ASYN_EOM_EOS ? "EOS" : "",
+                  eomReason & ASYN_EOM_END ? "END" : "",
+                  pasynUser->errorMessage,
+                  pasynManager->strStatus(status), status);
+      }
     }
-    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-              "%s calling disconnect_C nread=%lu timeout=%f eomReason=%x (%s%s%s) status=%s (%d)\n",
-              modNamEMC,
-              (unsigned long)*pnread,
-              DEFAULT_CONTROLLER_TIMEOUT,
-              eomReason,
-              eomReason & ASYN_EOM_CNT ? "CNT" : "",
-              eomReason & ASYN_EOM_EOS ? "EOS" : "",
-              eomReason & ASYN_EOM_END ? "END" : "",
-              pasynManager->strStatus(status), status);
     disconnect_C(pasynUser);
-    status = asynError;
   }
   if (!status) {
     /* The length to read is inside the AMS/TCP header */
@@ -340,7 +355,6 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   eomReason & ASYN_EOM_END ? "END" : "",
                   pasynManager->strStatus(status), status);
         disconnect_C(pasynUser);
-        status = asynError; /* TimeOut -> Error */
       }
     } else {
       *pnread = nread + part_1_len;

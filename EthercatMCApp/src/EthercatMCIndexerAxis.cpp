@@ -84,6 +84,8 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC,
   : asynMotorAxis(pC, axisNo),
     pC_(pC)
 {
+  /* Not connected until now */
+  setIntegerParam(pC_->motorStatusCommsError_, 1);
 #ifdef motorFlagsDriverUsesEGUString
     setIntegerParam(pC_->motorFlagsDriverUsesEGU_,1);
 #endif
@@ -113,7 +115,7 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC,
   /* Set the module name to "" if we have FILE/LINE enabled by asyn */
   if (pasynTrace->getTraceInfoMask(pC_->pasynUserController_) &
       ASYN_TRACEINFO_SOURCE) {
-  modNamEMC = "";
+    modNamEMC = "";
   }
 }
 

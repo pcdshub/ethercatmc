@@ -109,6 +109,7 @@ EthercatMCController::EthercatMCController(const char *portName,
 
   /* Controller */
   memset(&ctrlLocal, 0, sizeof(ctrlLocal));
+  ctrlLocal.oldStatus = asynDisconnected;
   features_ = 0;
 #ifndef motorMessageTextString
   createParam("MOTOR_MESSAGE_TEXT",          asynParamOctet,       &EthercatMCMCUErrMsg_);
@@ -338,7 +339,7 @@ asynStatus EthercatMCController::configController(int needOkOrDie, const char *v
                                         inString, sizeof(inString));
   inString[sizeof(inString) -1] = '\0';
   if (status) {
-    ctrlLocal.isConnected = 0;
+    ;
   } else if (needOkOrDie) {
     status = checkACK(value, configStrLen, inString);
     if (status) {
@@ -482,7 +483,7 @@ asynStatus checkACK(const char *outdata, size_t outlen,
 asynStatus EthercatMCController::writeReadControllerPrint(int traceMask)
 {
   asynStatus status = writeReadOnErrorDisconnect();
-  if (status && ctrlLocal.isConnected) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
+  if (status && !ctrlLocal.oldStatus) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, outString_, inString_,
@@ -548,27 +549,31 @@ asynStatus EthercatMCController::setMCUErrMsg(const char *value)
 
 void EthercatMCController::handleStatusChange(asynStatus status)
 {
-
-  if ((status && ctrlLocal.isConnected) ||
-      (status == asynTimeout)) {
-    /* Connected -> Disconnected */
-    int i;
-    ctrlLocal.isConnected = 0;
-    ctrlLocal.initialPollDone = 0;
-    /* Gvl comes via EthercatMCCreateAxis,
-       keep that bit  */
-    features_ &= ~FEATURE_BITS_GVL;
-    setMCUErrMsg("MCU Disconnected");
-    for (i=0; i<numAxes_; i++) {
-      asynMotorAxis *pAxis=getAxis(i);
-      if (!pAxis) continue;
-      pAxis->setIntegerParam(motorStatusCommsError_, 1);
-      pAxis->callParamCallbacks();
+  if (status != ctrlLocal.oldStatus) {
+    asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+              "%soldStatus=%s (%d) status=%s (%d)\n",
+              modNamEMC,
+              pasynManager->strStatus(ctrlLocal.oldStatus), (int)ctrlLocal.oldStatus,
+              pasynManager->strStatus(status), (int)status);
+    if (status) {
+      /* Connected -> Disconnected */
+      int i;
+      ctrlLocal.initialPollDone = 0;
+      /* Gvl comes via EthercatMCCreateAxis,
+         keep that bit  */
+      features_ &= ~FEATURE_BITS_GVL;
+      setMCUErrMsg("MCU Disconnected");
+      for (i=0; i<numAxes_; i++) {
+        asynMotorAxis *pAxis=getAxis(i);
+        if (!pAxis) continue;
+        pAxis->setIntegerParam(motorStatusCommsError_, 1);
+        pAxis->callParamCallbacks();
+      }
+    } else {
+      /* Disconnected -> Connected */
+      setMCUErrMsg("MCU Cconnected");
     }
-  } else if (!status && !ctrlLocal.isConnected) {
-    /* Disconnected -> Connected */
-    ctrlLocal.isConnected = 1;
-    setMCUErrMsg("MCU Cconnected");
+    ctrlLocal.oldStatus = status;
   }
 }
 
@@ -579,10 +584,20 @@ asynStatus EthercatMCController::poll(void)
   asynPrint(pasynUserController_, ASYN_TRACE_FLOW,
             "%spoll ctrlLocal.initialPollDone=%d\n",
             modNamEMC, ctrlLocal.initialPollDone);
+
   if (ctrlLocal.useADSbinary) {
     if (!ctrlLocal.initialPollDone) {
       status = initialPollIndexer();
-      if (!status) ctrlLocal.initialPollDone = 1;
+      if (!status) {
+        ctrlLocal.initialPollDone = 1;
+      } else {
+        int i = 1;
+        while (i < numAxes_) {
+          setIntegerParam(i ,motorStatusCommsError_, 1);
+          callParamCallbacks(i);
+          i++;
+        }
+      }
     }
   } else {
     if (!features_) {
