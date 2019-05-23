@@ -84,7 +84,23 @@ extern "C" const char *errStringFromErrId(int nErrorId)
   }
 }
 
-
+extern "C" const char *EthercatMCstrStatus(asynStatus status)
+{
+  switch ((int)status) {
+  case asynSuccess:             return "asynSuccess";
+  case asynTimeout:             return "asynTimeout";
+  case asynOverflow:            return "asynOverflow";
+  case asynError:               return "asynError";
+  case asynDisconnected:        return "asynDisconnected";
+  case asynDisabled:            return "asynDisabled";
+  case asynParamAlreadyExists:  return "asynParamAlreadyExists";
+  case asynParamNotFound:       return "asynParamNotFound";
+  case asynParamWrongType:      return "asynParamWrongType";
+  case asynParamBadIndex:       return "asynParamBadIndex";
+  case asynParamUndefined:      return "asynParamUndefined";
+  default: return "??";
+  }
+}
 
 /** Creates a new EthercatMCController object.
   * \param[in] portName          The name of the asyn port that will be created for this driver
@@ -346,7 +362,7 @@ asynStatus EthercatMCController::configController(int needOkOrDie, const char *v
       asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%s out=%s in=\"%s\" return=%s (%d)\n",
                 modulName, value, inString,
-                pasynManager->strStatus(status), (int)status);
+                EthercatMCstrStatus(status), (int)status);
       if (needOkOrDie < 0) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
                   "%s Aborting IOC\n",
@@ -381,7 +397,7 @@ extern "C" asynStatus disconnect_C(asynUser *pasynUser)
     if (status != asynSuccess) {
       asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%s status=%s (%d)\n",
-                modulName, pasynManager->strStatus(status), (int)status);
+                modulName, EthercatMCstrStatus(status), (int)status);
     }
   } else {
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
@@ -413,7 +429,7 @@ asynStatus writeReadOnErrorDisconnect_C(asynUser *pasynUser,
               eomReason & ASYN_EOM_CNT ? "CNT" : "",
               eomReason & ASYN_EOM_EOS ? "EOS" : "",
               eomReason & ASYN_EOM_END ? "END" : "",
-              pasynManager->strStatus(status), status);
+              EthercatMCstrStatus(status), status);
     disconnect_C(pasynUser);
     return asynError; /* TimeOut -> Error */
   }
@@ -448,7 +464,7 @@ asynStatus EthercatMCController::writeReadOnErrorDisconnect(void)
       asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%sout=%s in=%s timeDelta=%f status=%s (%d)\n",
                 modNamEMC, outString_, inString_, timeDelta,
-                pasynManager->strStatus(status), (int)status);
+                EthercatMCstrStatus(status), (int)status);
     }
   }
   handleStatusChange(status);
@@ -487,7 +503,7 @@ asynStatus EthercatMCController::writeReadControllerPrint(int traceMask)
   asynPrint(pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, outString_, inString_,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   return status;
 }
 
@@ -526,7 +542,7 @@ asynStatus EthercatMCController::writeReadACK(int traceMask)
         asynPrint(pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                   "%sout=%s in=%s return=%s (%d)\n",
                   modNamEMC, outString_, inString_,
-                  pasynManager->strStatus(status), (int)status);
+                  EthercatMCstrStatus(status), (int)status);
         return status;
       }
     }
@@ -536,7 +552,7 @@ asynStatus EthercatMCController::writeReadACK(int traceMask)
   asynPrint(pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, outString_, inString_,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   return status;
 }
 
@@ -553,8 +569,8 @@ void EthercatMCController::handleStatusChange(asynStatus status)
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%soldStatus=%s (%d) status=%s (%d)\n",
               modNamEMC,
-              pasynManager->strStatus(ctrlLocal.oldStatus), (int)ctrlLocal.oldStatus,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(ctrlLocal.oldStatus), (int)ctrlLocal.oldStatus,
+              EthercatMCstrStatus(status), (int)status);
     if (status) {
       /* Connected -> Disconnected */
       int i;
@@ -632,7 +648,7 @@ int EthercatMCController::getFeatures(void)
     asynPrint(pasynUserController_, ASYN_TRACE_INFO,
               "%sout=%s in=%s status=%s (%d)\n",
               modNamEMC, outString_, inString_,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     if (!status) {
       /* loop through the features */
       char *pFeatures = strdup(inString_);

@@ -226,7 +226,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
                   "%smove (%d) status=%s (%d)\n",
                   "EthercatMCIndexerAxis", axisNo_,
-                  pasynManager->strStatus(status), (int)status);
+                  EthercatMCstrStatus(status), (int)status);
         return status;
       }
       setDoubleParam(pC_->EthercatMCVel_RB_, maxVelocity);
@@ -244,7 +244,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
                   "%smove (%d) status=%s (%d)\n",
                   "EthercatMCIndexerAxis", axisNo_,
-                  pasynManager->strStatus(status), (int)status);
+                  EthercatMCstrStatus(status), (int)status);
         return status;
       }
       setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
@@ -353,7 +353,7 @@ asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity,
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
                   "%smoveVelocity (%d) status=%s (%d)\n",
                   "EthercatMCIndexerAxis", axisNo_,
-                  pasynManager->strStatus(status), (int)status);
+                  EthercatMCstrStatus(status), (int)status);
         return status;
       }
       setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
@@ -396,7 +396,7 @@ asynStatus EthercatMCIndexerAxis::stopAxisInternal(const char *function_name,
   asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   return status;
 }
 
@@ -617,7 +617,7 @@ asynStatus EthercatMCIndexerAxis::resetAxis(void)
   asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   return status;
 }
 

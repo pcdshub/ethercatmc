@@ -779,7 +779,7 @@ asynStatus EthercatMCAxis::resetAxis(void)
   resetAxisReturn:
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%sresetAxis(%d) status=%s (%d)\n",
-             modNamEMC, axisNo_, pasynManager->strStatus(status), (int)status);
+             modNamEMC, axisNo_, EthercatMCstrStatus(status), (int)status);
   /* do a poll */
   poll(&moving);
   return status;
@@ -838,7 +838,7 @@ asynStatus EthercatMCAxis::enableAmplifier(int on)
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%sout=%s in=%s status=%s (%d)\n",
                modNamEMC, pC_->outString_, pC_->inString_,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     if (!strcmp("0;1", pC_->inString_)) {
       /* bBusy == 0; bEnable(d) == 1 */
@@ -1184,7 +1184,7 @@ asynStatus EthercatMCAxis::poll(bool *moving)
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sout=%s in=%s return=%s (%d)\n",
               modNamEMC, pC_->outString_, pC_->inString_,
-              pasynManager->strStatus(comStatus), (int)comStatus);
+              EthercatMCstrStatus(comStatus), (int)comStatus);
     if (comStatus == asynDisabled) {
       return asynSuccess;
     }

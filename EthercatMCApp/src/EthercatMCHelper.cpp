@@ -24,7 +24,7 @@ asynStatus EthercatMCAxis::writeReadControllerPrint(int traceMask)
   asynPrint(pC_->pasynUserController_, traceMask,
             "%sout=%s in=%s status=%s (%d)\n",
             modNamEMC, pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   return status;
 }
 
@@ -70,7 +70,7 @@ asynStatus EthercatMCAxis::setValueOnAxisVerify(const char *var, const char *rbv
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%ssetValueOnAxisVerify(%d) out=%s in=%s status=%s (%d)\n",
               modNamEMC, axisNo_,pC_->outString_, pC_->inString_,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     if (status) {
       return status;
     } else {
@@ -341,7 +341,7 @@ asynStatus EthercatMCAxis::getValueFromAxis(const char* var, int *value)
             "%sout=%s in=%s status=%s (%d) iValue=%d\n",
             modNamEMC,
             pC_->outString_, pC_->inString_,
-            pasynManager->strStatus(status), (int)status, res);
+            EthercatMCstrStatus(status), (int)status, res);
 
   *value = res;
   return asynSuccess;

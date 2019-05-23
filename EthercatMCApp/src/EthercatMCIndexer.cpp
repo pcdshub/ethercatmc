@@ -194,7 +194,7 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
               status ? traceMask | ASYN_TRACE_INFO : traceMask,
               "%scmdSubParamIndex=0x%04x status=%s (%d)\n",
               modNamEMC, cmdSubParamIndex,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
       case PARAM_IF_CMD_INVALID:
@@ -253,7 +253,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
     asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
 	      "%sstatus=%s (%d)\n",
 	      modNamEMC,
-	      pasynManager->strStatus(status), (int)status);
+	      EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     while (counter < 5) {
       unsigned cmdSubParamIndex = 0;
@@ -269,7 +269,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
 	asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
 		  "%sstatus=%s (%d)\n",
 		  modNamEMC,
-		  pasynManager->strStatus(status), (int)status);
+		  EthercatMCstrStatus(status), (int)status);
 	return status;
       }
       cmdSubParamIndex = netToUint(&paramIf.paramCtrl,
@@ -311,7 +311,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
 		  "%sparamIfOffset=%u cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
 		  modNamEMC, paramIfOffset, cmdSubParamIndex,
 		  counter,
-		  pasynManager->strStatus(status), (int)status);
+		  EthercatMCstrStatus(status), (int)status);
       }
       epicsThreadSleep(.1 * (counter<<1));
       counter++;
@@ -351,7 +351,7 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   asynPrint(pasynUserController_, traceMask,
             "%sparamIfOffset=%u paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
             modNamEMC, paramIfOffset, paramIndex, lenInPlcPara,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   if (status) return status;
 
   status = setPlcMemoryInteger(paramIfOffset, cmd, lenInPlcCmd);
@@ -359,7 +359,7 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   asynPrint(pasynUserController_, traceMask,
             "%sstatus=%s (%d)\n",
             modNamEMC,
-            pasynManager->strStatus(status), (int)status);
+            EthercatMCstrStatus(status), (int)status);
   if (status) return status;
   while (counter < 5) {
     unsigned cmdSubParamIndex = 0;
@@ -369,7 +369,7 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
               "%s cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
               modNamEMC,
               cmdSubParamIndex, counter,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     /* This is good, return */
     if (cmdSubParamIndex == cmdAcked) return asynSuccess;
@@ -397,7 +397,7 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
                 "%scmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
                 modNamEMC, cmdSubParamIndex,
                 counter,
-                pasynManager->strStatus(status), (int)status);
+                EthercatMCstrStatus(status), (int)status);
       return status;
     }
     epicsThreadSleep(.1 * (counter<<1));
@@ -516,7 +516,7 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
               ASYN_TRACE_INFO,
               "%sindexerReadAxisParameters status=%s (%d)\n",
               modNamEMC,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     return status;
   }
   for (dataIdx = 0; dataIdx <= 16; dataIdx++) {
@@ -530,7 +530,7 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
                 ASYN_TRACE_INFO,
                 "%sindexerReadAxisParameters status=%s (%d)\n",
                 modNamEMC,
-                pasynManager->strStatus(status), (int)status);
+                EthercatMCstrStatus(status), (int)status);
       return status;
     }
       /* dataIdx == 0 has ACK + infoType/devNum
@@ -573,7 +573,7 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
                     ASYN_TRACE_INFO,
                     "%sindexerReadAxisParameters paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
                     modNamEMC, paramIndex, lenInPlcPara,
-                    pasynManager->strStatus(status), (int)status);
+                    EthercatMCstrStatus(status), (int)status);
           return status;
         }
         asynPrint(pasynUserController_, ASYN_TRACE_INFO,

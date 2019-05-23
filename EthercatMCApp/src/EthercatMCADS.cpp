@@ -218,7 +218,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
   if (status) {
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sstatus=%s (%d)\n", modNamEMC,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     goto restore_Eos;
   }
   status = pasynOctetSyncIO->getOutputEos(pasynUser,
@@ -228,14 +228,14 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
   if (status) {
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sstatus=%s (%d)\n", modNamEMC,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     goto restore_Eos;
   }
   status = pasynOctetSyncIO->setInputEos(pasynUser, "", 0);
   if (status) {
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sstatus=%s (%d)\n", modNamEMC,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     goto restore_Eos;
   }
   status = pasynOctetSyncIO->setOutputEos(pasynUser, "", 0);
@@ -243,7 +243,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
     asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
               "%sstatus=%s (%d)\n",
               modNamEMC,
-              pasynManager->strStatus(status), (int)status);
+              EthercatMCstrStatus(status), (int)status);
     goto restore_Eos;
   }
   status = pasynOctetSyncIO->write(pasynUser, outdata, outlen,
@@ -258,7 +258,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                 (unsigned long)nwrite,
                 DEFAULT_CONTROLLER_TIMEOUT,
                 pasynUser->errorMessage,
-                pasynManager->strStatus(status), status);
+                EthercatMCstrStatus(status), status);
     }
     status = asynError; /* TimeOut -> Error */
     return status;
@@ -288,7 +288,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   modNamEMC,
                   (unsigned long)*pnread,
                   DEFAULT_CONTROLLER_TIMEOUT,
-                  pasynManager->strStatus(status), status);
+                  EthercatMCstrStatus(status), status);
       } else {
         asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                   "%sIN  nread=%lu eomReason=%x (%s%s%s) err=%s status=%s (%d)\n",
@@ -299,7 +299,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   eomReason & ASYN_EOM_EOS ? "EOS" : "",
                   eomReason & ASYN_EOM_END ? "END" : "",
                   pasynUser->errorMessage,
-                  pasynManager->strStatus(status), status);
+                  EthercatMCstrStatus(status), status);
       }
     }
     disconnect_C(pasynUser);
@@ -353,7 +353,7 @@ EthercatMCController::writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                   eomReason & ASYN_EOM_CNT ? "CNT" : "",
                   eomReason & ASYN_EOM_EOS ? "EOS" : "",
                   eomReason & ASYN_EOM_END ? "END" : "",
-                  pasynManager->strStatus(status), status);
+                  EthercatMCstrStatus(status), status);
         disconnect_C(pasynUser);
       }
     } else {
@@ -370,7 +370,7 @@ restore_Eos:
     if (cmdStatus) {
       asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%scmdStatus=%s (%d)\n", modNamEMC,
-                pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+                EthercatMCstrStatus(cmdStatus), (int)cmdStatus);
     }
     cmdStatus = pasynOctetSyncIO->setOutputEos(pasynUser,
                                                old_OutputEos,
@@ -378,7 +378,7 @@ restore_Eos:
     if (cmdStatus) {
       asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
                 "%scmdStatus=%s (%d)\n", modNamEMC,
-                pasynManager->strStatus(cmdStatus), (int)cmdStatus);
+                EthercatMCstrStatus(cmdStatus), (int)cmdStatus);
     }
   }
   return status;
