@@ -267,7 +267,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
     unsigned cmdReason = idxStatusCodeSTART  << (12 + 16);
     struct {
       uint8_t  posRaw[8];
-      uint8_t  cmdReason[8];
+      uint8_t  cmdReason[4];
     } posCmd;
     doubleToNet(position, &posCmd.posRaw, sizeof(posCmd.posRaw));
     uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
@@ -624,11 +624,15 @@ asynStatus EthercatMCIndexerAxis::resetAxis(void)
 asynStatus EthercatMCIndexerAxis::setClosedLoop(bool closedLoop)
 {
   double value = closedLoop ? 0.0 : 1.0; /* 1.0 means disable */
-  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
+  unsigned paramIfOffset = 0;
   unsigned lenInPlcPara = 0;
   asynStatus status;
   if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
     lenInPlcPara = 4;
+    paramIfOffset = drvlocal.iOffset + 0xA;
+  } else if (drvlocal.iTypCode == 0x5010) {
+    lenInPlcPara = 8;
+    paramIfOffset = drvlocal.iOffset + 22;
   } else {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%spoll(%d) iTypCode=0x%x\n",
