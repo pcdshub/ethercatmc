@@ -91,24 +91,16 @@ asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
                                                   unsigned *value,
                                                   size_t lenInPlc)
 {
-
   asynStatus status;
-  uint8_t raw[4];
-  unsigned ret;
-  if (lenInPlc == 2) {
-    status = getPlcMemoryViaADS(indexOffset, raw, lenInPlc);
-    ret = (unsigned)raw[0] + (raw[1] << 8);
-    *value = ret;
+
+  memset(value, 0, lenInPlc);
+  if (lenInPlc <= 8) {
+    uint8_t raw[8];
+    status = getPlcMemoryViaADS(indexOffset, &raw, lenInPlc);
+    *value = netToUint(&raw, lenInPlc);
     return status;
-  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
-    /* We only use the low 32 bits */
-    status = getPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
-    ret = (unsigned)raw[0] + (raw[1] << 8) + (raw[2] << 16) + (raw[3] << 24);
-    *value = ret;
-    return status;
-  } else {
-    return asynError;
   }
+  return asynError;
 }
 
 asynStatus EthercatMCController::getPlcMemoryString(unsigned indexOffset,
@@ -123,18 +115,10 @@ asynStatus EthercatMCController::setPlcMemoryInteger(unsigned indexOffset,
                                                      int value,
                                                      size_t lenInPlc)
 {
-  if (lenInPlc == 2) {
-    uint8_t raw[2];
-    raw[0] = (uint8_t)value;
-    raw[1] = (uint8_t)(value >> 8);
-    return setPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
-  } else if (lenInPlc == 4) {
-    uint8_t raw[4];
-    raw[0] = (uint8_t)value;
-    raw[1] = (uint8_t)(value >> 8);
-    raw[2] = (uint8_t)(value >> 16);
-    raw[3] = (uint8_t)(value >> 24);
-    return setPlcMemoryViaADS(indexOffset, raw, sizeof(raw));
+  if (lenInPlc <= 8) {
+    uint8_t raw[8];
+    uintToNet(value, &raw, lenInPlc);
+    return setPlcMemoryViaADS(indexOffset, raw, lenInPlc);
   } else {
     return asynError;
   }
@@ -148,13 +132,11 @@ asynStatus EthercatMCController::getPlcMemoryDouble(unsigned indexOffset,
   asynStatus status;
 
   memset(value, 0, lenInPlc);
-  if (lenInPlc == 4) {
-    uint8_t raw[4];
-    status = getPlcMemoryViaADS(indexOffset, &raw, sizeof(raw));
-    *value = netToDouble(&raw, sizeof(raw));
+  if (lenInPlc <= 8) {
+    uint8_t raw[8];
+    status = getPlcMemoryViaADS(indexOffset, &raw, lenInPlc);
+    *value = netToDouble(&raw, lenInPlc);
     return status;
-    //} else if (lenInPlc == 8) {
-    //return getPlcMemoryViaADS(indexOffset, value, lenInPlc);
   }
   return asynError;
 }
@@ -163,13 +145,10 @@ asynStatus EthercatMCController::setPlcMemoryDouble(unsigned indexOffset,
                                                     double value,
                                                     size_t lenInPlc)
 {
-  if (lenInPlc == 4) {
-    uint8_t raw[4];
-    doubleToNet(value, &raw, sizeof(raw));
-    return setPlcMemoryViaADS(indexOffset, &raw, sizeof(raw));
-    //} else if (lenInPlc == 8) {
-    //double res = value;
-    //return setPlcMemoryViaADS(indexOffset, &res, sizeof(res));
+  if (lenInPlc <= 8) {
+    uint8_t raw[8];
+    doubleToNet(value, &raw, lenInPlc);
+    return setPlcMemoryViaADS(indexOffset, &raw, lenInPlc);
   }
   return asynError;
 }
@@ -370,8 +349,8 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     status = setPlcMemoryDouble(paramIfOffset + 2, value, lenInPlcPara);
   if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
-            "%sstatus=%s (%d)\n",
-            modNamEMC,
+            "%sparamIfOffset=%u paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
+            modNamEMC, paramIfOffset, paramIndex, lenInPlcPara,
             pasynManager->strStatus(status), (int)status);
   if (status) return status;
 
