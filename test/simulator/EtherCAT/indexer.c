@@ -344,23 +344,14 @@ static void init_axis(int axis_no)
                   &motor_init_values,
                   sizeof(motor_init_values));
 
-    //cmd_Motor_cmd[axis_no].maximumVelocity = 50;
-    //
-    //cmd_Motor_cmd[axis_no].homeVeloTowardsHomeSensor = 10;
-    //cmd_Motor_cmd[axis_no].homeVeloFromHomeSensor = 5;
-    //cmd_Motor_cmd[axis_no].fPosition = getMotorPos(axis_no);
-    //cmd_Motor_cmd[axis_no].referenceVelocity = 600;
-    //cmd_Motor_cmd[axis_no].inTargetPositionMonitorWindow = 0.1;
-    //cmd_Motor_cmd[axis_no].inTargetPositionMonitorTime = 0.02;
-    //cmd_Motor_cmd[axis_no].inTargetPositionMonitorEnabled = 1;
     setMRES_23(axis_no, UREV);
     setMRES_24(axis_no, SREV);
     if (axis_no == 1)
       cmd_Motor_cmd[axis_no].fHysteresis = 2.0;
     else
       cmd_Motor_cmd[axis_no].fHysteresis = 0.1;
-    cmd_Motor_cmd[axis_no].fVelocity = 1;
-    cmd_Motor_cmd[axis_no].fAcceleration = 1;
+    cmd_Motor_cmd[axis_no].fVelocity = 2 + axis_no / 10.0;
+    cmd_Motor_cmd[axis_no].fAcceleration = 1 + axis_no / 10.0;
     /* Simulated limit switches, take from indexer table */
     {
       int tmp_axis_no = 1;
