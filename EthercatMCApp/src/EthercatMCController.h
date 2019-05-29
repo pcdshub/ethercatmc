@@ -74,8 +74,8 @@ FILENAME...   EthercatMCController.h
 extern const char *modNamEMC;
 
 extern "C" {
-  unsigned   netToUint(void *data, size_t lenInPlc);
-  double     netToDouble(void *data, size_t lenInPlc);
+  unsigned   netToUint(const void *data, size_t lenInPlc);
+  double     netToDouble(const void *data, size_t lenInPlc);
   void       doubleToNet(const double value, void *data, size_t lenInPlc);
   void       uintToNet(const unsigned value, void *data, size_t lenInPlc);
   int EthercatMCCreateAxis(const char *EthercatMCName, int axisNo,
@@ -94,6 +94,10 @@ extern "C" {
   const char *EthercatMCstrStatus(asynStatus status);
   const char *errStringFromErrId(int nErrorId);
 }
+#define NETTOUINT(n)       netToUint((const void*)&n, sizeof(n))
+#define NETTODOUBLE(n)     netToDouble((const void*)&n, sizeof(n))
+#define UINTTONET(val,n)   uintToNet((val), (&n), sizeof(n))
+#define DOUBLETONET(val,n) doubleToNet((val), (&n), sizeof(n))
 
 class EthercatMCIndexerAxis;
 
