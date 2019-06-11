@@ -359,22 +359,32 @@ asynStatus EthercatMCIndexerAxis::setPosition(double value)
 asynStatus EthercatMCIndexerAxis::stopAxisInternal(const char *function_name,
                                                    double acceleration)
 {
-  asynStatus status = asynSuccess;
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%sstopAxisInternal(%d) (%s)\n",
             modNamEMC, axisNo_, function_name);
 
-  size_t lenInPlc = 2;
-  unsigned reg = 4;
-  unsigned traceMask = ASYN_TRACE_INFO;
-  unsigned cmdReason = idxStatusCodeSTOP << 12;
-  status = pC_->setPlcMemoryInteger(drvlocal.iOffset + reg * lenInPlc,
-                                         cmdReason, lenInPlc);
-  asynPrint(pC_->pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, pC_->outString_, pC_->inString_,
-            EthercatMCstrStatus(status), (int)status);
-  return status;
+  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
+    unsigned cmdReason = idxStatusCodeSTOP  << 12;
+    struct {
+      uint8_t  cmdReason[2];
+    } posCmd;
+    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
+                                   &posCmd, sizeof(posCmd));
+  } else if (drvlocal.iTypCode == 0x5010) {
+    unsigned cmdReason = idxStatusCodeSTOP  << (12 + 16);
+    struct {
+      uint8_t  cmdReason[4];
+    } posCmd;
+    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
+                                   &posCmd, sizeof(posCmd));
+  } else {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+	      "%smove(%d) iTypCode=0x%x\n",
+	      modNamEMC, axisNo_, drvlocal.iTypCode);
+    return asynError;
+  }
 }
 
 /** Stop the axis, called by motor Record
