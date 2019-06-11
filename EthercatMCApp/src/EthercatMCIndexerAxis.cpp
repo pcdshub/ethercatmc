@@ -353,6 +353,35 @@ asynStatus EthercatMCIndexerAxis::setPosition(double value)
   return status;
 }
 
+asynStatus EthercatMCIndexerAxis::writeCmdRegisster(unsigned idxStatusCode)
+{
+  asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+            "%swriteCmdRegisster(%d) idxStatusCode=0x%x\n",
+            modNamEMC, axisNo_, idxStatusCode);
+  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
+    unsigned cmdReason = idxStatusCode << 12;
+    struct {
+      uint8_t  cmdReason[2];
+    } posCmd;
+    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
+                                   &posCmd, sizeof(posCmd));
+  } else if (drvlocal.iTypCode == 0x5010) {
+    unsigned cmdReason = idxStatusCode << (12 + 16);
+    struct {
+      uint8_t  cmdReason[4];
+    } posCmd;
+    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
+                                   &posCmd, sizeof(posCmd));
+  } else {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+	      "%swriteCmdRegisster(%d) iTypCode=0x%x\n",
+	      modNamEMC, axisNo_, drvlocal.iTypCode);
+    return asynError;
+  }
+}
+
 /** Stop the axis
  *
  */
@@ -363,28 +392,7 @@ asynStatus EthercatMCIndexerAxis::stopAxisInternal(const char *function_name,
             "%sstopAxisInternal(%d) (%s)\n",
             modNamEMC, axisNo_, function_name);
 
-  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-    unsigned cmdReason = idxStatusCodeSTOP  << 12;
-    struct {
-      uint8_t  cmdReason[2];
-    } posCmd;
-    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
-    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
-                                   &posCmd, sizeof(posCmd));
-  } else if (drvlocal.iTypCode == 0x5010) {
-    unsigned cmdReason = idxStatusCodeSTOP  << (12 + 16);
-    struct {
-      uint8_t  cmdReason[4];
-    } posCmd;
-    uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
-    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + (2 * drvlocal.lenInPlcPara),
-                                   &posCmd, sizeof(posCmd));
-  } else {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-	      "%smove(%d) iTypCode=0x%x\n",
-	      modNamEMC, axisNo_, drvlocal.iTypCode);
-    return asynError;
-  }
+  return writeCmdRegisster(idxStatusCodeSTOP);
 }
 
 /** Stop the axis, called by motor Record
@@ -582,18 +590,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
 
 asynStatus EthercatMCIndexerAxis::resetAxis(void)
 {
-  asynStatus status = asynSuccess;
-  unsigned reg = 4;
-  size_t lenInPlc = 2;
-  unsigned traceMask = ASYN_TRACE_INFO;
-  unsigned cmdReason = idxStatusCodeRESET << 12;
-  status = pC_->setPlcMemoryInteger(drvlocal.iOffset + reg * lenInPlc,
-                                    cmdReason, lenInPlc);
-  asynPrint(pC_->pasynUserController_, traceMask,
-            "%sout=%s in=%s status=%s (%d)\n",
-            modNamEMC, pC_->outString_, pC_->inString_,
-            EthercatMCstrStatus(status), (int)status);
-  return status;
+  return writeCmdRegisster(idxStatusCodeRESET);
 }
 
 /** Set the motor closed loop status
