@@ -349,7 +349,11 @@ asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity,
  */
 asynStatus EthercatMCIndexerAxis::setPosition(double value)
 {
-  asynStatus status = asynSuccess;
+  asynStatus status;
+  status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
+                                  PARAM_IDX_FUN_SET_POSITION,
+                                  drvlocal.lenInPlcPara,
+                                  value);
   return status;
 }
 
@@ -507,7 +511,8 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setDoubleParam(pC_->motorPosition_, actPosition);
     drvlocal.hasProblem = 0;
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
-    if (statusReasonAux != drvlocal.old_statusReasonAux) {
+    if ((statusReasonAux != drvlocal.old_statusReasonAux) ||
+        (idxAuxBits      != drvlocal.old_idxAuxBits)) {
       asynPrint(pC_->pasynUserController_, traceMask,
                 "%spoll(%d) actPos=%f targetPos=%f statusReasonAux=0x%x %d (%s)\n",
                 modNamEMC, axisNo_,
@@ -515,6 +520,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
                 statusReasonAux, idxStatusCode,
                 idxStatusCodeTypeToStr(idxStatusCode));
       drvlocal.old_statusReasonAux = statusReasonAux;
+      drvlocal.old_idxAuxBits      = idxAuxBits;
     }
     if ((paramCtrl != drvlocal.old_paramCtrl) ||
         (paramValue != drvlocal.old_paramValue)) {

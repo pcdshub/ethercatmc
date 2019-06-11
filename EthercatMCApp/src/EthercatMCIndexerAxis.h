@@ -68,6 +68,7 @@ private:
     unsigned lenInPlcPara;
     unsigned paramIfOffset;
     unsigned old_statusReasonAux;
+    unsigned old_idxAuxBits;
     unsigned old_paramCtrl;
     unsigned int hasProblem :1;
   } drvlocal;

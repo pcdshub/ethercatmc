@@ -497,6 +497,12 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
 #endif
     pAxis->setIntegerParam(EthercatMCHomProc_RB_, 14);
     break;
+  case PARAM_IDX_FUN_SET_POSITION:
+#ifdef  motorNotHomedProblemString
+    pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
+#endif
+    pAxis->setIntegerParam(EthercatMCHomProc_RB_, 15);
+    break;
   }
 }
 

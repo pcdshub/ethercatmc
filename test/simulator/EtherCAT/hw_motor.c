@@ -728,6 +728,7 @@ void setMotorPos(int axis_no, double value)
   fprintf(stdlog, "%s/%s:%d axis_no=%d value=%g\n",
           __FILE__, __FUNCTION__, __LINE__,
           axis_no, value);
+  motor_axis[axis_no].homed = 1;
   /* simulate EncoderPos */
   motor_axis[axis_no].MotorPosNow = value;
   motor_axis[axis_no].EncoderPos = getEncoderPosFromMotorPos(axis_no, motor_axis[axis_no].MotorPosNow);

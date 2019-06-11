@@ -29,11 +29,11 @@
 /* axis 0 (not used), axis1, axis2 */
 #define  NUM_MOTORS5008     3
 
-/* axis3 */
-#define  NUM_MOTORS5010     1
+/* axis3 axis4 */
+#define  NUM_MOTORS5010     2
 
-/* 4 devices: the indexer +  3 motors */
-#define  NUM_DEVICES        4
+/* 5 devices for the indexer: the indexer itself + 4 motors */
+#define  NUM_DEVICES        5
 
 typedef enum {
   idxStatusCodeRESET    = 0,
@@ -91,6 +91,7 @@ typedef enum {
 #define PARAM_IDX_STEPS_PER_UNIT_FLOAT32       68
 #define PARAM_IDX_HOME_POSITION_FLOAT32        69
 #define PARAM_IDX_FUN_REFERENCE               133
+#define PARAM_IDX_FUN_SET_POSITION            137
 #define PARAM_IDX_FUN_MOVE_VELOCITY           142
 
 /*  Which parameters are available */
@@ -119,6 +120,7 @@ typedef enum {
 #define PARAM_AVAIL_64_79_HOME_POSITION_FLOAT32        (1 << (69-64))
 
 #define PARAM_AVAIL_128_143_FUN_REFERENCE              (1 << (133-128))
+#define PARAM_AVAIL_128_143_FUN_SET_POSITION           (1 << (137-128))
 #define PARAM_AVAIL_128_143_FUN_MOVE_VELOCITY          (1 << (142-128))
 
 
@@ -261,8 +263,29 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     "Axis5010-3",
     { "", "", "", "", "", "homing", "@home", "homed" },
     0, +173.0
+  },
+    { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
+      UNITCODE_MM,
+    {PARAM_AVAIL_0_15_OPMODE_AUTO_UINT32,
+     0,
+     0,
+     PARAM_AVAIL_48_63_SPEED_FLOAT32 | PARAM_AVAIL_48_63_ACCEL_FLOAT32 | PARAM_AVAIL_48_63_HYTERESIS_FLOAT32,
+     0,
+     0,
+     0,
+     0,
+     PARAM_AVAIL_128_143_FUN_SET_POSITION,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0},
+    "Axis5010-4",
+    { "", "", "", "", "", "", "", "notHomed" },
+    0, +163.0
   }
-
 };
 
 
@@ -586,10 +609,30 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
     statusReasonAux32 |= 0x04000000;
   {
     unsigned auxBitIdx = 0;
-    for (auxBitIdx = 0; auxBitIdx < 7; auxBitIdx++) {
-      if (!strcmp("homing",
-                  (const char*)&indexerDeviceAbsStraction[motor_axis_no].auxName[auxBitIdx])) {
+    for (auxBitIdx = 0; auxBitIdx <= 7; auxBitIdx++) {
+      const char *auxBitName = (const char*)&indexerDeviceAbsStraction[motor_axis_no].auxName[auxBitIdx];
+      LOGINFO6("%s/%s:%d motor_axis_no=%u auxBitIdx=%u auxBitName=%s\n",
+               __FILE__, __FUNCTION__, __LINE__,
+               motor_axis_no, auxBitIdx, auxBitName);
+
+      if (!strcmp("homing", auxBitName)) {
         if (isMotorHoming(motor_axis_no)) {
+          statusReasonAux32 |= 1 << auxBitIdx;
+        }
+      } else if (!strcmp("homed", auxBitName)) {
+        int bValue = getAxisHomed(motor_axis_no);
+        LOGINFO6("%s/%s:%d motor_axis_no=%u auxBitIdx=%u homed=%d\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 motor_axis_no, auxBitIdx, bValue);
+        if (bValue) {
+          statusReasonAux32 |= 1 << auxBitIdx;
+        }
+      } else if (!strcmp("notHomed", auxBitName)) {
+        int bValue = getAxisHomed(motor_axis_no);
+        LOGINFO6("%s/%s:%d motor_axis_no=%u auxBitIdx=%u homed=%d\n",
+                 __FILE__, __FUNCTION__, __LINE__,
+                 motor_axis_no, auxBitIdx, bValue);
+        if (!bValue) {
           statusReasonAux32 |= 1 << auxBitIdx;
         }
       }
@@ -763,6 +806,10 @@ indexerMotorParamInterface(unsigned motor_axis_no,
         ret = PARAM_IF_CMD_DONE | paramIndex;
       }
       break;
+    case PARAM_IDX_FUN_SET_POSITION:
+      setMotorPos(motor_axis_no, fValue);
+      ret = PARAM_IF_CMD_DONE | paramIndex;
+      break;
     }
     /* put DONE (or ERROR) into the process image */
     uintToNet(ret, &idxData.memoryBytes[offset], 2);
@@ -809,7 +856,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         unsigned auxIdx;
         unsigned flagsLow = 0;
         unsigned maxAuxIdx;
-        unsigned offset;
+        unsigned offset = 0;
         maxAuxIdx = sizeof(indexerDeviceAbsStraction[devNum].auxName) /
           sizeof(indexerDeviceAbsStraction[devNum].auxName[0]);
 
@@ -823,8 +870,16 @@ static int indexerHandleIndexerCmd(unsigned offset,
                    auxIdx, flagsLow);
         }
         idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
+
         /* Offset to the first motor */
-        offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum] - (void*)&idxData);
+        if (devNum <= NUM_MOTORS5008) {
+          offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum] - (void*)&idxData);
+        } else {
+          /* Assume that the 5010 come after the 5008 motors */
+          unsigned motor5010Num = devNum-NUM_MOTORS5008;
+          offset = (unsigned)((void*)&idxData.memoryStruct.motors5010[motor5010Num] - (void*)&idxData);
+        }
+
         /* TODO: Support other interface types */
 
         idxData.memoryStruct.indexer.infoType0.offset = offset;
