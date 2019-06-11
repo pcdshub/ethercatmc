@@ -498,10 +498,11 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific for 5010 */
-      statusReasonAux = statusReasonAux32;
       idxStatusCode = (idxStatusCodeType)(statusReasonAux32 >> 28);
       idxReasonBits = (statusReasonAux32 >> 24) & 0x0F;
-      idxAuxBits    =  statusReasonAux32  & 0x0FFFF;
+      idxAuxBits    =  statusReasonAux32  & 0x0FFFFFF;
+      /* Simulate the 16 bit register, status, reason, aux7 .. aux0 */
+      statusReasonAux = (idxStatusCode << 12) | (idxReasonBits << 8) | (idxAuxBits & 0xFF);
     } else {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
                 "%spoll(%d) iTypCode=0x%x\n",

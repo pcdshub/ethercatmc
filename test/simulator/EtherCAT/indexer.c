@@ -651,7 +651,7 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
   else
     idxStatusCode = idxStatusCodeIDLE;
 
-  statusReasonAux32 = (idxStatusCode << 28);
+  statusReasonAux32 |= (idxStatusCode << 28);
   uintToNet(statusReasonAux32,
             &pIndexerDevice5010interface->statusReasonAux32,
             sizeof(pIndexerDevice5010interface->statusReasonAux32));
