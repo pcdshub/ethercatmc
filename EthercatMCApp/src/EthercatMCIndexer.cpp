@@ -366,9 +366,9 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     status = getPlcMemoryUint(paramIfOffset, &cmdSubParamIndex, 2);
     if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
     asynPrint(pasynUserController_, traceMask,
-              "%s cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+              "%sparamIndex=%u lenInPlcPara=%u cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
               modNamEMC,
-              cmdSubParamIndex, counter,
+              paramIndex, lenInPlcPara, cmdSubParamIndex, counter,
               EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     /* This is good, return */
@@ -495,6 +495,7 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
 #ifdef  motorNotHomedProblemString
     pAxis->setIntegerParam(motorNotHomedProblem_, MOTORNOTHOMEDPROBLEM_ERROR);
 #endif
+    pAxis->setIntegerParam(EthercatMCHomProc_RB_, 14);
     break;
   }
 }
@@ -562,23 +563,32 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
     for (bitIdx = 0; bitIdx <= 15; bitIdx++) {
       unsigned paramIndex = dataIdx*16 + bitIdx;
       unsigned bitIsSet = parameters & (1 << bitIdx) ? 1 : 0;
-      if (bitIsSet && (paramIndex < 128)) {
-        double fValue = 0;
-        status = indexerParamRead(paramIfOffset,
-                                  paramIndex,
-                                  lenInPlcPara,
-                                  &fValue);
-        if (status) {
-          asynPrint(pasynUserController_,
-                    ASYN_TRACE_INFO,
-                    "%sindexerReadAxisParameters paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
-                    modNamEMC, paramIndex, lenInPlcPara,
-                    EthercatMCstrStatus(status), (int)status);
-          return status;
+      if (bitIsSet) {
+        double fValue = 0.0;
+        if (paramIndex < 128) {
+          /* paramIndex >= 128 are functions.
+             Don't read them.
+             tell driver that the function exist */
+          status = indexerParamRead(paramIfOffset,
+                                    paramIndex,
+                                    lenInPlcPara,
+                                    &fValue);
+          if (status) {
+            asynPrint(pasynUserController_,
+                      ASYN_TRACE_INFO,
+                      "%sindexerReadAxisParameters paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
+                      modNamEMC, paramIndex, lenInPlcPara,
+                      EthercatMCstrStatus(status), (int)status);
+            return status;
+          }
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                    "%sparameters(%d) paramIdx=%u fValue=%f\n",
+                    modNamEMC, axisNo, paramIndex, fValue);
+        } else {
+          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                    "%sparameters(%d) paramIdxFunction=%u\n",
+                    modNamEMC, axisNo, paramIndex);
         }
-        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                  "%sparameters(%d) paramIdx=%u fValue=%f\n",
-                  modNamEMC, axisNo, paramIndex, fValue);
         parameterFloatReadBack(axisNo, paramIndex, fValue);
       }
     }
