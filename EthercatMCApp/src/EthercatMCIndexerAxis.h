@@ -64,6 +64,8 @@ private:
     unsigned iTypCode;
     unsigned devNum;
     unsigned iOffset;
+    unsigned lenInPlcPara;
+    unsigned paramIfOffset;
     unsigned old_statusReasonAux;
     unsigned old_paramCtrl;
     unsigned int hasProblem :1;

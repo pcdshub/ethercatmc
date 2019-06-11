@@ -157,6 +157,17 @@ void EthercatMCIndexerAxis::setIndexerDevNumOffsetTypeCode(unsigned devNum,
   drvlocal.devNum = devNum;
   drvlocal.iTypCode = iTypCode;
   drvlocal.iOffset = iOffset;
+    if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
+      drvlocal.lenInPlcPara = 4;
+      drvlocal.paramIfOffset = drvlocal.iOffset + 0xA;
+  } else if (drvlocal.iTypCode == 0x5010) {
+      drvlocal.lenInPlcPara = 8;
+      drvlocal.paramIfOffset = drvlocal.iOffset + 22;
+  } else {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%s(%d) iTypCode=0x%x\n",
+              modNamEMC, axisNo_, drvlocal.iTypCode);
+  }
 }
 
 
@@ -193,34 +204,20 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
 {
   asynStatus status = asynSuccess;
   unsigned traceMask = ASYN_TRACE_INFO;
-  unsigned paramIfOffset = 0;
-  unsigned lenInPlcPara = 0;
 
   asynPrint(pC_->pasynUserController_, traceMask,
             "%smove (%d) position=%f relative=%d minVelocity=%f maxVelocity=%f"
             " acceleration=%f\n",
             "EthercatMCIndexerAxis", axisNo_,
             position, relative, minVelocity, maxVelocity, acceleration);
-  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-    lenInPlcPara = 4;
-    paramIfOffset = drvlocal.iOffset + 10;
-  } else if (drvlocal.iTypCode == 0x5010) {
-    lenInPlcPara = 8;
-    paramIfOffset = drvlocal.iOffset + 22;
-  } else {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-	      "%smove(%d) iTypCode=0x%x\n",
-	      modNamEMC, axisNo_, drvlocal.iTypCode);
-    return asynError;
-  }
 
   if (maxVelocity > 0.0) {
     double oldValue;
     pC_->getDoubleParam(axisNo_, pC_->EthercatMCVel_RB_, &oldValue);
     if (maxVelocity != oldValue) {
-      status = pC_->indexerParamWrite(paramIfOffset,
+      status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                       PARAM_IDX_SPEED_FLOAT32,
-                                      lenInPlcPara,
+                                      drvlocal.lenInPlcPara,
                                       maxVelocity);
       if (status) {
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
@@ -236,9 +233,9 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
     double oldValue;
     pC_->getDoubleParam(axisNo_, pC_->EthercatMCAcc_RB_, &oldValue);
     if (acceleration != oldValue) {
-      status = pC_->indexerParamWrite(paramIfOffset,
+      status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                       PARAM_IDX_ACCEL_FLOAT32,
-                                      lenInPlcPara,
+                                      drvlocal.lenInPlcPara,
                                       acceleration);
       if (status) {
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
@@ -263,7 +260,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
     } posCmd;
     doubleToNet(position, &posCmd.posRaw, sizeof(posCmd.posRaw));
     uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
-    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + lenInPlcPara,
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + drvlocal.lenInPlcPara,
                                    &posCmd, sizeof(posCmd));
   } else if (drvlocal.iTypCode == 0x5010) {
     unsigned cmdReason = idxStatusCodeSTART  << (12 + 16);
@@ -273,7 +270,7 @@ asynStatus EthercatMCIndexerAxis::move(double position, int relative,
     } posCmd;
     doubleToNet(position, &posCmd.posRaw, sizeof(posCmd.posRaw));
     uintToNet(cmdReason, &posCmd.cmdReason, sizeof(posCmd.cmdReason));
-    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + lenInPlcPara,
+    return pC_->setPlcMemoryViaADS(drvlocal.iOffset + drvlocal.lenInPlcPara,
                                    &posCmd, sizeof(posCmd));
   } else {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
@@ -295,23 +292,13 @@ asynStatus EthercatMCIndexerAxis::home(double minVelocity, double maxVelocity,
                                        double acceleration, int forwards)
 {
   asynStatus status;
-  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
-  unsigned lenInPlcPara = 0;
   (void)minVelocity;
   (void)maxVelocity;
   (void)acceleration;
   (void)forwards;
-  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-    lenInPlcPara = 4;
-  } else {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%shome(%d) iTypCode=0x%x\n",
-              modNamEMC, axisNo_, drvlocal.iTypCode);
-    return asynError;
-  }
-  status = pC_->indexerParamWrite(paramIfOffset,
+  status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                   PARAM_IDX_FUN_REFERENCE,
-                                  lenInPlcPara,
+                                  drvlocal.lenInPlcPara,
                                   0.0);
   return status;
 }
@@ -328,26 +315,16 @@ asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity,
                                                double acceleration)
 {
   asynStatus status;
-  unsigned paramIfOffset = drvlocal.iOffset + 0xA;
-  unsigned lenInPlcPara = 0;
   (void)minVelocity;
   (void)acceleration;
-  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-    lenInPlcPara = 4;
-  } else {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%smoveVelocity(%d) iTypCode=0x%x\n",
-              modNamEMC, axisNo_, drvlocal.iTypCode);
-    return asynError;
-  }
 
   if (acceleration > 0.0) {
     double oldValue;
     pC_->getDoubleParam(axisNo_, pC_->EthercatMCAcc_RB_, &oldValue);
     if (acceleration != oldValue) {
-      status = pC_->indexerParamWrite(paramIfOffset,
+      status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                       PARAM_IDX_ACCEL_FLOAT32,
-                                      lenInPlcPara,
+                                      drvlocal.lenInPlcPara,
                                       acceleration);
       if (status) {
         asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR,
@@ -359,9 +336,9 @@ asynStatus EthercatMCIndexerAxis::moveVelocity(double minVelocity,
       setDoubleParam(pC_->EthercatMCAcc_RB_, acceleration);
     }
   }
-  status = pC_->indexerParamWrite(paramIfOffset,
+  status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                   PARAM_IDX_FUN_MOVE_VELOCITY,
-                                  lenInPlcPara,
+                                  drvlocal.lenInPlcPara,
                                   maxVelocity);
   return status;
 }
@@ -434,21 +411,9 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     unsigned idxAuxBits = 0;
     int pollReadBackInBackGround = 0;
     if (drvlocal.dirty.initialPollNeeded) {
-      unsigned lenInPlcPara = 0;
-      if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-        lenInPlcPara = 4;
-      } else if (drvlocal.iTypCode == 0x5010) {
-        lenInPlcPara = 8;
-      } else {
-        asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-                  "%spoll(%d) iTypCode=0x%x\n",
-                  modNamEMC, axisNo_, drvlocal.iTypCode);
-        return asynError;
-      }
-
       status = pC_->indexerReadAxisParameters(this, drvlocal.devNum,
                                               drvlocal.iOffset,
-                                              lenInPlcPara);
+                                              drvlocal.lenInPlcPara);
       if (!status) {
         drvlocal.dirty.initialPollNeeded = 0;
         setIntegerParam(pC_->motorStatusCommsError_, 0);
@@ -626,28 +591,14 @@ asynStatus EthercatMCIndexerAxis::resetAxis(void)
 asynStatus EthercatMCIndexerAxis::setClosedLoop(bool closedLoop)
 {
   double value = closedLoop ? 0.0 : 1.0; /* 1.0 means disable */
-  unsigned paramIfOffset = 0;
-  unsigned lenInPlcPara = 0;
   asynStatus status;
-  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-    lenInPlcPara = 4;
-    paramIfOffset = drvlocal.iOffset + 0xA;
-  } else if (drvlocal.iTypCode == 0x5010) {
-    lenInPlcPara = 8;
-    paramIfOffset = drvlocal.iOffset + 22;
-  } else {
-    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
-              "%spoll(%d) iTypCode=0x%x\n",
-              modNamEMC, axisNo_, drvlocal.iTypCode);
-    return asynError;
-  }
 
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%ssetClosedLoop(%d)=%d\n",  modNamEMC, axisNo_,
             (int)closedLoop);
-  status = pC_->indexerParamWrite(paramIfOffset,
+  status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                   PARAM_IDX_OPMODE_AUTO_UINT32,
-                                  lenInPlcPara,
+                                  drvlocal.lenInPlcPara,
                                   value);
   return status;
 }
