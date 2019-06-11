@@ -59,6 +59,7 @@ typedef enum {
  The bit 15..13 are coded like this: */
 #define PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK         0xE000
 #define PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK         0x1FFF
+#define PARAM_IF_CMD_MASKPARAM_DONE                0x8000
 
 #define PARAM_IF_CMD_INVALID                       0x0000
 #define PARAM_IF_CMD_DOREAD                        0x2000
@@ -117,7 +118,7 @@ typedef enum {
 #define PARAM_AVAIL_64_79_STEPS_PER_UNIT_FLOAT32       (1 << (68-64))
 #define PARAM_AVAIL_64_79_HOME_POSITION_FLOAT32        (1 << (69-64))
 
-#define PARAM_AVAIL_128_143_FUN_REFERENCE              (1 << (132-128))
+#define PARAM_AVAIL_128_143_FUN_REFERENCE              (1 << (133-128))
 #define PARAM_AVAIL_128_143_FUN_MOVE_VELOCITY          (1 << (142-128))
 
 
@@ -249,7 +250,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0,
      0,
-     0,
+     PARAM_AVAIL_128_143_FUN_REFERENCE,
      0,
      0,
      0,
@@ -702,10 +703,11 @@ indexerMotorParamInterface(unsigned motor_axis_no,
   unsigned paramCommand = uValue & PARAM_IF_CMD_MASKPARAM_IF_CMD_MASK;
   unsigned paramIndex = uValue & PARAM_IF_CMD_MASKPARAM_IF_IDX_MASK;
   uint16_t ret = (uint16_t)uValue;
-  LOGINFO3("%s/%s:%d motor_axis_no=%u offset=%u uValue=0x%x\n",
-           __FILE__, __FUNCTION__, __LINE__,
-           motor_axis_no, offset, uValue);
-
+  if (!(paramCommand & PARAM_IF_CMD_MASKPARAM_DONE)) {
+    LOGINFO3("%s/%s:%d motor_axis_no=%u paramIndex=%u offset=%u uValue=0x%x lenInPlcPara=%u\n",
+             __FILE__, __FUNCTION__, __LINE__,
+             motor_axis_no, paramIndex, offset, uValue, lenInPlcPara);
+  }
   if (paramCommand == PARAM_IF_CMD_DOREAD) {
     double fRet;
     /* do the read */
@@ -750,6 +752,7 @@ indexerMotorParamInterface(unsigned motor_axis_no,
                  acceleration);
         ret = PARAM_IF_CMD_DONE | paramIndex;
       }
+      break;
     case PARAM_IDX_FUN_MOVE_VELOCITY:
       {
         int direction = fValue > 0.0;
@@ -1025,7 +1028,7 @@ void indexerHandlePLCcycle(void)
   unsigned devNum = 0;
   init();
   while (devNum < NUM_DEVICES) {
-    LOGINFO3("%s/%s:%d devNum=%u typeCode=0x%x\n",
+    LOGINFO6("%s/%s:%d devNum=%u typeCode=0x%x\n",
              __FILE__, __FUNCTION__, __LINE__,
              devNum, indexerDeviceAbsStraction[devNum].typeCode);
 
@@ -1049,7 +1052,7 @@ void indexerHandlePLCcycle(void)
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors5008[devNum].paramCtrl -
                             (void*)&idxData);
-        LOGINFO3("%s/%s:%d devNum=%u offset=%u\n",
+        LOGINFO6("%s/%s:%d devNum=%u offset=%u\n",
                  __FILE__, __FUNCTION__, __LINE__,
                  devNum, offset);
         indexerMotorParamInterface(devNum, offset, lenInPlcPara);
@@ -1076,7 +1079,7 @@ void indexerHandlePLCcycle(void)
         /* param interface */
         offset = (unsigned)((void*)&idxData.memoryStruct.motors5010[motor5010Num].paramCtrl -
                             (void*)&idxData);
-        LOGINFO3("%s/%s:%d devNum=%u motor5010Num=%u offset=%u\n",
+        LOGINFO6("%s/%s:%d devNum=%u motor5010Num=%u offset=%u\n",
                  __FILE__, __FUNCTION__, __LINE__,
                  devNum, motor5010Num, offset);
         indexerMotorParamInterface(devNum, offset, lenInPlcPara);
