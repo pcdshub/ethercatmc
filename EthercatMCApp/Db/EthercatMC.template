@@ -296,7 +296,7 @@ record(mbbi,"$(PREFIX)$(MOTOR_NAME)-HomProc-RB") {
     field(ELST, "IndexNfromLimBwd")
     field(TVST, "IndexNfromLimFwd")
     field(TTST, "HomeSwiLeftRight")
-    field(FTST, "Reserved")
+    field(FTST, "Homable")
     field(FFST, "ManSetPos")
 }
 
