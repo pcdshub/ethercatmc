@@ -84,8 +84,6 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC,
   : asynMotorAxis(pC, axisNo),
     pC_(pC)
 {
-  /* Not connected until now */
-  setIntegerParam(pC_->motorStatusCommsError_, 1);
 #ifdef motorFlagsDriverUsesEGUString
     setIntegerParam(pC_->motorFlagsDriverUsesEGU_,1);
 #endif
@@ -168,6 +166,11 @@ void EthercatMCIndexerAxis::setIndexerDevNumOffsetTypeCode(unsigned devNum,
               "%s(%d) iTypCode=0x%x\n",
               modNamEMC, axisNo_, drvlocal.iTypCode);
   }
+}
+
+void EthercatMCIndexerAxis::setAuxBitsNotHomedMask(unsigned auxBitsNotHomedMask)
+{
+  drvlocal.auxBitsNotHomedMask = auxBitsNotHomedMask;
 }
 
 
@@ -569,6 +572,10 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       setIntegerParam(pC_->motorStatusMoving_, nowMoving);
       setIntegerParam(pC_->motorStatusDone_, !nowMoving);
       setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux);
+      if (drvlocal.auxBitsNotHomedMask) {
+        setIntegerParam(pC_->motorStatusHomed_,
+                        idxAuxBits & drvlocal.auxBitsNotHomedMask ? 0 : 1);
+      }
     }
     *moving = nowMoving;
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);

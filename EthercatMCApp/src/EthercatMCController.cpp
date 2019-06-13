@@ -160,10 +160,10 @@ EthercatMCController::EthercatMCController(const char *portName,
   createParam(EthercatMCaux5_String,         asynParamOctet,       &EthercatMCaux5_);
   createParam(EthercatMCaux6_String,         asynParamOctet,       &EthercatMCaux6_);
   createParam(EthercatMCaux7_String,         asynParamOctet,       &EthercatMCaux7_);
-  createParam(EthercatMCreason8_String,      asynParamOctet,       &EthercatMCreason8_);
-  createParam(EthercatMCreason9_String,      asynParamOctet,       &EthercatMCreason9_);
-  createParam(EthercatMCreason10_String,     asynParamOctet,       &EthercatMCreason10_);
-  createParam(EthercatMCreason11_String,     asynParamOctet,       &EthercatMCreason11_);
+  createParam(EthercatMCreason24_String,     asynParamOctet,       &EthercatMCreason24_);
+  createParam(EthercatMCreason25_String,     asynParamOctet,       &EthercatMCreason25_);
+  createParam(EthercatMCreason26_String,     asynParamOctet,       &EthercatMCreason26_);
+  createParam(EthercatMCreason27_String,     asynParamOctet,       &EthercatMCreason27_);
   createParam(EthercatMCCfgVELO_String,      asynParamFloat64,     &EthercatMCCfgVELO_);
   createParam(EthercatMCCfgVMAX_String,      asynParamFloat64,     &EthercatMCCfgVMAX_);
   createParam(EthercatMCCfgJVEL_String,      asynParamFloat64,     &EthercatMCCfgJVEL_);

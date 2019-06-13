@@ -261,7 +261,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-3",
-    { "", "", "", "", "", "homing", "@home", "homed" },
+    { "", "", "", "", "notHomed", "homing", "@home", "homed" },
     0, +173.0
   },
     { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
@@ -283,7 +283,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-4",
-    { "notHomed", "", "", "", "", "", "", "" },
+    { "", "", "", "", "", "", "", "notHomed" },
     0, +163.0
   }
 };

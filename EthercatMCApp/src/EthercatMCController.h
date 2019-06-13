@@ -29,10 +29,10 @@ FILENAME...   EthercatMCController.h
 #define EthercatMCaux5_String                "AuxBit5"
 #define EthercatMCaux6_String                "AuxBit6"
 #define EthercatMCaux7_String                "AuxBit7"
-#define EthercatMCreason8_String             "ReasonBit24"
-#define EthercatMCreason9_String             "ReasonBit25"
-#define EthercatMCreason10_String            "ReasonBit26"
-#define EthercatMCreason11_String            "ReasonBit27"
+#define EthercatMCreason24_String             "ReasonBit24"
+#define EthercatMCreason25_String             "ReasonBit25"
+#define EthercatMCreason26_String            "ReasonBit26"
+#define EthercatMCreason27_String            "ReasonBit27"
 #define EthercatMCHomProc_RBString           "HomProc-RB"
 #define EthercatMCHomPos_RBString            "HomPos-RB"
 #define EthercatMCHomProcString              "HomProc"
@@ -245,10 +245,10 @@ public:
   int EthercatMCaux5_;
   int EthercatMCaux6_;
   int EthercatMCaux7_;
-  int EthercatMCreason8_;
-  int EthercatMCreason9_;
-  int EthercatMCreason10_;
-  int EthercatMCreason11_;
+  int EthercatMCreason24_;
+  int EthercatMCreason25_;
+  int EthercatMCreason26_;
+  int EthercatMCreason27_;
   int EthercatMCHomProc_RB_;
   int EthercatMCHomPos_RB_;
   int EthercatMCHomProc_;

@@ -613,10 +613,10 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
   asynStatus status = asynSuccess;
   unsigned axisNo = pAxis->axisNo_;
 
-  pAxis->setStringParam(EthercatMCreason11_, "High limit");
-  pAxis->setStringParam(EthercatMCreason10_, "Low limit");
-  pAxis->setStringParam(EthercatMCreason9_,  "Dynamic problem, timeout");
-  pAxis->setStringParam(EthercatMCreason8_,  "Static problem, inhibit");
+  pAxis->setStringParam(EthercatMCreason27_, "High limit");
+  pAxis->setStringParam(EthercatMCreason26_, "Low limit");
+  pAxis->setStringParam(EthercatMCreason25_,  "Dynamic problem, timeout");
+  pAxis->setStringParam(EthercatMCreason24_,  "Static problem, inhibit");
 #if 0
   pAxis->setStringParam(EthercatMCaux7_,  "Aux 7");
   pAxis->setStringParam(EthercatMCaux6_,  "Aux 6");
@@ -638,13 +638,16 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
         status = readDeviceIndexer(devNum, infoType16 + auxBitIdx);
         if (status) return status;
         status = getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
-                                      auxBitName,
-                                      sizeof(auxBitName));
+                                    auxBitName,
+                                    sizeof(auxBitName));
         asynPrint(pasynUserController_, ASYN_TRACE_INFO,
                   "%sauxBitName[%d] auxBitName(%02u)=%s\n",
                   modNamEMC, axisNo, auxBitIdx, auxBitName);
         if (status) return status;
         pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
+        if (!strcmp("notHomed", auxBitName)) {
+          pAxis->setAuxBitsNotHomedMask(1 << auxBitIdx);
+        }
       }
     }
   }

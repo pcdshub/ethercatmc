@@ -47,6 +47,7 @@ public:
   asynStatus stopAxisInternal(const char *function_name, double acceleration);
   asynStatus stop(double acceleration);
   void setIndexerDevNumOffsetTypeCode(unsigned devNum, unsigned iOffset, unsigned iTypCode);
+  void setAuxBitsNotHomedMask(unsigned auxBitsNotHomedMask);
   asynStatus poll(bool *moving);
   asynStatus resetAxis(void);
   asynStatus setClosedLoop(bool closedLoop);
@@ -67,6 +68,7 @@ private:
     unsigned iOffset;
     unsigned lenInPlcPara;
     unsigned paramIfOffset;
+    unsigned auxBitsNotHomedMask;
     unsigned old_statusReasonAux;
     unsigned old_idxAuxBits;
     unsigned old_paramCtrl;
