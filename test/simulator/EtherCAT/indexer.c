@@ -799,9 +799,13 @@ indexerMotorParamInterface(unsigned motor_axis_no,
     case PARAM_IDX_FUN_MOVE_VELOCITY:
       {
         int direction = fValue > 0.0;
+        double fVelocity = fabs(fValue);
+        if (!fVelocity) {
+          fVelocity = cmd_Motor_cmd[motor_axis_no].fVelocity;
+        }
         moveVelocity(motor_axis_no,
                      direction,
-                     fabs(fValue),
+                     fVelocity,
                      cmd_Motor_cmd[motor_axis_no].fAcceleration);
         ret = PARAM_IF_CMD_DONE | paramIndex;
       }
