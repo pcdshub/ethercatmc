@@ -283,7 +283,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-4",
-    { "", "", "", "", "", "", "", "notHomed" },
+    { "notHomed", "", "", "", "", "", "", "" },
     0, +163.0
   }
 };
@@ -798,7 +798,7 @@ indexerMotorParamInterface(unsigned motor_axis_no,
       break;
     case PARAM_IDX_FUN_MOVE_VELOCITY:
       {
-        int direction = fValue > 0.0;
+        int direction = fValue >= 0.0;
         double fVelocity = fabs(fValue);
         if (!fVelocity) {
           fVelocity = cmd_Motor_cmd[motor_axis_no].fVelocity;

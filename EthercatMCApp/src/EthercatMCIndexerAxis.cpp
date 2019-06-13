@@ -467,10 +467,14 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific bit positions for 5008 */
-      statusReasonAux = statusReasonAux16;
       idxStatusCode = (idxStatusCodeType)(statusReasonAux16 >> 12);
       idxReasonBits = (statusReasonAux16 >> 8) & 0x0F;
       idxAuxBits    =  statusReasonAux16  & 0x0FF;
+
+      /* 8 aux bits */
+      statusReasonAux = statusReasonAux16 & 0xFF;
+      /* 4 reason bits */
+      statusReasonAux |= (idxReasonBits << 24);
     } else if (drvlocal.iTypCode == 0x5010) {
       struct {
         uint8_t   actPos[8];
@@ -480,7 +484,6 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         uint8_t   paramCtrl[2];
         uint8_t   paramValue[8];
       } readback;
-      uint32_t statusReasonAux32;
       status = pC_->getPlcMemoryViaADS(drvlocal.iOffset,
                                        &readback,
                                        sizeof(readback));
@@ -491,18 +494,16 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
                                 sizeof(readback.actPos));
       targetPosition = netToDouble(&readback.targtPos,
                                    sizeof(readback.targtPos));
-      statusReasonAux32 = netToUint(&readback.statReasAux,
-                                    sizeof(readback.statReasAux));
+      statusReasonAux = netToUint(&readback.statReasAux,
+                                  sizeof(readback.statReasAux));
       paramCtrl = netToUint(&readback.paramCtrl,
                               sizeof(readback.paramCtrl));
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific for 5010 */
-      idxStatusCode = (idxStatusCodeType)(statusReasonAux32 >> 28);
-      idxReasonBits = (statusReasonAux32 >> 24) & 0x0F;
-      idxAuxBits    =  statusReasonAux32  & 0x0FFFFFF;
-      /* Simulate the 16 bit register, status, reason, aux7 .. aux0 */
-      statusReasonAux = (idxStatusCode << 12) | (idxReasonBits << 8) | (idxAuxBits & 0xFF);
+      idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 28);
+      idxReasonBits = (statusReasonAux >> 24) & 0x0F;
+      idxAuxBits    =  statusReasonAux  & 0x0FFFFFF;
     } else {
       asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
                 "%spoll(%d) iTypCode=0x%x\n",
@@ -561,13 +562,13 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       drvlocal.hasProblem = 1;
     }
     if (statusValid) {
-      int hls = idxReasonBits & idxReasonBits & 0x8 ? 1 : 0;
-      int lls = idxReasonBits & idxReasonBits & 0x4 ? 1 : 0;
+      int hls = idxReasonBits & 0x8 ? 1 : 0;
+      int lls = idxReasonBits & 0x4 ? 1 : 0;
       setIntegerParam(pC_->motorStatusLowLimit_, lls);
       setIntegerParam(pC_->motorStatusHighLimit_, hls);
       setIntegerParam(pC_->motorStatusMoving_, nowMoving);
       setIntegerParam(pC_->motorStatusDone_, !nowMoving);
-      setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux & 0xFFF);
+      setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux);
     }
     *moving = nowMoving;
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
