@@ -239,7 +239,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "RotAxis2",
-    { "", "", "", "", "", "homing", "@home", "homed" },
+    { "notHomed", "", "", "", "", "", "", "" },
     -180.0, +180.0
   },
     { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
@@ -261,7 +261,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-3",
-    { "", "", "", "", "notHomed", "homing", "@home", "homed" },
+    { "notHomed", "", "", "", "", "", "", "" },
     0, +173.0
   },
     { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
@@ -283,7 +283,7 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-4",
-    { "", "", "", "", "", "", "", "notHomed" },
+    { "notHomed", "", "", "", "", "", "", "" },
     0, +163.0
   }
 };
@@ -864,14 +864,13 @@ static int indexerHandleIndexerCmd(unsigned offset,
         maxAuxIdx = sizeof(indexerDeviceAbsStraction[devNum].auxName) /
           sizeof(indexerDeviceAbsStraction[devNum].auxName[0]);
 
-        for (auxIdx = maxAuxIdx; auxIdx; auxIdx--) {
+        for (auxIdx = 0; auxIdx < maxAuxIdx; auxIdx++) {
           if (strlen(indexerDeviceAbsStraction[devNum].auxName[auxIdx])) {
-            flagsLow |= 1;
+            flagsLow |= (1 << auxIdx);
           }
-          flagsLow = flagsLow << 1;
-          LOGINFO6("%s/%s:%d auxIdx=%u flagsLow=0x%x\n",
+          LOGINFO3("%s/%s:%d devNum=%u auxIdx=%u flagsLow=0x%x\n",
                    __FILE__, __FUNCTION__, __LINE__,
-                   auxIdx, flagsLow);
+                   devNum, auxIdx, flagsLow);
         }
         idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
 
