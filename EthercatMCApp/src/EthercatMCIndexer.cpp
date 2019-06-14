@@ -161,8 +161,15 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned devNum,
   unsigned value = (devNum + (infoType << 8));
   unsigned valueAcked = 0x8000 + value;
   unsigned counter = 0;
-  if (devNum > 0xFF)   return asynDisabled;
-  if (infoType > 0xFF) return asynDisabled;
+  if ((devNum > 0xFF) || (infoType > 0xFF)) {
+    status = asynDisabled;
+    asynPrint(pasynUserController_,
+              ASYN_TRACE_INFO,
+              "%sreadDeviceIndexer devNum=%u infoType=%u status=%s (%d)\n",
+              modNamEMC,devNum, infoType,
+              EthercatMCstrStatus(status), (int)status);
+    return status;
+  }
 
   /* https://forge.frm2.tum.de/public/doc/plc/master/singlehtml/
      The ACK bit on bit 15 must be set when we read back.
@@ -170,15 +177,36 @@ asynStatus EthercatMCController::readDeviceIndexer(unsigned devNum,
      otherwise there is a collision.
   */
   status = setPlcMemoryInteger(ctrlLocal.indexerOffset, value, 2);
-  if (status) return status;
+  if (status) {
+    asynPrint(pasynUserController_,
+              ASYN_TRACE_INFO,
+              "%sreadDeviceIndexer status=%s (%d)\n",
+              modNamEMC,
+              EthercatMCstrStatus(status), (int)status);
+    return status;
+  }
   while (counter < 5) {
     status = getPlcMemoryUint(ctrlLocal.indexerOffset, &value, 2);
-    if (status) return status;
+    if (status) {
+      asynPrint(pasynUserController_,
+                ASYN_TRACE_INFO,
+                "%sreadDeviceIndexer status=%s (%d)\n",
+                modNamEMC,
+                EthercatMCstrStatus(status), (int)status);
+      return status;
+    }
     if (value == valueAcked) return asynSuccess;
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
   }
-  return asynDisabled;
+  status = asynDisabled;
+  asynPrint(pasynUserController_,
+            ASYN_TRACE_INFO,
+            "%sreadDeviceIndexer devNum=0x%x infoType=0x%x counter=%u value=0x%x status=%s (%d)\n",
+            modNamEMC, devNum, infoType, counter, value,
+            EthercatMCstrStatus(status), (int)status);
+  return status;
+
 }
 
 asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
@@ -630,10 +658,11 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
   /* AUX bits */
   {
     unsigned auxBitIdx = 0;
-    for (auxBitIdx = 0; auxBitIdx < 23; auxBitIdx++) {
+    for (auxBitIdx = 0; auxBitIdx <= 23; auxBitIdx++) {
       if ((iAllFlags >> auxBitIdx) & 1) {
         char auxBitName[34];
         unsigned infoType16 = 16;
+        unsigned functionNo = EthercatMCaux0_ + auxBitIdx;
         memset(&auxBitName, 0, sizeof(auxBitName));
         status = readDeviceIndexer(devNum, infoType16 + auxBitIdx);
         if (status) return status;
@@ -644,7 +673,9 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
                   "%sauxBitName[%d] auxBitName(%02u)=%s\n",
                   modNamEMC, axisNo, auxBitIdx, auxBitName);
         if (status) return status;
-        pAxis->setStringParam(EthercatMCaux0_ + auxBitIdx, auxBitName);
+        if (functionNo <= EthercatMCaux7_) {
+          pAxis->setStringParam(functionNo, auxBitName);
+        }
         if (!strcmp("notHomed", auxBitName)) {
           pAxis->setAuxBitsNotHomedMask(1 << auxBitIdx);
         }
@@ -824,8 +855,9 @@ asynStatus EthercatMCController::initialPollIndexer(void)
                                   fAbsMax,
                                   iOffset);
           asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                    "%sTypeCode(%d) iTypCode=%x pAxis=%p\n",
-                    modNamEMC, axisNo, iTypCode, pAxis);
+                    "%sTypeCode(%d) iTypCode=%x pAxis=%p status=%s (%d)\n",
+                    modNamEMC, axisNo, iTypCode, pAxis,
+                    EthercatMCstrStatus(status), (int)status);
           if (status) goto endPollIndexer;
 
           pAxis->setIndexerDevNumOffsetTypeCode(devNum, iOffset, iTypCode);
