@@ -134,8 +134,7 @@ typedef struct {
     uint16_t   size;
     uint16_t   offset;
     uint16_t   unit;
-    uint16_t   flagsLow;
-    uint16_t   flagsHigh;
+    uint8_t    flags[4];
     float      absMin;
     float      absMax;
 } indexerInfoType0_type;
@@ -158,7 +157,7 @@ typedef struct {
   uint16_t  unitCode;
   uint16_t  paramAvail[16]; /* counting 0..15 */
   char      devName[34];
-  char      auxName[8][34];
+  char      auxName[24][34];
   float     absMin;
   float     absMax;
 } indexerDeviceAbsStraction_type;
@@ -195,7 +194,9 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
     UNITCODE_NONE,
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     "indexer",
-    { "", "", "", "", "", "", "", "" },
+      { "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", ""},
     0.0, 0.0
   },
   { TYPECODE_PARAMDEVICE_5008, WORDS_PARAMDEVICE_5008,
@@ -217,7 +218,9 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "SimAxis1",
-    { "", "", "", "", "", "homing", "@home", "homed" },
+    { "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "notHomed"},
     5.0, 175.0
   },
   { TYPECODE_PARAMDEVICE_5008, WORDS_PARAMDEVICE_5008,
@@ -239,7 +242,9 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "RotAxis2",
-    { "notHomed", "", "", "", "", "", "", "" },
+    { "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "notHomed"},
     -180.0, +180.0
   },
     { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
@@ -261,7 +266,9 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-3",
-    { "notHomed", "", "", "", "", "", "", "" },
+      { "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "notHomed"},
     0, +173.0
   },
     { TYPECODE_PARAMDEVICE_5010, WORDS_PARAMDEVICE_5010,
@@ -283,7 +290,9 @@ indexerDeviceAbsStraction_type indexerDeviceAbsStraction[NUM_DEVICES] =
      0,
      0},
     "Axis5010-4",
-    { "notHomed", "", "", "", "", "", "", "" },
+    { "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "notHomed"},
     0, +163.0
   }
 };
@@ -854,11 +863,13 @@ static int indexerHandleIndexerCmd(unsigned offset,
       idxData.memoryStruct.indexer.infoType0.absMax = indexerDeviceAbsStraction[devNum].absMax;
       if (!devNum) {
         /* The indexer himself. */
+        unsigned flags = 0x80000000; /* extended indexer */
         idxData.memoryStruct.indexer.infoType0.offset = offsetIndexer;
-        idxData.memoryStruct.indexer.infoType0.flagsHigh = 0x8000; /* extended indexer */
+        uintToNet(flags, &idxData.memoryStruct.indexer.infoType0.flags,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.flags));
       } else {
         unsigned auxIdx;
-        unsigned flagsLow = 0;
+        unsigned flags = 0;
         unsigned maxAuxIdx;
         unsigned offset = 0;
         maxAuxIdx = sizeof(indexerDeviceAbsStraction[devNum].auxName) /
@@ -866,13 +877,14 @@ static int indexerHandleIndexerCmd(unsigned offset,
 
         for (auxIdx = 0; auxIdx < maxAuxIdx; auxIdx++) {
           if (strlen(indexerDeviceAbsStraction[devNum].auxName[auxIdx])) {
-            flagsLow |= (1 << auxIdx);
+            flags |= (1 << auxIdx);
           }
           LOGINFO3("%s/%s:%d devNum=%u auxIdx=%u flagsLow=0x%x\n",
                    __FILE__, __FUNCTION__, __LINE__,
-                   devNum, auxIdx, flagsLow);
+                   devNum, auxIdx, flags);
         }
-        idxData.memoryStruct.indexer.infoType0.flagsLow = flagsLow;
+        uintToNet(flags, &idxData.memoryStruct.indexer.infoType0.flags,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.flags));
 
         /* Offset to the first motor */
         if (devNum <= NUM_MOTORS5008) {
@@ -894,7 +906,8 @@ static int indexerHandleIndexerCmd(unsigned offset,
                idxData.memoryStruct.indexer.infoType0.typeCode,
                idxData.memoryStruct.indexer.infoType0.size,
                idxData.memoryStruct.indexer.infoType0.offset,
-               idxData.memoryStruct.indexer.infoType0.flagsLow,
+               netToUint(&idxData.memoryStruct.indexer.infoType0.flags,
+                         sizeof(idxData.memoryStruct.indexer.infoType0.flags)),
                idxData.memoryStruct.indexer_ack);
 
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
@@ -927,9 +940,8 @@ static int indexerHandleIndexerCmd(unsigned offset,
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
       return 0;
     default:
-      if (infoType >= 16 && infoType <= 23) {
-        /* Support for aux bits 7..0
-           Bits 23..16 are not (yet) supported */
+      if (infoType >= 16 && infoType <= 39) {
+        /* Support for aux bits 23..0 */
         strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
                 indexerDeviceAbsStraction[devNum].auxName[infoType-16],
                 sizeof(idxData.memoryStruct.indexer.infoType4.name));
