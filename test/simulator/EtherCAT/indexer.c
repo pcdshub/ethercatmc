@@ -130,13 +130,13 @@ static unsigned offsetIndexer;
 
 /* Info types of the indexer */
 typedef struct {
-    uint16_t   typeCode;
-    uint16_t   size;
-    uint16_t   offset;
-    uint16_t   unit;
+    uint8_t    typeCode[2];
+    uint8_t    size[2];
+    uint8_t    offset[2];
+    uint8_t    unit[2];
     uint8_t    flags[4];
-    float      absMin;
-    float      absMax;
+    uint8_t    absMin[4];
+    uint8_t    absMax[4];
 } indexerInfoType0_type;
 
 typedef struct {
@@ -433,6 +433,8 @@ static unsigned netToUint(void *data, size_t lenInPlc)
   return 0;
 }
 
+#define NETTOUINT(n) netToUint(&(n), sizeof(n))
+
 static double netToDouble(void *data, size_t lenInPlc)
 {
   const uint8_t *src = (const uint8_t*)data;
@@ -584,8 +586,7 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
 {
   unsigned statusReasonAux32;
   idxStatusCodeType idxStatusCode;
-  statusReasonAux32 = netToUint(&pIndexerDevice5010interface->statusReasonAux32,
-                                sizeof(pIndexerDevice5010interface->statusReasonAux32));
+  statusReasonAux32 = NETTOUINT(pIndexerDevice5010interface->statusReasonAux32);
   idxStatusCode = (idxStatusCodeType)(statusReasonAux32 >> 28);
 
   switch (idxStatusCode) {
@@ -853,18 +854,27 @@ static int indexerHandleIndexerCmd(unsigned offset,
   switch (infoType) {
     case 0:
       /* get values from device table */
-      idxData.memoryStruct.indexer.infoType0.typeCode = indexerDeviceAbsStraction[devNum].typeCode;
-      idxData.memoryStruct.indexer.infoType0.size = indexerDeviceAbsStraction[devNum].size;
-      idxData.memoryStruct.indexer.infoType0.unit = indexerDeviceAbsStraction[devNum].unitCode;
-      /* TODO: calc the flags from lenght of AUX strings */
-      //idxData.memoryStruct.indexer.infoType0.flagsLow = indexerDeviceAbsStraction[devNum].flagsLow;
-      //idxData.memoryStruct.indexer.infoType0.flagsHigh = indexerDeviceAbsStraction[devNum].flagsHigh;
-      idxData.memoryStruct.indexer.infoType0.absMin = indexerDeviceAbsStraction[devNum].absMin;
-      idxData.memoryStruct.indexer.infoType0.absMax = indexerDeviceAbsStraction[devNum].absMax;
+      uintToNet(indexerDeviceAbsStraction[devNum].typeCode,
+                &idxData.memoryStruct.indexer.infoType0.typeCode,
+                sizeof(idxData.memoryStruct.indexer.infoType0.typeCode));
+      uintToNet(indexerDeviceAbsStraction[devNum].size,
+                &idxData.memoryStruct.indexer.infoType0.size,
+                sizeof(idxData.memoryStruct.indexer.infoType0.size));
+      uintToNet(indexerDeviceAbsStraction[devNum].unitCode,
+                &idxData.memoryStruct.indexer.infoType0.unit,
+                sizeof(idxData.memoryStruct.indexer.infoType0.unit));
+      doubleToNet(indexerDeviceAbsStraction[devNum].absMin,
+                  &idxData.memoryStruct.indexer.infoType0.absMin,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.absMin));
+      doubleToNet(indexerDeviceAbsStraction[devNum].absMax,
+                  &idxData.memoryStruct.indexer.infoType0.absMax,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.absMax));
       if (!devNum) {
         /* The indexer himself. */
         unsigned flags = 0x80000000; /* extended indexer */
-        idxData.memoryStruct.indexer.infoType0.offset = offsetIndexer;
+        uintToNet(offsetIndexer,
+                  &idxData.memoryStruct.indexer.infoType0.offset,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.offset));
         uintToNet(flags, &idxData.memoryStruct.indexer.infoType0.flags,
                   sizeof(idxData.memoryStruct.indexer.infoType0.flags));
       } else {
@@ -896,18 +906,18 @@ static int indexerHandleIndexerCmd(unsigned offset,
         }
 
         /* TODO: Support other interface types */
-
-        idxData.memoryStruct.indexer.infoType0.offset = offset;
+        uintToNet(offset,
+                  &idxData.memoryStruct.indexer.infoType0.offset,
+                  sizeof(idxData.memoryStruct.indexer.infoType0.offset));
       }
       LOGINFO6("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%x ack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
                &idxData, &idxData.memoryStruct.indexer,
                (unsigned)((void*)&idxData.memoryStruct.indexer - (void*)&idxData),
-               idxData.memoryStruct.indexer.infoType0.typeCode,
-               idxData.memoryStruct.indexer.infoType0.size,
-               idxData.memoryStruct.indexer.infoType0.offset,
-               netToUint(&idxData.memoryStruct.indexer.infoType0.flags,
-                         sizeof(idxData.memoryStruct.indexer.infoType0.flags)),
+               NETTOUINT(idxData.memoryStruct.indexer.infoType0.typeCode),
+               NETTOUINT(idxData.memoryStruct.indexer.infoType0.size),
+               NETTOUINT(idxData.memoryStruct.indexer.infoType0.offset),
+               NETTOUINT(idxData.memoryStruct.indexer.infoType0.flags),
                idxData.memoryStruct.indexer_ack);
 
       idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
