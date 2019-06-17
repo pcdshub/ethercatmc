@@ -433,8 +433,6 @@ static unsigned netToUint(void *data, size_t lenInPlc)
   return 0;
 }
 
-#define NETTOUINT(n) netToUint(&(n), sizeof(n))
-
 static double netToDouble(void *data, size_t lenInPlc)
 {
   const uint8_t *src = (const uint8_t*)data;
@@ -509,6 +507,10 @@ static void uintToNet(const unsigned value, void *data, size_t lenInPlc)
     dst[3] = (uint8_t)(value >> 24);
   }
 }
+
+#define NETTOUINT(n)     netToUint(&(n),      sizeof(n))
+#define UINTTONET(v,n)   uintToNet(v, &(n),   sizeof(n))
+#define DOUBLETONET(v,n) doubleToNet(v, &(n), sizeof(n))
 
 static void
 indexerMotorStatusRead5008(unsigned motor_axis_no,
@@ -662,9 +664,8 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
     idxStatusCode = idxStatusCodeIDLE;
 
   statusReasonAux32 |= (idxStatusCode << 28);
-  uintToNet(statusReasonAux32,
-            &pIndexerDevice5010interface->statusReasonAux32,
-            sizeof(pIndexerDevice5010interface->statusReasonAux32));
+  UINTTONET(statusReasonAux32,
+            pIndexerDevice5010interface->statusReasonAux32);
 }
 
 
@@ -854,29 +855,21 @@ static int indexerHandleIndexerCmd(unsigned offset,
   switch (infoType) {
     case 0:
       /* get values from device table */
-      uintToNet(indexerDeviceAbsStraction[devNum].typeCode,
-                &idxData.memoryStruct.indexer.infoType0.typeCode,
-                sizeof(idxData.memoryStruct.indexer.infoType0.typeCode));
-      uintToNet(indexerDeviceAbsStraction[devNum].size,
-                &idxData.memoryStruct.indexer.infoType0.size,
-                sizeof(idxData.memoryStruct.indexer.infoType0.size));
-      uintToNet(indexerDeviceAbsStraction[devNum].unitCode,
-                &idxData.memoryStruct.indexer.infoType0.unit,
-                sizeof(idxData.memoryStruct.indexer.infoType0.unit));
-      doubleToNet(indexerDeviceAbsStraction[devNum].absMin,
-                  &idxData.memoryStruct.indexer.infoType0.absMin,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.absMin));
-      doubleToNet(indexerDeviceAbsStraction[devNum].absMax,
-                  &idxData.memoryStruct.indexer.infoType0.absMax,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.absMax));
+      UINTTONET(indexerDeviceAbsStraction[devNum].typeCode,
+                idxData.memoryStruct.indexer.infoType0.typeCode);
+      UINTTONET(indexerDeviceAbsStraction[devNum].size,
+                idxData.memoryStruct.indexer.infoType0.size);
+      UINTTONET(indexerDeviceAbsStraction[devNum].unitCode,
+                idxData.memoryStruct.indexer.infoType0.unit);
+      DOUBLETONET(indexerDeviceAbsStraction[devNum].absMin,
+                  idxData.memoryStruct.indexer.infoType0.absMin);
+      DOUBLETONET(indexerDeviceAbsStraction[devNum].absMax,
+                  idxData.memoryStruct.indexer.infoType0.absMax);
       if (!devNum) {
         /* The indexer himself. */
         unsigned flags = 0x80000000; /* extended indexer */
-        uintToNet(offsetIndexer,
-                  &idxData.memoryStruct.indexer.infoType0.offset,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.offset));
-        uintToNet(flags, &idxData.memoryStruct.indexer.infoType0.flags,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.flags));
+        UINTTONET(offsetIndexer, idxData.memoryStruct.indexer.infoType0.offset);
+        UINTTONET(flags, idxData.memoryStruct.indexer.infoType0.flags);
       } else {
         unsigned auxIdx;
         unsigned flags = 0;
@@ -893,8 +886,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
                    __FILE__, __FUNCTION__, __LINE__,
                    devNum, auxIdx, flags);
         }
-        uintToNet(flags, &idxData.memoryStruct.indexer.infoType0.flags,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.flags));
+        UINTTONET(flags, idxData.memoryStruct.indexer.infoType0.flags);
 
         /* Offset to the first motor */
         if (devNum <= NUM_MOTORS5008) {
@@ -906,9 +898,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         }
 
         /* TODO: Support other interface types */
-        uintToNet(offset,
-                  &idxData.memoryStruct.indexer.infoType0.offset,
-                  sizeof(idxData.memoryStruct.indexer.infoType0.offset));
+        UINTTONET(offset, idxData.memoryStruct.indexer.infoType0.offset);
       }
       LOGINFO6("%s/%s:%d idxData=%p indexer=%p delta=%u typeCode=%x size=%u offset=%u flagsLow=0x%x ack=0x%x\n",
                __FILE__, __FUNCTION__, __LINE__,
