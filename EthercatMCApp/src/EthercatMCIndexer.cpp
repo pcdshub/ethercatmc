@@ -87,6 +87,9 @@ extern "C" {
   }
 };
 
+static const double fABSMIN = -3.0e+38;
+static const double fABSMAX =  3.0e+38;
+
 asynStatus EthercatMCController::getPlcMemoryUint(unsigned indexOffset,
                                                   unsigned *value,
                                                   size_t lenInPlc)
@@ -453,23 +456,25 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
   case PARAM_IDX_MICROSTEPS_FLOAT32:
    pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * fValue);
    break;
+  case PARAM_IDX_USR_MIN_FLOAT32:
+    setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_, fValue);
+    /* fall through */
   case PARAM_IDX_ABS_MIN_FLOAT32:
     setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
-    pAxis->setDoubleParam(EthercatMCCfgDLLM_, fValue);
+    setDoubleParam(axisNo, EthercatMCCfgDLLM_, fValue);
 #ifdef motorLowLimitROString
     setDoubleParam(motorLowLimitRO_, fValue);
 #endif
     break;
   case PARAM_IDX_ABS_MAX_FLOAT32:
+    setDoubleParam(axisNo,  EthercatMCCfgPMAX_RB_, fValue);
+    /* fall through */
+  case PARAM_IDX_USR_MAX_FLOAT32:
     setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
-    pAxis->setDoubleParam(EthercatMCCfgDHLM_, fValue);
+    setDoubleParam(axisNo,  EthercatMCCfgDHLM_, fValue);
 #ifdef motorHighLimitROString
     setDoubleParam(motorHighLimitRO_, fValue);
 #endif
-    break;
-  case PARAM_IDX_USR_MIN_FLOAT32:
-    break;
-  case PARAM_IDX_USR_MAX_FLOAT32:
     break;
   case PARAM_IDX_WRN_MIN_FLOAT32:
     break;
@@ -685,15 +690,17 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
   /* Unit code */
   {
     int validSoftlimits = fAbsMax > fAbsMin;
-    if (fAbsMin <= -3.0e+38 && fAbsMax >= 3.0e+38)
+    if (fAbsMin <= fABSMIN && fAbsMax >= fABSMAX)
       validSoftlimits = 0;
 
     /* Soft limits */
     /*  absolute values become read only limits */
-    pAxis->setIntegerParam(EthercatMCCfgDHLM_En_, validSoftlimits);
-    pAxis->setDoubleParam( EthercatMCCfgDHLM_,    fAbsMax);
-    pAxis->setIntegerParam(EthercatMCCfgDLLM_En_, validSoftlimits);
-    pAxis->setDoubleParam( EthercatMCCfgDLLM_,    fAbsMin);
+    setIntegerParam(axisNo,EthercatMCCfgDHLM_En_, validSoftlimits);
+    setDoubleParam(axisNo, EthercatMCCfgDHLM_,    fAbsMax);
+    setDoubleParam(axisNo,  EthercatMCCfgPMAX_RB_,fAbsMax);
+    setIntegerParam(axisNo,EthercatMCCfgDLLM_En_, validSoftlimits);
+    setDoubleParam(axisNo, EthercatMCCfgDLLM_,    fAbsMin);
+    setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_,fAbsMin);
 #ifdef motorHighLimitROString
     if (validSoftlimits) {
       pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);

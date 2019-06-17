@@ -55,6 +55,8 @@ FILENAME...   EthercatMCController.h
 #define EthercatMCCfgDLLM_EnString           "CfgDLLM-En"
 #define EthercatMCCfgSREV_RBString           "CfgSREV-RB"
 #define EthercatMCCfgUREV_RBString           "CfgUREV-RB"
+#define EthercatMCCfgPMIN_RBString           "CfgPMIN-RB"
+#define EthercatMCCfgPMAX_RBString           "CfgPMAX-RB"
 #define EthercatMCCfgSPDB_RBString           "CfgSPDB-RB"
 #define EthercatMCCfgRDBD_RBString           "CfgRDBD-RB"
 #define EthercatMCCfgRDBD_Tim_RBString       "CfgRDBD-Tim-RB"
@@ -277,6 +279,8 @@ public:
   int EthercatMCCfgACCS_;
   int EthercatMCCfgSREV_RB_;
   int EthercatMCCfgUREV_RB_;
+  int EthercatMCCfgPMIN_RB_;
+  int EthercatMCCfgPMAX_RB_;
   int EthercatMCCfgSPDB_RB_;
   int EthercatMCCfgRDBD_RB_;
   int EthercatMCCfgRDBD_Tim_RB_;
