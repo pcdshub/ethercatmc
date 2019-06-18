@@ -693,7 +693,7 @@ $(pv_value)</tooltip>
     <password_input>false</password_input>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(R)CfgPMIN-RB</pv_name>
+    <pv_name>$(P)$(R)CfgPMAX-RB</pv_name>
     <pv_value />
     <read_only>false</read_only>
     <rules>
@@ -752,7 +752,7 @@ $(pv_value)</tooltip>
     </scale_options>
     <scripts />
     <show_scrollbar>false</show_scrollbar>
-    <text>Absolute minimum</text>
+    <text>Absolute maximum</text>
     <tooltip></tooltip>
     <transparent>true</transparent>
     <vertical_alignment>1</vertical_alignment>
@@ -797,7 +797,7 @@ $(pv_value)</tooltip>
     <password_input>false</password_input>
     <precision>0</precision>
     <precision_from_pv>true</precision_from_pv>
-    <pv_name>$(P)$(R)CfgPMAX-RB</pv_name>
+    <pv_name>$(P)$(R)CfgPMIN-RB</pv_name>
     <pv_value />
     <read_only>false</read_only>
     <rules>
@@ -856,7 +856,7 @@ $(pv_value)</tooltip>
     </scale_options>
     <scripts />
     <show_scrollbar>false</show_scrollbar>
-    <text>Absolute maximum</text>
+    <text>Absolute minimum</text>
     <tooltip></tooltip>
     <transparent>true</transparent>
     <vertical_alignment>1</vertical_alignment>
