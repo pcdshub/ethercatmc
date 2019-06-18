@@ -206,7 +206,8 @@ public:
                                 double value, size_t lenInPlc);
 
   asynStatus indexerParamWaitNotBusy(unsigned indexOffset);
-  asynStatus indexerParamRead(unsigned paramIfOffset,
+  asynStatus indexerParamRead(int axisNo,
+                              unsigned paramIfOffset,
                               unsigned paramIndex,
                               unsigned lenInPlcPara,
                               double *value);

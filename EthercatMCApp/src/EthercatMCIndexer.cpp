@@ -252,7 +252,8 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
 }
 
 
-asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
+asynStatus EthercatMCController::indexerParamRead(int axisNo,
+                                                  unsigned paramIfOffset,
                                                   unsigned paramIndex,
                                                   unsigned lenInPlcPara,
                                                   double   *value)
@@ -281,7 +282,7 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
     */
 
     status = setPlcMemoryInteger(paramIfOffset, cmd, lenInPlcCmd);
-    asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
+    asynPrint(pasynUserController_, traceMask | (status ? ASYN_TRACE_ERROR : 0),
 	      "%sstatus=%s (%d)\n",
 	      modNamEMC,
 	      EthercatMCstrStatus(status), (int)status);
@@ -339,8 +340,8 @@ asynStatus EthercatMCController::indexerParamRead(unsigned paramIfOffset,
       }
       if (status && (counter > 1)) {
 	asynPrint(pasynUserController_, traceMask | ASYN_TRACE_ERROR,
-		  "%sparamIfOffset=%u cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
-		  modNamEMC, paramIfOffset, cmdSubParamIndex,
+		  "%s (%d) paramIfOffset=%u paramIndex=%u cmdSubParamIndex=0x%04x counter=%u status=%s (%d)\n",
+		  modNamEMC, axisNo, paramIfOffset, paramIndex, cmdSubParamIndex,
 		  counter,
 		  EthercatMCstrStatus(status), (int)status);
       }
@@ -457,20 +458,20 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
    pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * fValue);
    break;
   case PARAM_IDX_USR_MIN_FLOAT32:
-    setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_, fValue);
-    /* fall through */
+    setIntegerParam(axisNo,EthercatMCCfgDLLM_En_, fValue > fABSMIN ? 1 : 0);
+    setDoubleParam(axisNo, EthercatMCCfgDLLM_,    fValue);
+ break;
   case PARAM_IDX_ABS_MIN_FLOAT32:
-    setIntegerParam(axisNo, EthercatMCCfgDLLM_En_, 1);
-    setDoubleParam(axisNo, EthercatMCCfgDLLM_, fValue);
+    setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_, fValue);
 #ifdef motorLowLimitROString
     setDoubleParam(motorLowLimitRO_, fValue);
 #endif
     break;
   case PARAM_IDX_ABS_MAX_FLOAT32:
     setDoubleParam(axisNo,  EthercatMCCfgPMAX_RB_, fValue);
-    /* fall through */
+    break;
   case PARAM_IDX_USR_MAX_FLOAT32:
-    setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, 1);
+    setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, fValue < fABSMAX ? 1 : 0);
     setDoubleParam(axisNo,  EthercatMCCfgDHLM_, fValue);
 #ifdef motorHighLimitROString
     setDoubleParam(motorHighLimitRO_, fValue);
@@ -568,8 +569,8 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
     if (status) {
       asynPrint(pasynUserController_,
                 ASYN_TRACE_INFO,
-                "%sindexerReadAxisParameters status=%s (%d)\n",
-                modNamEMC,
+                "%sindexerReadAxisParameters (%d) status=%s (%d)\n",
+                modNamEMC, axisNo,
                 EthercatMCstrStatus(status), (int)status);
       return status;
     }
@@ -608,7 +609,8 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
           /* paramIndex >= 128 are functions.
              Don't read them.
              tell driver that the function exist */
-          status = indexerParamRead(paramIfOffset,
+          status = indexerParamRead(axisNo,
+                                    paramIfOffset,
                                     paramIndex,
                                     lenInPlcPara,
                                     &fValue);
@@ -687,27 +689,18 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
       }
     }
   }
-  /* Unit code */
-  {
-    int validSoftlimits = fAbsMax > fAbsMin;
-    if (fAbsMin <= fABSMIN && fAbsMax >= fABSMAX)
-      validSoftlimits = 0;
+  /* Limits */
+  setDoubleParam(axisNo, EthercatMCCfgPMAX_RB_, fAbsMax);
+  setDoubleParam(axisNo, EthercatMCCfgPMIN_RB_, fAbsMin);
 
-    /* Soft limits */
-    /*  absolute values become read only limits */
-    setIntegerParam(axisNo,EthercatMCCfgDHLM_En_, validSoftlimits);
-    setDoubleParam(axisNo, EthercatMCCfgDHLM_,    fAbsMax);
-    setDoubleParam(axisNo,  EthercatMCCfgPMAX_RB_,fAbsMax);
-    setIntegerParam(axisNo,EthercatMCCfgDLLM_En_, validSoftlimits);
-    setDoubleParam(axisNo, EthercatMCCfgDLLM_,    fAbsMin);
-    setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_,fAbsMin);
 #ifdef motorHighLimitROString
-    if (validSoftlimits) {
-      pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);
-      pAxis->setDoubleParam(motorLowLimitRO_,  fAbsMin);
-    }
-#endif
+  /* Read only limits in motor */
+  if (fAbsMin > fABSMIN && fAbsMax < fABSMAX) {
+    setDoubleParam(axisNo, motorHighLimitRO_, fAbsMax);
+    setDoubleParam(axisNo, motorLowLimitRO_,  fAbsMin);
   }
+#endif
+
   return status;
 }
 
