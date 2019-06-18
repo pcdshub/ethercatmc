@@ -1002,16 +1002,19 @@ int getAmplifierOn(int axis_no)
            (timeNow.tv_sec > motor_axis[axis_no].powerOnTime.tv_sec)) {
         timeNow.tv_sec--;
         motor_axis[axis_no].amplifierPercent++;
+#if 0
         fprintf(stdlog, "%s/%s:%d axis_no=%d amplifierPercent=%d\n",
                 __FILE__, __FUNCTION__, __LINE__,
                 axis_no, motor_axis[axis_no].amplifierPercent);
+#endif
     }
+  }
+  if (motor_axis[axis_no].amplifierPercent == 100) {
     fprintf(stdlog, "%s/%s:%d axis_no=%d amplifierPercent=%d\n",
             __FILE__, __FUNCTION__, __LINE__,
             axis_no, motor_axis[axis_no].amplifierPercent);
-  }
-  if (motor_axis[axis_no].amplifierPercent == 100)
     return 1;
+  }
   else
     return 0;
 }
