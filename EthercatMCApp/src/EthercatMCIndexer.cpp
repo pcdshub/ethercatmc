@@ -460,9 +460,7 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
   case PARAM_IDX_USR_MIN_FLOAT32:
     setIntegerParam(axisNo,EthercatMCCfgDLLM_En_, fValue > fABSMIN ? 1 : 0);
     setDoubleParam(axisNo, EthercatMCCfgDLLM_,    fValue);
-#ifdef motorLowLimitROString
-    pAxis->setDoubleParam(motorLowLimitRO_, fValue);
-#endif
+    udateMotorLimitsRO(axisNo);
  break;
   case PARAM_IDX_ABS_MIN_FLOAT32:
     setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_, fValue);
@@ -473,9 +471,7 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
   case PARAM_IDX_USR_MAX_FLOAT32:
     setIntegerParam(axisNo, EthercatMCCfgDHLM_En_, fValue < fABSMAX ? 1 : 0);
     setDoubleParam(axisNo,  EthercatMCCfgDHLM_, fValue);
-#ifdef motorHighLimitROString
-    pAxis->setDoubleParam(motorHighLimitRO_, fValue);
-#endif
+    udateMotorLimitsRO(axisNo);
     break;
   case PARAM_IDX_WRN_MIN_FLOAT32:
     break;

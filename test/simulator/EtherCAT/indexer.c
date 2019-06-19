@@ -752,6 +752,12 @@ indexerMotorParamWrite(unsigned motor_axis_no,
        param = 0 means "on", then ramp up */
     setAmplifierPercent(motor_axis_no, fValue ? 0 : 97);
     return ret;
+  case PARAM_IDX_USR_MAX_FLOAT32:
+    setHighSoftLimitPos(motor_axis_no, fValue);
+    return ret;
+  case PARAM_IDX_USR_MIN_FLOAT32:
+    setLowSoftLimitPos(motor_axis_no, fValue);
+    return ret;
   case PARAM_IDX_SPEED_FLOAT32:
     cmd_Motor_cmd[motor_axis_no].fVelocity = fValue;
     return ret;
@@ -807,6 +813,8 @@ indexerMotorParamInterface(unsigned motor_axis_no,
       /* Comes as an uint via the wire */
       fValue =  (double)netToUint(&idxData.memoryBytes[offset + 2], lenInPlcPara);
       /* fall through */
+    case PARAM_IDX_USR_MAX_FLOAT32:
+    case PARAM_IDX_USR_MIN_FLOAT32:
     case PARAM_IDX_SPEED_FLOAT32:
     case PARAM_IDX_ACCEL_FLOAT32:
       ret = indexerMotorParamWrite(motor_axis_no, paramIndex, fValue);

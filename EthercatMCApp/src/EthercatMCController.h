@@ -153,12 +153,16 @@ public:
   int features_;
 
   protected:
+  void udateMotorLimitsRO(int axisNo);
+  void udateMotorLimitsRO(int axisNo, int enabledHighAndLow,
+                          double fValueHigh, double fValueLow);
   void handleStatusChange(asynStatus status);
   asynStatus writeReadBinaryOnErrorDisconnect(asynUser *pasynUser,
                                               const char *outdata,
                                               size_t outlen,
                                               char *indata, size_t inlen,
                                               size_t *pnread);
+
   /* memory bytes via ADS */
   asynStatus writeWriteReadAds(asynUser *pasynUser,
                                AmsHdrType *amsHdr_p, size_t outlen,

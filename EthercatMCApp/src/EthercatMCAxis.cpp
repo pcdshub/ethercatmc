@@ -190,7 +190,7 @@ asynStatus EthercatMCAxis::readBackSoftLimits(void)
   asynStatus status;
   int nvals;
   int axisID = getMotionAxisID();
-  int iValueHigh = 0, iValueLow = 0;
+  int enabledHigh = 0, enabledLow = 0;
   double fValueHigh = 0.0, fValueLow  = 0.0;
   double scaleFactor = drvlocal.scaleFactor;
 
@@ -206,35 +206,30 @@ asynStatus EthercatMCAxis::readBackSoftLimits(void)
   if (status)
     return status;
   nvals = sscanf(pC_->inString_, "%d;%lf;%d;%lf",
-                 &iValueHigh, &fValueHigh, &iValueLow, &fValueLow);
+                 &enabledHigh, &fValueHigh, &enabledLow, &fValueLow);
   if (nvals != 4) {
      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
      "%snvals=%d command=\"%s\" response=\"%s\"\n",
              modNamEMC, nvals, pC_->outString_, pC_->inString_);
-    iValueHigh = iValueLow = 0;
+    enabledHigh = enabledLow = 0;
     fValueHigh = fValueLow = 0.0;
     return asynError;
   }
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_FLOW,
             "%sout=%s in=%s CHLM_En=%d CHLM=%f CLLM_En=%d CLLM=%f\n",
             modNamEMC, pC_->outString_, pC_->inString_,
-            iValueHigh, fValueHigh, iValueLow, fValueLow);
+            enabledHigh, fValueHigh, enabledLow, fValueLow);
   /* EthercatMCCHLMXX are info(asyn:READBACK,"1"),
      so we must use pC_->setXXX(axisNo_..)  here */
-  pC_->setIntegerParam(axisNo_, pC_->EthercatMCCfgDHLM_En_, iValueHigh);
+  pC_->setIntegerParam(axisNo_, pC_->EthercatMCCfgDHLM_En_, enabledHigh);
   pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgDHLM_, fValueHigh);
-  pC_->setIntegerParam(axisNo_, pC_->EthercatMCCfgDLLM_En_, iValueLow);
+  pC_->setIntegerParam(axisNo_, pC_->EthercatMCCfgDLLM_En_, enabledLow);
   pC_->setDoubleParam(axisNo_, pC_->EthercatMCCfgDLLM_, fValueLow);
 
-  if (!iValueHigh || !iValueLow || !scaleFactor || fValueLow >= fValueHigh) {
-    /* Any limit not active, or scaleFactor == 0.0
-       Set everything to 0 */
-    fValueHigh = fValueLow  = 0.0;
+  if (scaleFactor) {
+    pC_->udateMotorLimitsRO(axisNo_, enabledHigh && enabledLow,
+                            fValueHigh / scaleFactor, fValueLow / scaleFactor);
   }
-#ifdef motorHighLimitROString
-  setDoubleParam(pC_->motorHighLimitRO_, fValueHigh / scaleFactor);
-  setDoubleParam(pC_->motorLowLimitRO_, fValueLow / scaleFactor);
-#endif
   return status;
 }
 

@@ -52,6 +52,8 @@ public:
   asynStatus resetAxis(void);
   asynStatus setClosedLoop(bool closedLoop);
   asynStatus setIntegerParam(int function, int value);
+  asynStatus setDoubleParam(int function, double value);
+
 private:
   EthercatMCController *pC_;
 

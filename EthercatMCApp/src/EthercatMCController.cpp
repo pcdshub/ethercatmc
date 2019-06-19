@@ -565,6 +565,67 @@ asynStatus EthercatMCController::setMCUErrMsg(const char *value)
   return status;
 }
 
+void EthercatMCController::udateMotorLimitsRO(int axisNo)
+{
+  double fValueHigh = 0.0, fValueLow = 0.0;
+  int enabledHigh = 0, enabledLow = 0;
+
+  /* When the integer parameter is undefined, 0 is returned,
+     same as not enabled */
+  getIntegerParam(axisNo, EthercatMCCfgDHLM_En_, &enabledHigh);
+  getIntegerParam(axisNo, EthercatMCCfgDLLM_En_, &enabledLow);
+
+  if (enabledHigh && enabledLow) {
+    asynStatus status1, status2;
+    status1 = getDoubleParam(axisNo, EthercatMCCfgDHLM_, &fValueHigh);
+    status2 = getDoubleParam(axisNo, EthercatMCCfgDLLM_, &fValueLow);
+
+    if (status1 || status2) {
+      udateMotorLimitsRO(axisNo, 0, 0.0, 0.0);
+      return;
+    }
+  }
+  udateMotorLimitsRO(axisNo, enabledHigh && enabledLow, fValueHigh, fValueLow);
+}
+
+void EthercatMCController::udateMotorLimitsRO(int axisNo, int enabledHighAndLow,
+                                              double fValueHigh, double fValueLow)
+{
+#ifdef motorHighLimitROString
+  static const double fABSMIN = -3.0e+38;
+  static const double fABSMAX =  3.0e+38;
+  int valid = 1;
+  if (fValueLow >= fValueHigh ||
+      (fValueLow <= fABSMIN) || (fValueHigh >= fABSMAX)) {
+    /* Any limit not active or out of range: set everything to 0 */
+    valid = 0;
+  }
+
+  asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+            "%sudateMotorLimitsRO(%d) enabledHighAndLow=%d valid=%d fValueHigh=%g fValueLow=%g\n",
+            modNamEMC, axisNo,
+            enabledHighAndLow, valid, fValueHigh, fValueLow);
+
+  if (!enabledHighAndLow || !valid) {
+    /* Any limit not active or out of range: set everything to 0 */
+    fValueHigh = fValueLow  = 0.0;
+  }
+  asynMotorAxis *pAxis = getAxis(axisNo);
+  if (pAxis) {
+    /* We need the overload function from asynMotorAxis to
+       let the values ripple into the motorRecord */
+    pAxis->setDoubleParam(motorHighLimitRO_, fValueHigh);
+    pAxis->setDoubleParam(motorLowLimitRO_,  fValueLow);
+  }
+#else
+  (void)axisNo;
+  (void)enabledHighAndLow;
+  (void)fValueHigh;
+  (void)fValueLow;
+#endif
+
+}
+
 void EthercatMCController::handleStatusChange(asynStatus status)
 {
   if (status != ctrlLocal.oldStatus) {

@@ -661,3 +661,34 @@ asynStatus EthercatMCIndexerAxis::setIntegerParam(int function, int value)
   status = asynMotorAxis::setIntegerParam(function, value);
   return status;
 }
+
+asynStatus EthercatMCIndexerAxis::setDoubleParam(int function, double value)
+{
+  asynStatus status;
+  if (function == pC_->EthercatMCCfgDHLM_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%ssetDoubleParam(%d EthercatMCCfgDHLM_)=%g\n", modNamEMC, axisNo_, value);
+    status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
+                                    PARAM_IDX_USR_MAX_FLOAT32,
+                                    drvlocal.lenInPlcPara,
+                                    value);
+    asynMotorAxis::setDoubleParam(function, value);
+    pC_->udateMotorLimitsRO(axisNo_);
+    return status;
+  } else if (function == pC_->EthercatMCCfgDLLM_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%ssetDoubleParam(%d EthercatMCCfgDLLM_)=%g\n", modNamEMC, axisNo_, value);
+    status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
+                                    PARAM_IDX_USR_MIN_FLOAT32,
+                                    drvlocal.lenInPlcPara,
+                                    value);
+    asynMotorAxis::setDoubleParam(function, value);
+    pC_->udateMotorLimitsRO(axisNo_);
+    return status;
+  }
+
+  // Call the base class method
+  status = asynMotorAxis::setDoubleParam(function, value);
+  return status;
+
+}
