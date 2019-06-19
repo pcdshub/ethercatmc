@@ -108,7 +108,7 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC,
 #endif
 
 #ifdef motorShowPowerOffString
-    setIntegerParam(pC_->motorShowPowerOff_, 1);
+  setIntegerParam(pC_->motorShowPowerOff_, 1);
 #endif
   /* Set the module name to "" if we have FILE/LINE enabled by asyn */
   if (pasynTrace->getTraceInfoMask(pC_->pasynUserController_) &
@@ -431,6 +431,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     bool nowMoving = false;
     int powerIsOn = 1; /* Unless powerOff */
     int statusValid = 0;
+    int hasError = 0;
     idxStatusCodeType idxStatusCode;
     unsigned idxReasonBits = 0;
     unsigned idxAuxBits = 0;
@@ -558,6 +559,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       nowMoving = true;
       break;
     case idxStatusCodeERROR:
+      hasError = 1;
       statusValid = 1;
       drvlocal.hasProblem = 1;
       break;
@@ -572,6 +574,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       setIntegerParam(pC_->motorStatusMoving_, nowMoving);
       setIntegerParam(pC_->motorStatusDone_, !nowMoving);
       setIntegerParam(pC_->EthercatMCStatusBits_, statusReasonAux);
+      setIntegerParam(pC_->EthercatMCErr_, hasError);
       if (drvlocal.auxBitsNotHomedMask) {
         setIntegerParam(pC_->motorStatusHomed_,
                         idxAuxBits & drvlocal.auxBitsNotHomedMask ? 0 : 1);
@@ -618,6 +621,11 @@ asynStatus EthercatMCIndexerAxis::setClosedLoop(bool closedLoop)
   asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
             "%ssetClosedLoop(%d)=%d\n",  modNamEMC, axisNo_,
             (int)closedLoop);
+  if (!value) {
+    /* Report off before the poller detects off */
+    setIntegerParam(pC_->motorStatusPowerOn_, value);
+  }
+
   status = pC_->indexerParamWrite(drvlocal.paramIfOffset,
                                   PARAM_IDX_OPMODE_AUTO_UINT32,
                                   drvlocal.lenInPlcPara,

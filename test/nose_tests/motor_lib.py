@@ -703,3 +703,18 @@ class motor_lib(object):
             rbv = epics.caget(motor + '.RBV', use_monitor=False)
             print '%s .RBV=%f .STUP=%s' % (tc_no, rbv, stup)
             time.sleep(polltime)
+
+    def setPowerAndWait(self, motor, tc_no, cnen):
+        wait_for_power_changed = 6.0
+        epics.caput(motor + '.CNEN', cnen)
+        while wait_for_power_changed > 0:
+            msta = int(epics.caget(motor + '.MSTA', use_monitor=False))
+            print '%s: wait_for_power_changed=%f msta=%x %s' % (
+                tc_no, wait_for_power_changed, msta, self.getMSTAtext(msta))
+            if (cnen and (msta & self.MSTA_BIT_AMPON)):
+                return True
+            if (not cnen and not (msta & self.MSTA_BIT_AMPON)):
+                return True
+            time.sleep(polltime)
+            wait_for_power_changed -= polltime
+        return False

@@ -616,6 +616,10 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
                  0, /* int relative, */
                  cmd_Motor_cmd[motor_axis_no].fVelocity,
                  cmd_Motor_cmd[motor_axis_no].fAcceleration);
+    LOGINFO3("%s/%s:%d motor_axis_no=%u idxStatusCodeSTART isMotorMoving=%d\n",
+             __FILE__, __FUNCTION__, __LINE__,
+             motor_axis_no,
+             isMotorMoving(motor_axis_no));
     break;
   case idxStatusCodeSTOP:
     motorStop(motor_axis_no);
@@ -748,10 +752,16 @@ indexerMotorParamWrite(unsigned motor_axis_no,
 
   switch(paramIndex) {
   case PARAM_IDX_OPMODE_AUTO_UINT32:
-    /* param = 1 means amplifier off.
-       param = 0 means "on", then ramp up */
-    setAmplifierPercent(motor_axis_no, fValue ? 0 : 97);
-    return ret;
+    {
+      /* param = 1 means amplifier off.
+         param = 0 means "on", then ramp up */
+      int setOnNotOff = fValue ? 0 : 1;
+      int isOnNotOff  = getAmplifierOn(motor_axis_no);
+      if (isOnNotOff != setOnNotOff) {
+        setAmplifierPercent(motor_axis_no, setOnNotOff ? 97 : 0);
+      }
+      return ret;
+    }
   case PARAM_IDX_USR_MAX_FLOAT32:
     setHighSoftLimitPos(motor_axis_no, fValue);
     return ret;
