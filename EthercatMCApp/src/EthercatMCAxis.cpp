@@ -1624,12 +1624,15 @@ asynStatus EthercatMCAxis::setStringParamDbgStrToMcu(const char *value)
 
 asynStatus EthercatMCAxis::setStringParam(int function, const char *value)
 {
-  if (function == pC_->EthercatMCDbgStrToMcu_) {
+  if (function == pC_->EthercatMCDbgStrToLog_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%ssetStringParamDbgStrToLog(%d)=\"%s\"\n",
+              modNamEMC, axisNo_, value);
+  } else if (function == pC_->EthercatMCDbgStrToMcu_) {
     return setStringParamDbgStrToMcu(value);
-  } else {
-    /* Call base class method */
-    return asynMotorAxis::setStringParam(function, value);
   }
+  /* Call base class method */
+  return asynMotorAxis::setStringParam(function, value);
 }
 
 #ifndef motorMessageTextString

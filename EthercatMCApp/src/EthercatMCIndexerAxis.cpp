@@ -729,3 +729,14 @@ asynStatus EthercatMCIndexerAxis::setDoubleParam(int function, double value)
   return status;
 
 }
+
+asynStatus EthercatMCIndexerAxis::setStringParam(int function, const char *value)
+{
+  if (function == pC_->EthercatMCDbgStrToLog_) {
+    asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
+              "%ssetStringParamDbgStrToLog(%d)=\"%s\"\n",
+              modNamEMC, axisNo_, value);
+  }
+  /* Call base class method */
+  return asynMotorAxis::setStringParam(function, value);
+}

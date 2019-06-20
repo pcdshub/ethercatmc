@@ -133,6 +133,7 @@ EthercatMCController::EthercatMCController(const char *portName,
   createParam(EthercatMCMCUErrMsgString,     asynParamOctet,       &EthercatMCMCUErrMsg_);
 #endif
   createParam(EthercatMCDbgStrToMcuString,   asynParamOctet,       &EthercatMCDbgStrToMcu_);
+  createParam(EthercatMCDbgStrToLogString,   asynParamOctet,       &EthercatMCDbgStrToLog_);
 
   /* Per axis */
   createParam(EthercatMCErrString,           asynParamInt32,       &EthercatMCErr_);

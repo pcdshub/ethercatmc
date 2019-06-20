@@ -37,6 +37,13 @@ record(waveform, "$(PREFIX)$(MOTOR_NAME)-MsgTxt") {
     field(SCAN, "I/O Intr")
 }
 
+# Debug message in IOC log
+record(stringout, "$(PREFIX)$(MOTOR_NAME)-DbgStrToLOG") {
+    field(DESC, "Log String in IOC log")
+    field(VAL, "")
+    field(DTYP, "asynOctetWrite")
+    field(OUT,"@asyn($(MOTOR_PORT),$(AXIS_NO))StrToLOG")
+}
 
 # These records make the motor resolution, offset and direction available to the driver
 # which is needed for profile moves and other applications

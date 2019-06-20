@@ -70,6 +70,7 @@ FILENAME...   EthercatMCController.h
 
 #define EthercatMCMCUErrMsgString            "MCUErrMsg"
 #define EthercatMCDbgStrToMcuString          "StrToMCU"
+#define EthercatMCDbgStrToLogString          "StrToLOG"
 
 #define HOMPROC_MANUAL_SETPOS    15
 
@@ -275,6 +276,7 @@ public:
   int EthercatMCErrRst_;
   int EthercatMCMCUErrMsg_;
   int EthercatMCDbgStrToMcu_;
+  int EthercatMCDbgStrToLog_;
   int EthercatMCVelAct_;
   int EthercatMCVel_RB_;
   int EthercatMCAcc_RB_;

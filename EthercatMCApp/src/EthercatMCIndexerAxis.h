@@ -53,6 +53,7 @@ public:
   asynStatus setClosedLoop(bool closedLoop);
   asynStatus setIntegerParam(int function, int value);
   asynStatus setDoubleParam(int function, double value);
+  asynStatus setStringParam(int function, const char *value);
 
 private:
   EthercatMCController *pC_;
