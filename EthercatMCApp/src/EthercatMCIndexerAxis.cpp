@@ -424,12 +424,14 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
   asynStatus status = asynSuccess;
   if (drvlocal.iTypCode && drvlocal.iOffset) {
     unsigned traceMask = ASYN_TRACE_INFO;
+    const char *msgTxtFromDriver = NULL;
     double targetPosition = 0.0;
     double actPosition = 0.0;
     double paramValue = 0.0;
     unsigned statusReasonAux, paramCtrl;
+    uint16_t errorID;
     bool nowMoving = false;
-    int powerIsOn = 1; /* Unless powerOff */
+    int powerIsOn = 0;
     int statusValid = 0;
     int hasError = 0;
     idxStatusCodeType idxStatusCode;
@@ -445,6 +447,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         setIntegerParam(pC_->motorStatusCommsError_, 0);
       }
     }
+    pC_->getIntegerParam(axisNo_, pC_->motorStatusPowerOn_, &powerIsOn);
     if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
       struct {
         uint8_t   actPos[4];
@@ -484,7 +487,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         uint8_t   actPos[8];
         uint8_t   targtPos[8];
         uint8_t   statReasAux[4];
-        uint8_t   errorIDAux[2];
+        uint8_t   errorID[2];
         uint8_t   paramCtrl[2];
         uint8_t   paramValue[8];
       } readback;
@@ -505,6 +508,8 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific for 5010 */
+      errorID = netToUint(&readback.errorID,
+                          sizeof(readback.errorID));
       idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 28);
       idxReasonBits = (statusReasonAux >> 24) & 0x0F;
       idxAuxBits    =  statusReasonAux  & 0x0FFFFFF;
@@ -519,12 +524,19 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     if ((statusReasonAux != drvlocal.old_statusReasonAux) ||
         (idxAuxBits      != drvlocal.old_idxAuxBits)) {
-      asynPrint(pC_->pasynUserController_, traceMask,
-                "%spoll(%d) actPos=%f targetPos=%f statusReasonAux=0x%x %d (%s)\n",
-                modNamEMC, axisNo_,
-                actPosition, targetPosition,
-                statusReasonAux, idxStatusCode,
-                idxStatusCodeTypeToStr(idxStatusCode));
+      if (errorID) {
+        asynPrint(pC_->pasynUserController_, traceMask,
+                  "%spoll(%d) actPos=%f targetPos=%f statusReasonAux=0x%x (%s) errorID=0x%x\n",
+                  modNamEMC, axisNo_,
+                  actPosition, targetPosition, statusReasonAux,
+                  idxStatusCodeTypeToStr(idxStatusCode), errorID);
+      } else {
+        asynPrint(pC_->pasynUserController_, traceMask,
+                  "%spoll(%d) actPos=%f targetPos=%f statusReasonAux=0x%x (%s)\n",
+                  modNamEMC, axisNo_,
+                  actPosition, targetPosition, statusReasonAux,
+                  idxStatusCodeTypeToStr(idxStatusCode));
+      }
       drvlocal.old_statusReasonAux = statusReasonAux;
       drvlocal.old_idxAuxBits      = idxAuxBits;
     }
@@ -547,6 +559,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       /* After RESET, START, STOP the bits are not valid */
     case idxStatusCodeIDLE:
     case idxStatusCodeWARN:
+      powerIsOn = 1;
       statusValid = 1;
       break;
     case idxStatusCodePOWEROFF:
@@ -555,6 +568,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       powerIsOn = 0;
       break;
     case idxStatusCodeBUSY:
+      powerIsOn = 1;
       statusValid = 1;
       nowMoving = true;
       break;
@@ -579,11 +593,26 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
         setIntegerParam(pC_->motorStatusHomed_,
                         idxAuxBits & drvlocal.auxBitsNotHomedMask ? 0 : 1);
       }
+      if (hasError) {
+        char sErrorMessage[40];
+        const char *errIdString = errStringFromErrId(errorID);
+        memset(&sErrorMessage[0], 0, sizeof(sErrorMessage));
+        if (errIdString[0]) {
+          snprintf(sErrorMessage, sizeof(sErrorMessage)-1, "E: %s %x",
+                   errIdString, errorID);
+        }  else {
+          snprintf(sErrorMessage, sizeof(sErrorMessage)-1,
+                   "E: TwinCAT Err %x", errorID);
+        }
+        msgTxtFromDriver = sErrorMessage;
+      }
+      updateMsgTxtFromDriver(msgTxtFromDriver);
     }
     *moving = nowMoving;
     setIntegerParam(pC_->EthercatMCStatusCode_, idxStatusCode);
     setIntegerParam(pC_->motorStatusProblem_, drvlocal.hasProblem);
     setIntegerParam(pC_->motorStatusPowerOn_, powerIsOn);
+
     /* Read back the parameters one by one */
     if (pollReadBackInBackGround &&
         !nowMoving && (paramCtrl & PARAM_IF_ACK_MASK)) {

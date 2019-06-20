@@ -668,9 +668,11 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
   }
 
   /* the status bits */
-  if (get_bError(motor_axis_no))
+  if (get_bError(motor_axis_no)) {
     idxStatusCode = idxStatusCodeERROR;
-  else if (!getAmplifierOn(motor_axis_no))
+    UINTTONET(get_nErrorId(motor_axis_no),
+              pIndexerDevice5010interface->errorID);
+  } else if (!getAmplifierOn(motor_axis_no))
     idxStatusCode = idxStatusCodePOWEROFF;
   else if (isMotorMoving(motor_axis_no))
     idxStatusCode = idxStatusCodeBUSY;
