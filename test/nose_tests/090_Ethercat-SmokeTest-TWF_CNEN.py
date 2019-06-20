@@ -77,8 +77,8 @@ def resetAxis(motor, tc_no):
     wait_for_ErrRst = 5
     err = int(epics.caget(motor + '-Err', use_monitor=False))
     print '%s:%d resetAxis err=%d' % (tc_no, lineno(), err)
-    if not err:
-        return True
+    #if not err:
+    #    return True
 
     epics.caput(motor + '-ErrRst', 1)
     while wait_for_ErrRst > 0:
@@ -89,7 +89,6 @@ def resetAxis(motor, tc_no):
             return True
         time.sleep(polltime)
         wait_for_ErrRst -= polltime
-    assert(False)
     return False
 
 def waitForStop(self, motor, tc_no, wait_for_stop, direction, oldRBV, TweakValue):
@@ -113,7 +112,6 @@ def tweakToLimit(self, motor, tc_no, direction):
     assert(direction)
     old_high_limit = epics.caget(motor + '.HLM', timeout=5)
     old_low_limit = epics.caget(motor + '.LLM', timeout=5)
-    old_Enable = epics.caget(motor + '.CNEN')
     # switch off the soft limits, save the values
     self.lib.setSoftLimitsOff(motor)
 
@@ -189,17 +187,18 @@ def tweakToLimit(self, motor, tc_no, direction):
     # If we reached the limit switch, we are fine and
     # can reset the error
     resetAxis(motor, tc_no)
-    print '%s:%d CNEN=%d' % (tc_no, lineno(), old_Enable)
-    self.lib.setPowerAndWait(motor, tc_no, old_Enable)
+    print '%s:%d CNEN=%d' % (tc_no, lineno(), self.old_Enable)
+    self.lib.setPowerAndWait(motor, tc_no, self.old_Enable)
 
     # Move away from the limit switch
-    epics.caput(motor + '.JOGF', newPos)
+    epics.caput(motor + '.VAL', rbv)
 
 
 class Test(unittest.TestCase):
     lib = motor_lib()
     motor = os.getenv("TESTEDMOTORAXIS")
 
+    old_Enable = epics.caget(motor + '.CNEN')
     TweakValue = epics.caget(motor + '.TWV')
 
     # TWF/TWR
@@ -268,3 +267,6 @@ class Test(unittest.TestCase):
         print '%s' % tc_no
         motor = self.motor
         resetAxis(motor, tc_no)
+        print '%s:%d CNEN=%d' % (tc_no, lineno(), self.old_Enable)
+        self.lib.setPowerAndWait(motor, tc_no, self.old_Enable)
+        #assert False
