@@ -130,10 +130,14 @@ static int motorHandleADS_ADR_getInt(unsigned adsport,
 {
   if (indexGroup >= 0x4000 && indexGroup < 0x5000) {
     int motor_axis_no = (int)indexGroup - 0x4000;
-    switch(indexOffset)
-      case 0x15:
+    switch(indexOffset) {
+    case 0x15:
       *iValue = cmd_Motor_cmd[motor_axis_no].inTargetPositionMonitorEnabled;
       return 0; /* Monitor */
+    case 0x57:
+      *iValue = 1;
+      return 0; /* Encoder (>=1, even without a physical encoder) */
+    }
   } else if (indexGroup >= 0x5000 && indexGroup < 0x6000) {
     int motor_axis_no = (int)indexGroup - 0x5000;
     switch(indexOffset) {
