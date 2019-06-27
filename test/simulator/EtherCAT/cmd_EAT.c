@@ -521,6 +521,17 @@ static int cmdEAThandleADS_ADR(const char *arg)
         //case ADST_UINT64__21:
         {
           unsigned uValue = 0;
+          if (adsport == 501) {
+            int iValue = 0;
+            res = motorHandleADS_ADR_getInt(adsport,
+                                            indexGroup,
+                                            indexOffset,
+                                            &iValue);
+            if (res) return res;
+            cmd_buf_printf("%i", iValue);
+            return -1;
+
+          }
           if (indexGroup == 0x4020) {
             res = indexerHandleADS_ADR_getUInt(adsport, indexOffset, len_in_PLC, &uValue);
             LOGINFO6("%s/%s:%d "
