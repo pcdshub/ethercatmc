@@ -690,11 +690,10 @@ EthercatMCController::newIndexerAxis(EthercatMCIndexerAxis *pAxis,
   setDoubleParam(axisNo, EthercatMCCfgPMIN_RB_, fAbsMin);
 
 #ifdef motorHighLimitROString
-  /* Read only limits in motor */
-  if (fAbsMin > fABSMIN && fAbsMax < fABSMAX) {
-    pAxis->setDoubleParam(motorHighLimitRO_, fAbsMax);
-    pAxis->setDoubleParam(motorLowLimitRO_,  fAbsMin);
-  }
+  udateMotorLimitsRO(axisNo,
+                     (fAbsMin > fABSMIN && fAbsMax < fABSMAX),
+                     fAbsMax,
+                     fAbsMin);
 #endif
 
   return status;
