@@ -23,6 +23,7 @@ polltime = 0.2
 class Test(unittest.TestCase):
     lib = motor_lib()
     motor = os.getenv("TESTEDMOTORAXIS")
+    epics.caput(motor + '-DbgStrToLOG', "Start " + os.path.basename(__file__)[0:20])
     #motmotor   = epics.Motor(os.getenv("TESTEDMOTORAXIS"))
     pvmotor = epics.PV(os.getenv("TESTEDMOTORAXIS"))
     pv_Err   = epics.PV(os.getenv("TESTEDMOTORAXIS") + "-Err")

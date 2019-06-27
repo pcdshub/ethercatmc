@@ -704,8 +704,9 @@ class motor_lib(object):
             print '%s .RBV=%f .STUP=%s' % (tc_no, rbv, stup)
             time.sleep(polltime)
 
-    def setPowerAndWait(self, motor, tc_no, cnen):
+    def setCNENandWait(self, motor, tc_no, cnen):
         wait_for_power_changed = 6.0
+        epics.caput(motor + '-DbgStrToLOG', "CNEN= " + tc_no[0:20]);
         epics.caput(motor + '.CNEN', cnen)
         while wait_for_power_changed > 0:
             msta = int(epics.caget(motor + '.MSTA', use_monitor=False))

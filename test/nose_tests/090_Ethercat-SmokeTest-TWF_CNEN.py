@@ -119,7 +119,7 @@ def tweakToLimit(self, motor, tc_no, direction):
     # can reset the error
     resetAxis(motor, tc_no)
     print '%s:%d CNEN=1' % (tc_no, lineno())
-    self.lib.setPowerAndWait(motor, tc_no, 1)
+    self.lib.setCNENandWait(motor, tc_no, 1)
     epics.caput(motor + '.CNEN', 1)
     # Step through the range in 20 steps or so
     deltaToMove = (old_high_limit - old_low_limit) / 20
@@ -188,7 +188,7 @@ def tweakToLimit(self, motor, tc_no, direction):
     # can reset the error
     resetAxis(motor, tc_no)
     print '%s:%d CNEN=%d' % (tc_no, lineno(), self.old_Enable)
-    self.lib.setPowerAndWait(motor, tc_no, self.old_Enable)
+    self.lib.setCNENandWait(motor, tc_no, self.old_Enable)
 
     # Move away from the limit switch
     epics.caput(motor + '.VAL', rbv)
@@ -208,7 +208,7 @@ class Test(unittest.TestCase):
         motor = self.motor
         resetAxis(motor, tc_no)
         print '%s:%d .CNEN=1' % (tc_no, lineno())
-        self.lib.setPowerAndWait(motor, tc_no, 1)
+        self.lib.setCNENandWait(motor, tc_no, 1)
 
         oldRBV = epics.caget(motor + '.RBV', use_monitor=False)
         old_high_limit = epics.caget(motor + '.HLM')
@@ -268,5 +268,5 @@ class Test(unittest.TestCase):
         motor = self.motor
         resetAxis(motor, tc_no)
         print '%s:%d CNEN=%d' % (tc_no, lineno(), self.old_Enable)
-        self.lib.setPowerAndWait(motor, tc_no, self.old_Enable)
+        self.lib.setCNENandWait(motor, tc_no, self.old_Enable)
         #assert False

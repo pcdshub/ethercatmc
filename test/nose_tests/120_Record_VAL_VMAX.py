@@ -13,6 +13,7 @@ __g = motor_globals()
 ###
 
 def motorPositionTC(self, motor, tc_no, destination, velocity):
+    epics.caput(motor + '-DbgStrToLOG', "Start TC " + tc_no[0:20]);
     if (self.msta & self.lib.MSTA_BIT_HOMED):
         tc_no = "TC-1202-LLM"
         print '%s' % tc_no
@@ -34,6 +35,7 @@ def motorPositionTC(self, motor, tc_no, destination, velocity):
 class Test(unittest.TestCase):
     lib = motor_lib()
     motor = os.getenv("TESTEDMOTORAXIS")
+    epics.caput(motor + '-DbgStrToLOG', "Start " + os.path.basename(__file__))
 
     hlm = epics.caget(motor + '.HLM')
     llm = epics.caget(motor + '.LLM')
