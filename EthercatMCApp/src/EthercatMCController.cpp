@@ -602,17 +602,23 @@ void EthercatMCController::udateMotorLimitsRO(int axisNo, int enabledHighAndLow,
     valid = 0;
   }
 
-  asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-            "%sudateMotorLimitsRO(%d) enabledHighAndLow=%d valid=%d fValueHigh=%g fValueLow=%g\n",
-            modNamEMC, axisNo,
-            enabledHighAndLow, valid, fValueHigh, fValueLow);
-
   if (!enabledHighAndLow || !valid) {
     /* Any limit not active or out of range: set everything to 0 */
     fValueHigh = fValueLow  = 0.0;
   }
   asynMotorAxis *pAxis = getAxis(axisNo);
   if (pAxis) {
+    double oldValueHigh, oldValueLow;
+    getDoubleParam(axisNo, motorHighLimitRO_, &oldValueHigh);
+    getDoubleParam(axisNo, motorLowLimitRO_,  &oldValueLow);
+    if ((fValueHigh != oldValueHigh) || (fValueLow != oldValueLow)) {
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sudateMotorLimitsRO(%d) enabledHighAndLow=%d valid=%d fValueHigh=%g fValueLow=%g\n",
+                modNamEMC, axisNo,
+                enabledHighAndLow, valid, fValueHigh, fValueLow);
+    }
+
+
     /* We need the overload function from asynMotorAxis to
        let the values ripple into the motorRecord */
     pAxis->setDoubleParam(motorHighLimitRO_, fValueHigh);
