@@ -2,7 +2,7 @@
 APPXX=EthercatMC
 TOP=$(echo $PWD/.. | sed -e "s%/test/\.\.$%%")
 export APPXX
-EPICS_EEE=n
+EPICS_EEE=EEE
 
 uname_s=$(uname -s 2>/dev/null || echo unknown)
 uname_m=$(uname -m 2>/dev/null || echo unknown)
@@ -12,8 +12,11 @@ INSTALLED_EPICS=../../../../.epics.$(hostname).$uname_s.$uname_m
 if test "$EPICS_ENV_PATH" &&
     test "$EPICS_MODULES_PATH" &&
     test "$EPICS_BASES_PATH"; then
-  EPICS_EEE=y
+  EPICS_EEE=EEE
+elif test "$E3_REQUIRE_VERSION" ; then
+  EPICS_EEE=E3
 elif test -r $INSTALLED_EPICS; then
+  EPICS_EEE=CLASSIC
   echo INSTALLED_EPICS=$INSTALLED_EPICS
  . $INSTALLED_EPICS
 else
@@ -68,7 +71,7 @@ export MOTORIP MOTORPORT
   envPathsdst=./envPaths.$EPICS_HOST_ARCH &&
   stcmddst=./st.cmd.$EPICS_HOST_ARCH &&
   mkdir -p  $IOCDIR/ &&
-  if test "x$EPICS_EEE" = "xn"; then
+  if test "x$EPICS_EEE" = "xCLASSIC"; then
     if test -d ../motor; then
       DBMOTOR=dbmotor
       #motor
@@ -104,25 +107,35 @@ export MOTORIP MOTORPORT
     #EEE
     if sed -e "s/#.*//" -e "s/-ESS\$//"  <startup/st.${MOTORCFG}.cmd |
         grep "require *motor,.*[A-Za-z]"; then
-      (cd ../../motor &&
-         rm -rfv ./dbd ./include ./doc ./db &&
-         make install) || {
-         echo >&2 make install failed
-         exit 1
-      }
+    if test -d ../../motor; then
+        (cd ../../motor &&
+            rm -rfv ./dbd ./include ./doc ./db &&
+            make install) || {
+            echo >&2 make install failed
+            exit 1
+        }
+    fi
     fi &&
     if sed -e "s/#.*//" <startup/st.${MOTORCFG}.cmd |
         grep "require *EthercatMC,.*[A-Za-z]"; then
-      (cd .. &&
-         rm -rfv ./dbd ./include ./doc ./db &&
-         make install) || {
-         echo >&2 make install failed
-         exit 1
-      }
+	if test "x$EPICS_EEE" = "xEEE"; then
+	    (cd .. &&
+		rm -rfv ./dbd ./include ./doc ./db &&
+		make install) || {
+		echo >&2 make install failed
+		exit 1
+	    }
+	else
+	    (cd ../.. &&
+		make install) || {
+		echo >&2 make install failed
+		exit 1
+	    }
+	fi
     fi
   fi &&
   cd $IOCDIR/ &&
-  if test "x$EPICS_EEE" = "xy"; then
+  if test "x$EPICS_EEE" != "xCLASSIC"; then
     #EEE
     stcmddst=./st.cmd.EEE.$EPICS_HOST_ARCH &&
     # We need to patch the cmd files to adjust "<"
@@ -145,7 +158,11 @@ export MOTORIP MOTORPORT
     }
     rm -fv  require.lock* &&
     chmod +x $stcmddst &&
-    cmd=$(echo iocsh $stcmddst) &&
+    if test "x$EPICS_EEE" = "xEEE"; then
+	cmd=$(echo iocsh $stcmddst)
+    else
+	cmd=$(echo iocsh.bash $stcmddst)
+    fi &&
     echo PWD=$PWD cmd=$cmd &&
     eval $cmd
   else
