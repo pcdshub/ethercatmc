@@ -606,12 +606,10 @@ static void simulateMotion(int axis_no)
   gettimeofday(&timeNow, NULL);
 
   if (motor_axis[axis_no].moving.velo.JogVelocity) {
+    /* Simulate jogging  */
+    motor_axis[axis_no].MotorPosNow += motor_axis[axis_no].moving.velo.JogVelocity *
+      (timeNow.tv_sec - motor_axis[axis_no].lastPollTime.tv_sec);
     clipped = soft_limits_clip(axis_no, velocity);
-    if (!clipped) {
-      /* Simulate jogging  */
-      motor_axis[axis_no].MotorPosNow += motor_axis[axis_no].moving.velo.JogVelocity *
-        (timeNow.tv_sec - motor_axis[axis_no].lastPollTime.tv_sec);
-    }
   }
 
   if (motor_axis[axis_no].moving.velo.PosVelocity) {
