@@ -510,6 +510,8 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       /* Specific for 5010 */
       errorID = netToUint(&readback.errorID,
                           sizeof(readback.errorID));
+      setIntegerParam(pC_->EthercatMCErrId_, errorID);
+
       idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 28);
       idxReasonBits = (statusReasonAux >> 24) & 0x0F;
       idxAuxBits    =  statusReasonAux  & 0x0FFFFFF;

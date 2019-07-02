@@ -608,6 +608,8 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
     init_axis((int)motor_axis_no);
     motorStop(motor_axis_no);
     set_nErrorId(motor_axis_no, 0);
+    memset(&pIndexerDevice5010interface->errorID, 0,
+           sizeof(pIndexerDevice5010interface->errorID));
     break;
   case idxStatusCodeSTART:
     movePosition(motor_axis_no,
