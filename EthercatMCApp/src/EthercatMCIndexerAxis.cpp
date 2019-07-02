@@ -621,12 +621,19 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
           sizeof(pollNowParams)/sizeof(pollNowParams[0])) {
         drvlocal.pollNowIdx = 0;
       }
-      if (drvlocal.iTypCode == 0x5008) {
-        uint16_t newParamCtrl;
-        size_t lenInPlc = sizeof(newParamCtrl);
-        newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
-        pC_->setPlcMemoryInteger(drvlocal.iOffset + 0xA,
-                                 newParamCtrl,  lenInPlc);
+      switch (drvlocal.iTypCode) {
+      case 0x5008:
+      case 0x500c:
+      case 0x5010:
+        {
+          uint16_t newParamCtrl;
+          newParamCtrl = PARAM_IF_CMD_DOREAD + pollNowParams[drvlocal.pollNowIdx];
+          pC_->setPlcMemoryInteger(drvlocal.paramIfOffset,
+                                   newParamCtrl, sizeof(newParamCtrl));
+        }
+        break;
+      default:
+        ;
       }
     }
     callParamCallbacks();
