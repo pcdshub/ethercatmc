@@ -168,11 +168,11 @@ typedef struct {
    floating point values are 4 bytes long,
    the whole structure uses 16 bytes, 8 words */
 typedef struct {
-  float     actualValue;
-  float     targetValue;
-  uint16_t  statusReasonAux;
-  uint16_t  paramCtrl;
-  float     paramValue;
+  uint8_t   actualValue[4];
+  uint8_t   targetValue[4];
+  uint8_t   statusReasonAux16[2];
+  uint8_t   paramCtrl[2];
+  uint8_t   paramValue[4];
 } indexerDevice5008interface_type;
 
 /* struct as seen on the network = in memory
@@ -471,6 +471,8 @@ static double netToDouble(void *data, size_t lenInPlc)
   }
 }
 
+#define NETTODOUBLE(n)   netToDouble(&(n),      sizeof(n))
+
 static void doubleToNet(const double value, void *data, size_t lenInPlc)
 {
   uint8_t *dst = (uint8_t*)data;
@@ -532,7 +534,7 @@ indexerMotorStatusRead5008(unsigned motor_axis_no,
   unsigned statusReasonAux;
   idxStatusCodeType idxStatusCode;
   /* The following only works on little endian (?)*/
-  statusReasonAux = pIndexerDevice5008interface->statusReasonAux;
+  statusReasonAux = NETTOUINT(pIndexerDevice5008interface->statusReasonAux16);
   idxStatusCode = (idxStatusCodeType)(statusReasonAux >> 12);
   /* The following would be run in an own task in a PLC program.
      For the simulator, we hook the code into the read request
@@ -548,7 +550,7 @@ indexerMotorStatusRead5008(unsigned motor_axis_no,
     break;
   case idxStatusCodeSTART:
     movePosition(motor_axis_no,
-                 pIndexerDevice5008interface->targetValue,
+                 NETTODOUBLE(pIndexerDevice5008interface->targetValue),
                  0, /* int relative, */
                  cmd_Motor_cmd[motor_axis_no].fVelocity,
                  cmd_Motor_cmd[motor_axis_no].fAcceleration);
@@ -591,7 +593,7 @@ indexerMotorStatusRead5008(unsigned motor_axis_no,
     idxStatusCode = idxStatusCodeIDLE;
 
   ret = statusReasonAux | (idxStatusCode << 12);;
-  pIndexerDevice5008interface->statusReasonAux = ret;
+  UINTTONET(ret, pIndexerDevice5008interface->statusReasonAux16);
 }
 
 static void
@@ -613,8 +615,7 @@ indexerMotorStatusRead5010(unsigned motor_axis_no,
     break;
   case idxStatusCodeSTART:
     movePosition(motor_axis_no,
-                 netToDouble(&pIndexerDevice5010interface->targetValue,
-                             sizeof(pIndexerDevice5010interface->targetValue)),
+                 NETTODOUBLE(pIndexerDevice5010interface->targetValue),
                  0, /* int relative, */
                  cmd_Motor_cmd[motor_axis_no].fVelocity,
                  cmd_Motor_cmd[motor_axis_no].fAcceleration);
