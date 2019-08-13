@@ -2,6 +2,7 @@
   https://forge.frm2.tum.de/public/doc/plc/master/singlehtml/index.html#devices
  */
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
