@@ -328,6 +328,104 @@ static int initDone = 0;
 static cmd_Motor_cmd_type cmd_Motor_cmd[MAX_AXES];
 
 
+static unsigned netToUint(void *data, size_t lenInPlc)
+{
+  const uint8_t *src = (const uint8_t*)data;
+  unsigned uRes;
+  if (lenInPlc == 2) {
+    uRes = (unsigned)src[0] + ((unsigned)src[1] << 8);
+    return uRes;
+  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
+    /* We don't use the full range of 64 bit integers,
+       only values up to 2^31 */
+    uRes = (unsigned)src[0] + ((unsigned)src[1] << 8) +
+           ((unsigned)src[2] << 16) + ((unsigned)src[3] << 24);
+    return uRes;
+  }
+  return 0;
+}
+
+static double netToDouble(void *data, size_t lenInPlc)
+{
+  const uint8_t *src = (const uint8_t*)data;
+  if (lenInPlc == 4) {
+    union {
+      volatile uint32_t uRes;
+      volatile float    fRes;
+    } dst;
+    dst.uRes = (uint32_t)src[0] + ((uint32_t)src[1] << 8) +
+               ((uint32_t)src[2] << 16) + ((uint32_t)src[3] << 24);
+    return (double)dst.fRes;
+  } else if (lenInPlc == 8) {
+    union {
+      volatile uint64_t uRes;
+      volatile double   fRes;
+    } dst;
+    dst.uRes = (uint64_t)src[0] + ((uint64_t)src[1] << 8) +
+               ((uint64_t)src[2] << 16) + ((uint64_t)src[3] << 24) +
+               ((uint64_t)src[4] << 32) + ((uint64_t)src[5] << 40) +
+               ((uint64_t)src[6] << 48) + ((uint64_t)src[7] << 56);
+    return dst.fRes;
+  } else {
+    return 0.0;
+  }
+}
+
+#define NETTODOUBLE(n)   netToDouble(&(n),      sizeof(n))
+
+static void doubleToNet(const double value, void *data, size_t lenInPlc)
+{
+  uint8_t *dst = (uint8_t*)data;
+  if (lenInPlc == 4) {
+    union {
+      volatile uint32_t uRes;
+      volatile float    fRes;
+    } src;
+    src.fRes = (float)value;
+    dst[0] = (uint8_t)src.uRes;
+    dst[1] = (uint8_t)(src.uRes >> 8);
+    dst[2] = (uint8_t)(src.uRes >> 16);
+    dst[3] = (uint8_t)(src.uRes >> 24);
+  } else if (lenInPlc == 8) {
+    union {
+      volatile uint64_t uRes;
+      volatile double   fRes;
+    } src;
+    src.fRes = value;
+    dst[0] = (uint8_t)src.uRes;
+    dst[1] = (uint8_t)(src.uRes >> 8);
+    dst[2] = (uint8_t)(src.uRes >> 16);
+    dst[3] = (uint8_t)(src.uRes >> 24);
+    dst[4] = (uint8_t)(src.uRes >> 32);
+    dst[5] = (uint8_t)(src.uRes >> 40);
+    dst[6] = (uint8_t)(src.uRes >> 48);
+    dst[7] = (uint8_t)(src.uRes >> 56);
+  } else {
+    memset(data, 0, lenInPlc);
+  }
+}
+
+static void uintToNet(const unsigned value, void *data, size_t lenInPlc)
+{
+  uint8_t *dst = (uint8_t*)data;
+  memset(data, 0, lenInPlc);
+  if (lenInPlc == 2) {
+    dst[0] = (uint8_t)value;
+    dst[1] = (uint8_t)(value >> 8);
+  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
+    /* We don't use the full range of 64 bit integers,
+       only values up to 2^31 */
+    dst[0] = (uint8_t)value;
+    dst[1] = (uint8_t)(value >> 8);
+    dst[2] = (uint8_t)(value >> 16);
+    dst[3] = (uint8_t)(value >> 24);
+  }
+}
+
+#define NETTOUINT(n)     netToUint(&(n),      sizeof(n))
+#define UINTTONET(v,n)   uintToNet(v, &(n),   sizeof(n))
+#define DOUBLETONET(v,n) doubleToNet(v, &(n), sizeof(n))
+
 static void init(void)
 {
   if (initDone) return;
@@ -428,103 +526,6 @@ static void init_axis(int axis_no)
   }
 }
 
-static unsigned netToUint(void *data, size_t lenInPlc)
-{
-  const uint8_t *src = (const uint8_t*)data;
-  unsigned uRes;
-  if (lenInPlc == 2) {
-    uRes = (unsigned)src[0] + ((unsigned)src[1] << 8);
-    return uRes;
-  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
-    /* We don't use the full range of 64 bit integers,
-       only values up to 2^31 */
-    uRes = (unsigned)src[0] + ((unsigned)src[1] << 8) +
-           ((unsigned)src[2] << 16) + ((unsigned)src[3] << 24);
-    return uRes;
-  }
-  return 0;
-}
-
-static double netToDouble(void *data, size_t lenInPlc)
-{
-  const uint8_t *src = (const uint8_t*)data;
-  if (lenInPlc == 4) {
-    union {
-      volatile uint32_t uRes;
-      volatile float    fRes;
-    } dst;
-    dst.uRes = (uint32_t)src[0] + ((uint32_t)src[1] << 8) +
-               ((uint32_t)src[2] << 16) + ((uint32_t)src[3] << 24);
-    return (double)dst.fRes;
-  } else if (lenInPlc == 8) {
-    union {
-      volatile uint64_t uRes;
-      volatile double   fRes;
-    } dst;
-    dst.uRes = (uint64_t)src[0] + ((uint64_t)src[1] << 8) +
-               ((uint64_t)src[2] << 16) + ((uint64_t)src[3] << 24) +
-               ((uint64_t)src[4] << 32) + ((uint64_t)src[5] << 40) +
-               ((uint64_t)src[6] << 48) + ((uint64_t)src[7] << 56);
-    return dst.fRes;
-  } else {
-    return 0.0;
-  }
-}
-
-#define NETTODOUBLE(n)   netToDouble(&(n),      sizeof(n))
-
-static void doubleToNet(const double value, void *data, size_t lenInPlc)
-{
-  uint8_t *dst = (uint8_t*)data;
-  if (lenInPlc == 4) {
-    union {
-      volatile uint32_t uRes;
-      volatile float    fRes;
-    } src;
-    src.fRes = (float)value;
-    dst[0] = (uint8_t)src.uRes;
-    dst[1] = (uint8_t)(src.uRes >> 8);
-    dst[2] = (uint8_t)(src.uRes >> 16);
-    dst[3] = (uint8_t)(src.uRes >> 24);
-  } else if (lenInPlc == 8) {
-    union {
-      volatile uint64_t uRes;
-      volatile double   fRes;
-    } src;
-    src.fRes = value;
-    dst[0] = (uint8_t)src.uRes;
-    dst[1] = (uint8_t)(src.uRes >> 8);
-    dst[2] = (uint8_t)(src.uRes >> 16);
-    dst[3] = (uint8_t)(src.uRes >> 24);
-    dst[4] = (uint8_t)(src.uRes >> 32);
-    dst[5] = (uint8_t)(src.uRes >> 40);
-    dst[6] = (uint8_t)(src.uRes >> 48);
-    dst[7] = (uint8_t)(src.uRes >> 56);
-  } else {
-    memset(data, 0, lenInPlc);
-  }
-}
-
-static void uintToNet(const unsigned value, void *data, size_t lenInPlc)
-{
-  uint8_t *dst = (uint8_t*)data;
-  memset(data, 0, lenInPlc);
-  if (lenInPlc == 2) {
-    dst[0] = (uint8_t)value;
-    dst[1] = (uint8_t)(value >> 8);
-  } else if ((lenInPlc == 4) || (lenInPlc == 8)) {
-    /* We don't use the full range of 64 bit integers,
-       only values up to 2^31 */
-    dst[0] = (uint8_t)value;
-    dst[1] = (uint8_t)(value >> 8);
-    dst[2] = (uint8_t)(value >> 16);
-    dst[3] = (uint8_t)(value >> 24);
-  }
-}
-
-#define NETTOUINT(n)     netToUint(&(n),      sizeof(n))
-#define UINTTONET(v,n)   uintToNet(v, &(n),   sizeof(n))
-#define DOUBLETONET(v,n) doubleToNet(v, &(n), sizeof(n))
 
 static void
 indexerMotorStatusRead5008(unsigned motor_axis_no,
