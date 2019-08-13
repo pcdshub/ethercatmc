@@ -381,8 +381,8 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     status = setPlcMemoryDouble(paramIfOffset + 2, value, lenInPlcPara);
   if (status) traceMask |= ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER;
   asynPrint(pasynUserController_, traceMask,
-            "%sparamIfOffset=%u paramIndex=%u lenInPlcPara=%u status=%s (%d)\n",
-            modNamEMC, paramIfOffset, paramIndex, lenInPlcPara,
+            "%sparamIfOffset=%u paramIndex=%u value=%f lenInPlcPara=%u status=%s (%d)\n",
+            modNamEMC, paramIfOffset, paramIndex, value, lenInPlcPara,
             EthercatMCstrStatus(status), (int)status);
   if (status) return status;
 
