@@ -141,7 +141,7 @@ typedef struct {
 } indexerInfoType0_type;
 
 typedef struct {
-    uint16_t   size;
+  uint8_t   size[2];
 } indexerInfoType1_type;
 
 typedef struct {
@@ -306,9 +306,9 @@ typedef struct
 static union {
   uint8_t  memoryBytes[1024];
   struct {
-    float    magic;
-    uint16_t offset;
-    uint16_t indexer_ack;
+    uint8_t  magic[4];
+    uint8_t offset[2];
+    uint8_t indexer_ack[2];
     /* Area for the indexer. union of the different info types */
     union {
       indexerInfoType0_type  infoType0;
@@ -430,11 +430,11 @@ static void init(void)
 {
   if (initDone) return;
   memset (&idxData, 0, sizeof(idxData));
-  idxData.memoryStruct.magic = 2015.02;
-  idxData.memoryStruct.offset = offsetIndexer;
+  DOUBLETONET(2015.02, idxData.memoryStruct.magic);
+
   offsetIndexer =
     (unsigned)((void*)&idxData.memoryStruct.indexer_ack - (void*)&idxData);
-  idxData.memoryStruct.offset = offsetIndexer;
+  UINTTONET(offsetIndexer, idxData.memoryStruct.offset);
 
   LOGINFO3("%s/%s:%d offsetIndexer=%u\n",
            __FILE__, __FUNCTION__, __LINE__,
@@ -887,9 +887,9 @@ static int indexerHandleIndexerCmd(unsigned offset,
            offset, lenInPlc,
            uValue, devNum, maxDevNum, infoType);
   memset(&idxData.memoryStruct.indexer, 0, sizeof(idxData.memoryStruct.indexer));
-  idxData.memoryStruct.indexer_ack = uValue;
+  UINTTONET(uValue, idxData.memoryStruct.indexer_ack);
   if (devNum >= NUM_DEVICES) {
-    idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+    idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
     return 0;
   }
   switch (infoType) {
@@ -948,14 +948,14 @@ static int indexerHandleIndexerCmd(unsigned offset,
                NETTOUINT(idxData.memoryStruct.indexer.infoType0.size),
                NETTOUINT(idxData.memoryStruct.indexer.infoType0.offset),
                NETTOUINT(idxData.memoryStruct.indexer.infoType0.flags),
-               idxData.memoryStruct.indexer_ack);
+               NETTOUINT(idxData.memoryStruct.indexer_ack));
 
-      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
       return 0;
     case 1:
-      idxData.memoryStruct.indexer.infoType1.size =
-        indexerDeviceAbsStraction[devNum].size;
-      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      UINTTONET(indexerDeviceAbsStraction[devNum].size,
+                idxData.memoryStruct.indexer.infoType1.size);
+      idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
       return 0;
     case 4:
       /* get values from device table */
@@ -966,18 +966,18 @@ static int indexerHandleIndexerCmd(unsigned offset,
                __FILE__, __FUNCTION__, __LINE__,
                indexerDeviceAbsStraction[devNum].devName,
                &idxData.memoryStruct.indexer.infoType4.name[0]);
-      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
       return 0;
     case 5: /* version */
     case 6: /* author 1 */
     case 7: /* author 2 */
-      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
       return 0;
     case 15:
       memcpy(&idxData.memoryStruct.indexer.infoType15,
               indexerDeviceAbsStraction[devNum].paramAvail,
               sizeof(idxData.memoryStruct.indexer.infoType15));
-      idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+      idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
       return 0;
     default:
       if (infoType >= 16 && infoType <= 39) {
@@ -985,7 +985,7 @@ static int indexerHandleIndexerCmd(unsigned offset,
         strncpy(&idxData.memoryStruct.indexer.infoType4.name[0],
                 indexerDeviceAbsStraction[devNum].auxName[infoType-16],
                 sizeof(idxData.memoryStruct.indexer.infoType4.name));
-        idxData.memoryStruct.indexer_ack |= 0x8000; /* ACK */
+        idxData.memoryStruct.indexer_ack[1] |= 0x80; /* ACK in high byte */
         return 0;
       }
       return __LINE__;
@@ -1197,7 +1197,7 @@ void indexerHandlePLCcycle(void)
       break;
     case TYPECODE_INDEXER:
       {
-        uint16_t indexer_ack = idxData.memoryStruct.indexer_ack;
+        uint16_t indexer_ack = NETTOUINT(idxData.memoryStruct.indexer_ack);
         LOGINFO6("%s/%s:%d devNum=%u indexer_ack=0x%x\n",
                  __FILE__, __FUNCTION__, __LINE__,
                  devNum, indexer_ack);
