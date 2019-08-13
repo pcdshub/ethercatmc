@@ -1050,7 +1050,7 @@ static void motorHandleOneArg(const char *myarg_1)
   }
   /* stAxisStatusV2? */
   if (0 == strcmp(myarg_1, "stAxisStatusV2?")) {
-    cmd_buf_printf("");
+    cmd_buf_printf("%s", "");
     return;
   }
   /* stAxisStatus? */
