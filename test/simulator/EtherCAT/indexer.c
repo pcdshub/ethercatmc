@@ -147,6 +147,7 @@ typedef struct {
 
 typedef struct {
   char name[33]; /* leave one byte for trailing '\0' */
+  char ascii_null;
 } indexerInfoType4_type;
 
 typedef struct {
