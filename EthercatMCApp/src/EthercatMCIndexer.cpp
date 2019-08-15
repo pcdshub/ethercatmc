@@ -54,32 +54,32 @@ extern "C" {
   {
     if (prefixCode >= 0) {
       switch (prefixCode) {
-        case 24:   return "Y";
-        case 21:   return "Z";
-        case 18:   return "E";
-        case 15:   return "P";
-        case 12:   return "T";
-        case 9:    return "G";
-        case 6:    return "M";
-        case 3:    return "k";
-        case 2:    return "h";
-        case 1:    return "da";
-        case 0:    return "";
+      case 24:   return "Y";
+      case 21:   return "Z";
+      case 18:   return "E";
+      case 15:   return "P";
+      case 12:   return "T";
+      case 9:    return "G";
+      case 6:    return "M";
+      case 3:    return "k";
+      case 2:    return "h";
+      case 1:    return "da";
+      case 0:    return "";
       default:
         return "?";
       }
     } else {
       switch (-prefixCode) {
-        case 1:   return "d";
-        case 2:   return "c";
-        case 3:   return "m";
-        case 6:   return "u";
-        case 9:   return "n";
-        case 12:  return "p";
-        case 15:  return "f";
-        case 18:  return "a";
-        case 21:  return "z";
-        case 24:  return "y";
+      case 1:   return "d";
+      case 2:   return "c";
+      case 3:   return "m";
+      case 6:   return "u";
+      case 9:   return "n";
+      case 12:  return "p";
+      case 15:  return "f";
+      case 18:  return "a";
+      case 21:  return "z";
+      case 24:  return "y";
       default:
         return "?";
       }
@@ -228,19 +228,19 @@ asynStatus EthercatMCController::indexerParamWaitNotBusy(unsigned indexOffset)
               EthercatMCstrStatus(status), (int)status);
     if (status) return status;
     switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
-      case PARAM_IF_CMD_INVALID:
-      case PARAM_IF_CMD_DONE:
-      case PARAM_IF_CMD_ERR_NO_IDX:
-      case PARAM_IF_CMD_READONLY:
-      case PARAM_IF_CMD_RETRY_LATER:
-        return asynSuccess;
-      case PARAM_IF_CMD_BUSY:
-        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                  "%sBUSY\n",
-                  modNamEMC);
-        return asynDisabled;
-      default:
-        ; /* Read, write continue looping */
+    case PARAM_IF_CMD_INVALID:
+    case PARAM_IF_CMD_DONE:
+    case PARAM_IF_CMD_ERR_NO_IDX:
+    case PARAM_IF_CMD_READONLY:
+    case PARAM_IF_CMD_RETRY_LATER:
+      return asynSuccess;
+    case PARAM_IF_CMD_BUSY:
+      asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                "%sBUSY\n",
+                modNamEMC);
+      return asynDisabled;
+    default:
+      ; /* Read, write continue looping */
     }
     counter++;
     epicsThreadSleep(.1 * (counter<<1));
@@ -370,9 +370,9 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
   if (status) return status;
 
   /*
-     The parameter interface has this layout:
-     0 CmdParamReasonIdx
-     2 ParamValue
+    The parameter interface has this layout:
+    0 CmdParamReasonIdx
+    2 ParamValue
   */
   /* Parameters 1..4 are integers, the rest is floating point */
   if (paramIndex <= 4)
@@ -406,22 +406,22 @@ asynStatus EthercatMCController::indexerParamWrite(unsigned paramIfOffset,
     /* This is good, return */
     if (cmdSubParamIndex == cmdAcked) return asynSuccess;
     switch (cmdSubParamIndex & PARAM_IF_CMD_MASK) {
-      case PARAM_IF_CMD_INVALID:
-        status = asynDisabled;
-      case PARAM_IF_CMD_DOREAD:
-        status = asynDisabled;
-      case PARAM_IF_CMD_DOWRITE:
-      case PARAM_IF_CMD_BUSY:
-        break;
-      case PARAM_IF_CMD_DONE:
-        /* This is an error. (collision ?) */
-        status = asynDisabled;
-      case PARAM_IF_CMD_ERR_NO_IDX:
-        status = asynDisabled;
-      case PARAM_IF_CMD_READONLY:
-        status = asynDisabled;
-      case PARAM_IF_CMD_RETRY_LATER:
-        status = asynDisabled;
+    case PARAM_IF_CMD_INVALID:
+      status = asynDisabled;
+    case PARAM_IF_CMD_DOREAD:
+      status = asynDisabled;
+    case PARAM_IF_CMD_DOWRITE:
+    case PARAM_IF_CMD_BUSY:
+      break;
+    case PARAM_IF_CMD_DONE:
+      /* This is an error. (collision ?) */
+      status = asynDisabled;
+    case PARAM_IF_CMD_ERR_NO_IDX:
+      status = asynDisabled;
+    case PARAM_IF_CMD_READONLY:
+      status = asynDisabled;
+    case PARAM_IF_CMD_RETRY_LATER:
+      status = asynDisabled;
     }
     if (status) {
       traceMask |= ASYN_TRACE_INFO;
@@ -451,17 +451,17 @@ void EthercatMCController::parameterFloatReadBack(unsigned axisNo,
 
   switch(paramIndex) {
   case PARAM_IDX_OPMODE_AUTO_UINT32:
-   /* CNEN for EPICS */
-   pAxis->setIntegerParam(motorStatusGainSupport_, 1);
-   break;
+    /* CNEN for EPICS */
+    pAxis->setIntegerParam(motorStatusGainSupport_, 1);
+    break;
   case PARAM_IDX_MICROSTEPS_FLOAT32:
-   pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * fValue);
-   break;
+    pAxis->setDoubleParam(EthercatMCCfgSREV_RB_, fullsrev * fValue);
+    break;
   case PARAM_IDX_USR_MIN_FLOAT32:
     setIntegerParam(axisNo,EthercatMCCfgDLLM_En_, fValue > fABSMIN ? 1 : 0);
     setDoubleParam(axisNo, EthercatMCCfgDLLM_,    fValue);
     udateMotorLimitsRO(axisNo);
- break;
+    break;
   case PARAM_IDX_ABS_MIN_FLOAT32:
     setDoubleParam(axisNo,  EthercatMCCfgPMIN_RB_, fValue);
     break;
@@ -570,8 +570,8 @@ EthercatMCController::indexerReadAxisParameters(EthercatMCIndexerAxis *pAxis,
                 EthercatMCstrStatus(status), (int)status);
       return status;
     }
-      /* dataIdx == 0 has ACK + infoType/devNum
-         dataIdx == 1 has supported parameters 15..0 */
+    /* dataIdx == 0 has ACK + infoType/devNum
+       dataIdx == 1 has supported parameters 15..0 */
     asynPrint(pasynUserController_, traceMask,
               "%sparameters[%03u..%03u]=0x%04x\n",
               modNamEMC, dataIdx*16 +15,
@@ -718,14 +718,6 @@ asynStatus EthercatMCController::initialPollIndexer(void)
   unsigned infoType7 = 7;
   int      axisNo = 0;
 
-
-  if (0)
-  {
-    uint8_t resss[0x338];
-    getSymbolInfoViaADS("Main.M1.nMotionAxisID",
-                        &resss, sizeof(resss));
-  }
-
   memset(&descVersAuthors, 0, sizeof(descVersAuthors));
   if (!ctrlLocal.adsport) {
     ctrlLocal.adsport = 851;
@@ -786,16 +778,16 @@ asynStatus EthercatMCController::initialPollIndexer(void)
         iAllFlags = infoType0_data.flags_0 + (infoType0_data.flags_1 << 8) +
           (infoType0_data.flags_2 << 16) + (infoType0_data.flags_3 << 24);
         fAbsMin   = netToDouble(&infoType0_data.absMin,
-                                      sizeof(infoType0_data.absMin));
+                                sizeof(infoType0_data.absMin));
         fAbsMax   = netToDouble(&infoType0_data.absMax,
-                                      sizeof(infoType0_data.absMax));
+                                sizeof(infoType0_data.absMax));
       }
     }
     status = readDeviceIndexer(devNum, infoType4);
     if (!status) {
       getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
-                              descVersAuthors.desc,
-                              sizeof(descVersAuthors.desc));
+                         descVersAuthors.desc,
+                         sizeof(descVersAuthors.desc));
     }
     status = readDeviceIndexer(devNum, infoType5);
     if (!status) {
@@ -806,8 +798,8 @@ asynStatus EthercatMCController::initialPollIndexer(void)
     status = readDeviceIndexer(devNum, infoType6);
     if (!status) {
       getPlcMemoryString(ctrlLocal.indexerOffset + 1*2,
-                              descVersAuthors.author1,
-                              sizeof(descVersAuthors.author1));
+                         descVersAuthors.author1,
+                         sizeof(descVersAuthors.author1));
     }
     status = readDeviceIndexer(devNum, infoType7);
     if (!status) {
@@ -830,39 +822,39 @@ asynStatus EthercatMCController::initialPollIndexer(void)
       break; /* End of list ?? */
     }
     switch (iTypCode) {
-      case 0x5008:
-      case 0x500C:
-      case 0x5010:
-        {
-          char unitCodeTxt[40];
-          EthercatMCIndexerAxis *pAxis;
-          axisNo++;
-          pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
-          if (!pAxis) {
-            pAxis = new EthercatMCIndexerAxis(this, axisNo);
-          }
-          /* Now we have an axis */
-
-          status = newIndexerAxis(pAxis,
-                                  devNum,
-                                  iAllFlags,
-                                  fAbsMin,
-                                  fAbsMax,
-                                  iOffset);
-          asynPrint(pasynUserController_, ASYN_TRACE_INFO,
-                    "%sTypeCode(%d) iTypCode=%x pAxis=%p status=%s (%d)\n",
-                    modNamEMC, axisNo, iTypCode, pAxis,
-                    EthercatMCstrStatus(status), (int)status);
-          if (status) goto endPollIndexer;
-
-          pAxis->setIndexerDevNumOffsetTypeCode(devNum, iOffset, iTypCode);
-          setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
-          snprintf(unitCodeTxt, sizeof(unitCodeTxt), "%s%s",
-          plcUnitPrefixTxt(( (int8_t)((iUnit & 0xFF00)>>8))),
-          plcUnitTxtFromUnitCode(iUnit & 0xFF));
-          setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
+    case 0x5008:
+    case 0x500C:
+    case 0x5010:
+      {
+        char unitCodeTxt[40];
+        EthercatMCIndexerAxis *pAxis;
+        axisNo++;
+        pAxis = static_cast<EthercatMCIndexerAxis*>(asynMotorController::getAxis(axisNo));
+        if (!pAxis) {
+          pAxis = new EthercatMCIndexerAxis(this, axisNo);
         }
-     }
+        /* Now we have an axis */
+
+        status = newIndexerAxis(pAxis,
+                                devNum,
+                                iAllFlags,
+                                fAbsMin,
+                                fAbsMax,
+                                iOffset);
+        asynPrint(pasynUserController_, ASYN_TRACE_INFO,
+                  "%sTypeCode(%d) iTypCode=%x pAxis=%p status=%s (%d)\n",
+                  modNamEMC, axisNo, iTypCode, pAxis,
+                  EthercatMCstrStatus(status), (int)status);
+        if (status) goto endPollIndexer;
+
+        pAxis->setIndexerDevNumOffsetTypeCode(devNum, iOffset, iTypCode);
+        setStringParam(axisNo,  EthercatMCCfgDESC_RB_, descVersAuthors.desc);
+        snprintf(unitCodeTxt, sizeof(unitCodeTxt), "%s%s",
+                 plcUnitPrefixTxt(( (int8_t)((iUnit & 0xFF00)>>8))),
+                 plcUnitTxtFromUnitCode(iUnit & 0xFF));
+        setStringParam(axisNo,  EthercatMCCfgEGU_RB_, unitCodeTxt);
+      }
+    }
   }
 
  endPollIndexer:
