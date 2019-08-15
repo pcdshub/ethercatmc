@@ -46,23 +46,23 @@ typedef enum {
 extern "C" const char *idxStatusCodeTypeToStr(idxStatusCodeType idxStatusCode)
 {
   switch (idxStatusCode) {
-    case  idxStatusCodeRESET:    return "RESET";
-    case  idxStatusCodeIDLE:     return "IDLE ";
-    case  idxStatusCodePOWEROFF: return "PWROF";
-    case  idxStatusCodeWARN:     return "WARN ";
-    case  idxStatusCodeERR4:     return "ERR4 ";
-    case  idxStatusCodeSTART:    return "START";
-    case  idxStatusCodeBUSY:     return "BUSY ";
-    case  idxStatusCodeSTOP:     return "STOP ";
-    case  idxStatusCodeERROR:    return "ERROR";
-    case  idxStatusCodeERR9:     return "ERR9 ";
-    case  idxStatusCodeERR10:    return "ERR10";
-    case  idxStatusCodeERR11:    return "ERR11";
-    case  idxStatusCodeERR12:    return "ERR12";
-    case  idxStatusCodeERR13:    return "ERR13";
-    case  idxStatusCodeERR14:    return "ERR14";
-    case  idxStatusCodeERR15:    return "ERR15";
-    default:                     return "UKNWN";
+  case  idxStatusCodeRESET:    return "RESET";
+  case  idxStatusCodeIDLE:     return "IDLE ";
+  case  idxStatusCodePOWEROFF: return "PWROF";
+  case  idxStatusCodeWARN:     return "WARN ";
+  case  idxStatusCodeERR4:     return "ERR4 ";
+  case  idxStatusCodeSTART:    return "START";
+  case  idxStatusCodeBUSY:     return "BUSY ";
+  case  idxStatusCodeSTOP:     return "STOP ";
+  case  idxStatusCodeERROR:    return "ERROR";
+  case  idxStatusCodeERR9:     return "ERR9 ";
+  case  idxStatusCodeERR10:    return "ERR10";
+  case  idxStatusCodeERR11:    return "ERR11";
+  case  idxStatusCodeERR12:    return "ERR12";
+  case  idxStatusCodeERR13:    return "ERR13";
+  case  idxStatusCodeERR14:    return "ERR14";
+  case  idxStatusCodeERR15:    return "ERR15";
+  default:                     return "UKNWN";
   }
 }
 
@@ -85,10 +85,10 @@ EthercatMCIndexerAxis::EthercatMCIndexerAxis(EthercatMCController *pC,
     pC_(pC)
 {
 #ifdef motorFlagsDriverUsesEGUString
-    setIntegerParam(pC_->motorFlagsDriverUsesEGU_,1);
+  setIntegerParam(pC_->motorFlagsDriverUsesEGU_,1);
 #endif
 #ifdef motorFlagsAdjAfterHomedString
-    setIntegerParam(pC_->motorFlagsAdjAfterHomed_, 1);
+  setIntegerParam(pC_->motorFlagsAdjAfterHomed_, 1);
 #endif
   memset(&drvlocal, 0, sizeof(drvlocal));
   memset(&drvlocal.dirty, 0xFF, sizeof(drvlocal.dirty));
@@ -128,8 +128,7 @@ extern "C" int EthercatMCCreateIndexerAxis(const char *EthercatMCName,
   (void)axisOptionsStr;
 
   pC = (EthercatMCController*) findAsynPortDriver(EthercatMCName);
-  if (!pC)
-  {
+  if (!pC) {
     printf("Error port %s not found\n", EthercatMCName);
     return asynError;
   }
@@ -155,12 +154,12 @@ void EthercatMCIndexerAxis::setIndexerDevNumOffsetTypeCode(unsigned devNum,
   drvlocal.devNum = devNum;
   drvlocal.iTypCode = iTypCode;
   drvlocal.iOffset = iOffset;
-    if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
-      drvlocal.lenInPlcPara = 4;
-      drvlocal.paramIfOffset = drvlocal.iOffset + 0xA;
+  if ((drvlocal.iTypCode == 0x5008) || (drvlocal.iTypCode == 0x500c)) {
+    drvlocal.lenInPlcPara = 4;
+    drvlocal.paramIfOffset = drvlocal.iOffset + 0xA;
   } else if (drvlocal.iTypCode == 0x5010) {
-      drvlocal.lenInPlcPara = 8;
-      drvlocal.paramIfOffset = drvlocal.iOffset + 22;
+    drvlocal.lenInPlcPara = 8;
+    drvlocal.paramIfOffset = drvlocal.iOffset + 22;
   } else {
     asynPrint(pC_->pasynUserController_, ASYN_TRACE_INFO,
               "%s(%d) iTypCode=0x%x\n",
@@ -470,7 +469,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       statusReasonAux16 = netToUint(&readback.statReasAux,
                                     sizeof(readback.statReasAux));
       paramCtrl = netToUint(&readback.paramCtrl,
-                              sizeof(readback.paramCtrl));
+                            sizeof(readback.paramCtrl));
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific bit positions for 5008 */
@@ -504,7 +503,7 @@ asynStatus EthercatMCIndexerAxis::poll(bool *moving)
       statusReasonAux = netToUint(&readback.statReasAux,
                                   sizeof(readback.statReasAux));
       paramCtrl = netToUint(&readback.paramCtrl,
-                              sizeof(readback.paramCtrl));
+                            sizeof(readback.paramCtrl));
       paramValue = netToDouble(&readback.paramValue,
                                sizeof(readback.paramValue));
       /* Specific for 5010 */
@@ -650,7 +649,7 @@ asynStatus EthercatMCIndexerAxis::resetAxis(void)
 }
 
 /** Set the motor closed loop status
-  * \param[in] closedLoop true = close loop, false = open looop. */
+ * \param[in] closedLoop true = close loop, false = open looop. */
 asynStatus EthercatMCIndexerAxis::setClosedLoop(bool closedLoop)
 {
   double value = closedLoop ? 0.0 : 1.0; /* 1.0 means disable */
