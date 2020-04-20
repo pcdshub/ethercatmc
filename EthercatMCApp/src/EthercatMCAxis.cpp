@@ -207,6 +207,7 @@ asynStatus EthercatMCAxis::readBackSoftLimits(void)
   double fValueHigh = 0.0, fValueLow  = 0.0;
   double scaleFactor = drvlocal.scaleFactor;
 
+  if (axisID <= 0) return asynError;
   snprintf(pC_->outString_, sizeof(pC_->outString_),
            "ADSPORT=501/.ADR.16#%X,16#%X,2,2?;ADSPORT=501/.ADR.16#%X,16#%X,8,5?;"
            "ADSPORT=501/.ADR.16#%X,16#%X,2,2?;ADSPORT=501/.ADR.16#%X,16#%X,8,5?",
@@ -1296,24 +1297,26 @@ asynStatus EthercatMCAxis::poll(bool *moving)
         !drvlocal.supported.bECMC) {
       /* not moving: poll the parameters for this axis */
       int axisID = getMotionAxisID();
-      switch (drvlocal.eeAxisPollNow) {
-      case pollNowReadScaling:
-        readScaling(axisID);
-        drvlocal.eeAxisPollNow = pollNowReadMonitoring;
-        break;
-      case pollNowReadMonitoring:
-        readMonitoring(axisID);
-        drvlocal.eeAxisPollNow = pollNowReadBackSoftLimits;
-        break;
-      case pollNowReadBackSoftLimits:
-        readBackSoftLimits();
-        drvlocal.eeAxisPollNow = pollNowReadBackVelocities;
-        break;
-      case pollNowReadBackVelocities:
-      default:
-        readBackVelocities(axisID);
-        drvlocal.eeAxisPollNow = pollNowReadScaling;
-        break;
+      if (axisID > 0) {
+        switch (drvlocal.eeAxisPollNow) {
+        case pollNowReadScaling:
+          readScaling(axisID);
+          drvlocal.eeAxisPollNow = pollNowReadMonitoring;
+          break;
+        case pollNowReadMonitoring:
+          readMonitoring(axisID);
+          drvlocal.eeAxisPollNow = pollNowReadBackSoftLimits;
+          break;
+        case pollNowReadBackSoftLimits:
+          readBackSoftLimits();
+          drvlocal.eeAxisPollNow = pollNowReadBackVelocities;
+          break;
+        case pollNowReadBackVelocities:
+        default:
+          readBackVelocities(axisID);
+          drvlocal.eeAxisPollNow = pollNowReadScaling;
+          break;
+        }
       }
     }
   }

@@ -260,6 +260,7 @@ asynStatus EthercatMCController::writeReadOnErrorDisconnect(void)
   status = writeReadOnErrorDisconnect_C(pasynUserController_, outString_, outlen,
                                         inString_, sizeof(inString_));
   if (!status) {
+    // MCB - This just looks bogus.  "timeout" and "Too long".
     if (strstr(inString_, "State timout") ||
         strstr(inString_, "To long time in one state")) {
       double timeDelta = EthercatMCgetNowTimeSecs() - timeBefore;

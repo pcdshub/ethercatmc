@@ -186,44 +186,38 @@ asynStatus EthercatMCAxis::setValuesOnAxis(const char* var1, double value1,
   return writeReadACK();
 }
 
-
+// MCB - This was originally testing multiple adsports, starting
+// with the configured port, and then moving to 852, 851, and 853,
+// in that order.  However, this would leave adsport_str in a bad
+// state.  And it really doesn't make sense... we're not going to
+// change the adsport without changing the IOC.  So... just the
+// standard adsport, please.
 int EthercatMCAxis::getMotionAxisID(void)
 {
   int ret = drvlocal.dirty.nMotionAxisID;
   if (ret == -1) {
     int res = -3;
     asynStatus status;
-    static const unsigned adsports[] = {0, 852, 851, 853};
-    unsigned adsport_idx;
     ret = -2;
-    for (adsport_idx = 0;
-         adsport_idx < sizeof(adsports)/sizeof(adsports[0]);
-         adsport_idx++) {
-      unsigned adsport = adsports[adsport_idx];
-      if (!adsport) {
-        adsport = drvlocal.adsPort;
-      }
-      if (adsport) {
-        /* Save adsport_str for the poller */
-        snprintf(drvlocal.adsport_str, sizeof(drvlocal.adsport_str),
-                 "ADSPORT=%u/", adsport);
-      }
-      snprintf(pC_->outString_, sizeof(pC_->outString_),
-               "%sMain.M%d.nMotionAxisID?", drvlocal.adsport_str, axisNo_);
-      status = pC_->writeReadOnErrorDisconnect();
-      if (status) {
-        return -1;
-      }
-      int nvals = sscanf(pC_->inString_, "%d", &res);
-      if (nvals != 1) {
-        asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
-                  "%soldret=%d nvals=%d command=\"%s\" response=\"%s\" res=%d\n",
-                  modNamEMC, ret, nvals, pC_->outString_, pC_->inString_, res);
-        continue;
-      }
-      ret = res;
-      break;
+    unsigned adsport = drvlocal.adsPort;
+    if (adsport) {
+      /* Save adsport_str for the poller */
+      snprintf(drvlocal.adsport_str, sizeof(drvlocal.adsport_str),
+               "ADSPORT=%u/", adsport);
     }
+    snprintf(pC_->outString_, sizeof(pC_->outString_),
+             "%sMain.M%d.nMotionAxisID?", drvlocal.adsport_str, axisNo_);
+    status = pC_->writeReadOnErrorDisconnect();
+    if (status) {
+      return -1;
+    }
+    int nvals = sscanf(pC_->inString_, "%d", &res);
+    if (nvals != 1) {
+      asynPrint(pC_->pasynUserController_, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+                "%soldret=%d nvals=%d command=\"%s\" response=\"%s\" res=%d\n",
+                modNamEMC, ret, nvals, pC_->outString_, pC_->inString_, res);
+    } else
+      ret = res;
     if (ret != -1) drvlocal.dirty.nMotionAxisID = ret;
   }
   return ret;

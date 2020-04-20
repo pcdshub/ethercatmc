@@ -19,11 +19,11 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
-ASYN_MODULE_VERSION		= R4.35-0.0.1
-CALC_MODULE_VERSION		= R3.7-1.0.1
+ASYN_MODULE_VERSION	= R4.35-0.0.1
+CALC_MODULE_VERSION	= R3.7-1.0.1
 MOTOR_MODULE_VERSION	= R6.9-ess-0.0.1
 SSCAN_MODULE_VERSION	= R2.10.2-1.0.0
-SEQ_MODULE_VERSION		= R2.2.4-1.1
+SEQ_MODULE_VERSION	= R2.2.4-1.1
 
 # ==========================================================
 # External Support module path definitions
@@ -41,7 +41,7 @@ SEQ_MODULE_VERSION		= R2.2.4-1.1
 ASYN		= $(EPICS_MODULES)/asyn/$(ASYN_MODULE_VERSION)
 CALC		= $(EPICS_MODULES)/calc/$(CALC_MODULE_VERSION)
 MOTOR		= $(EPICS_MODULES)/motor/$(MOTOR_MODULE_VERSION)
-SEQ			= $(EPICS_MODULES)/seq/$(SEQ_MODULE_VERSION)
+SEQ		= $(EPICS_MODULES)/seq/$(SEQ_MODULE_VERSION)
 SSCAN		= $(EPICS_MODULES)/sscan/$(SSCAN_MODULE_VERSION)
 
 # Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths
