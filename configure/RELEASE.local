@@ -19,11 +19,11 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
-ASYN_MODULE_VERSION	= R4.35-0.0.1
+ASYN_MODULE_VERSION	= R4.35-0.0.2
 CALC_MODULE_VERSION	= R3.7-1.0.1
-MOTOR_MODULE_VERSION	= R6.9-ess-0.0.1
-SSCAN_MODULE_VERSION	= R2.10.2-1.0.0
-SEQ_MODULE_VERSION	= R2.2.4-1.1
+MOTOR_MODULE_VERSION	= R6.9-ess-0.0.2
+SSCAN_MODULE_VERSION	= R2.10.2-1.1.0
+SEQ_MODULE_VERSION	= R2.2.4-1.2
 
 # ==========================================================
 # External Support module path definitions
