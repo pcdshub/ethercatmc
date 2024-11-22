@@ -75,6 +75,9 @@ EthercatMC_LIBS += ads
 EthercatMC_DBD  += ads.dbd
 endif
 
+ifeq ($(USE_TIRPC),YES)
+EthercatMC_SYS_LIBS += tirpc
+endif
 
 EthercatMC_LIBS += EthercatMcSupport
 EthercatMC_LIBS += $(EPICS_BASE_IOC_LIBS)
