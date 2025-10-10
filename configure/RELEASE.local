@@ -21,7 +21,7 @@
 # ==========================================================
 ASYN_MODULE_VERSION	= R4.42-1.0.0
 CALC_MODULE_VERSION	= R3.7-1.0.1
-MOTOR_MODULE_VERSION	= R6.9-ess-0.0.3
+MOTOR_MODULE_VERSION	= R6.9-ess-0.0.4
 SSCAN_MODULE_VERSION	= R2.10.2-1.1.0
 SEQ_MODULE_VERSION	= R2.2.4-1.2
 
@@ -52,5 +52,5 @@ EPICS_BASE = $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
 
 MY_MODULES		= /cds/home/z/zlentz/github/epics/ads-ioc-fix/modules
 
-MOTOR		= $(MY_MODULES)/motor
+#MOTOR		= $(MY_MODULES)/motor
 
